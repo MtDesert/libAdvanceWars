@@ -3,9 +3,9 @@
 #include"Texture.h"
 #include<stdio.h>
 
-Texture *tex;
+Texture tex;
 void displayFunc(){
-	glClearColor(0,0,1,1);
+	glClearColor(0,0,0,1);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -24,7 +24,7 @@ void displayFunc(){
 			glDrawArrays(GL_TRIANGLE_FAN,0,4);
 		}
 	}*/
-	tex->draw();
+	tex.draw(Point2D<GLfloat>(0,0));
 	glFlush();
 	
 	glDisableClientState(GL_VERTEX_ARRAY);
@@ -51,11 +51,12 @@ int main(int argc,char* argv[]){
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	//load texture
-	tex=new Texture();
-	FileBMP fileBmp;
-	fileBmp.loadFile("bmp.bmp");
-	fileBmp.parseData();
-	tex->setTexImage2D(fileBmp);
+	if(argc==2){
+		FilePNG fileBmp;
+		fileBmp.loadFile(argv[1]);
+		fileBmp.parseData();
+		tex.texImage2D(fileBmp);
+	}
 	//main loop
 	glutMainLoop();
 	glutDestroyWindow(window);

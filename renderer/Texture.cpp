@@ -1,35 +1,40 @@
 #include "Texture.h"
 
-Texture::Texture()
+Texture::Texture():texture(0),width(0),height(0){}
+Texture::~Texture(){}
+
+void Texture::texImage2D(GLsizei width, GLsizei height, const GLvoid *pixels)
 {
-	glGenTextures(1,&texture);
+	if(!glIsTexture(texture)){
+		glGenTextures(1,&texture);
+	}
 	glBindTexture(GL_TEXTURE_2D,texture);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-}
-Texture::~Texture()
-{
-	glDeleteTextures(1,&texture);
-}
-
-void Texture::setTexImage2D(GLsizei width, GLsizei height, const GLvoid *pixels)
-{
-	glBindTexture(GL_TEXTURE_2D,texture);
+	this->width=1;//width;
+	this->height=1;//height;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
-void Texture::setTexImage2D(const FileBMP &fileBmp){
-	//make texture
+void Texture::deleteTexture(){
+	if(glIsTexture(texture))glDeleteTextures(1,&texture);
+}
+void Texture::texImage2D(const FileBMP &fileBmp){
 	Bitmap_32bit bitmap;
 	fileBmp.decodeTo(bitmap);
-	setTexImage2D(bitmap);
+	texImage2D(bitmap);
 }
-void Texture::setTexImage2D(const Bitmap_32bit &bitmap){
-	setTexImage2D(bitmap.getWidth(),bitmap.getHeight(),bitmap.dataPointer);
+void Texture::texImage2D(const FilePNG &filePng){
+	Bitmap_32bit bitmap;
+	filePng.decodeTo(bitmap);
+	texImage2D(bitmap);
 }
-void Texture::draw(){
+void Texture::texImage2D(const Bitmap_32bit &bitmap){
+	texImage2D(bitmap.getWidth(),bitmap.getHeight(),bitmap.dataPointer);
+}
+void Texture::draw(const Point2D<GLfloat> &p)const{
 	glBindTexture(GL_TEXTURE_2D,texture);
 	//vertex
-	GLfloat vertex[]={0,0 , 1,0 , 1,1 , 0,1};
+	GLfloat vertex[]={p.x,p.y , p.x+width,p.y , p.x+width,p.y+height , p.x,p.y+height};
 	glVertexPointer(2,GL_FLOAT,0,vertex);
 	//texCoord
 	GLfloat texCoord[]={0,0 , 1,0 , 1,1 , 0,1};
