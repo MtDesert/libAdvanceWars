@@ -20,6 +20,7 @@ public:
 	void texImage2D(const Bitmap_32bit &bitmap);
 
 	void draw(const Point2D<GLfloat> &p)const;
+	void draw(const Point2D<GLfloat> &p,const Point2D<GLfloat> &size)const;
 private:
 	GLuint texture;
 	GLsizei width,height;

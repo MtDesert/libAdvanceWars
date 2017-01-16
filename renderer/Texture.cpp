@@ -32,9 +32,12 @@ void Texture::texImage2D(const Bitmap_32bit &bitmap){
 	texImage2D(bitmap.getWidth(),bitmap.getHeight(),bitmap.dataPointer);
 }
 void Texture::draw(const Point2D<GLfloat> &p)const{
+	draw(p,Point2D<GLfloat>(width,height));
+}
+void Texture::draw(const Point2D<GLfloat> &p,const Point2D<GLfloat> &size)const{
 	glBindTexture(GL_TEXTURE_2D,texture);
 	//vertex
-	GLfloat vertex[]={p.x,p.y , p.x+width,p.y , p.x+width,p.y+height , p.x,p.y+height};
+	GLfloat vertex[]={p.x,p.y , p.x+size.x,p.y , p.x+size.x,p.y+size.y , p.x,p.y+size.y};
 	glVertexPointer(2,GL_FLOAT,0,vertex);
 	//texCoord
 	GLfloat texCoord[]={0,0 , 1,0 , 1,1 , 0,1};
