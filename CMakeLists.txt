@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 2.8)
 project(AdvanceWars)
 aux_source_directory(renderer RENDER_LIST)
 include(../../CompileScripts/CMakeLists.txt)
@@ -17,5 +17,7 @@ add_library(${PROJECT_NAME}Render SHARED ${RENDER_LIST})
 
 if(${TARGET_SYSTEM_NAME} STREQUAL Linux)
 add_executable(AdvanceWarsGLUT executable/AdvanceWarsGLUT.cpp)
+add_executable(AdvanceWarsX11 executable/AdvanceWarsX11.cpp)
 target_link_libraries(AdvanceWarsGLUT AdvanceWars AdvanceWarsRender Image Zipper Cpp11 glut GL)
+target_link_libraries(AdvanceWarsX11 AdvanceWars AdvanceWarsRender Image Zipper Cpp11 X11)
 endif()
