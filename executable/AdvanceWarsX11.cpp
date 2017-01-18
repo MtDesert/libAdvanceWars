@@ -57,6 +57,29 @@ void focusInEvent(const XFocusInEvent &event){}
 void focusOutEvent(const XFocusOutEvent &event){}
 void keymapNotifyEvent(const XKeymapEvent &event){}
 void exposeEvent(const XExposeEvent &event){}
+void graphicsExposeEvent(const XGraphicsExposeEvent &event){}
+void noExposeEvent(const XNoExposeEvent &event){}
+void visibilityNotifyEvent(const XVisibilityEvent &event){}
+void createNotifyEvent(const XCreateWindowEvent &event){}
+void destroyNotifyEvent(const XDestroyWindowEvent &event){}
+void unmapNotifyEvent(const XUnmapEvent &event){}
+void mapNotifyEvent(const XMapEvent &event){}
+void mapRequestEvent(const XMapRequestEvent &event){}
+void reparentNotifyEvent(const XReparentEvent &event){}
+void configureNotifyEvent(const XConfigureEvent &event){}
+void configureRequestEvent(const XConfigureRequestEvent &event){}
+void gravityNotifyEvent(const XGravityEvent &event){}
+void resizeRequestEvent(const XResizeRequestEvent &event){}
+void circulateNotifyEvent(const XCirculateEvent &event){}
+void circulateRequestEvent(const XCirculateRequestEvent &event){}
+void propertyNotifyEvent(const XPropertyEvent &event){}
+void selectionClearEvent(const XSelectionClearEvent &event){}
+void selectionRequestEvent(const XSelectionRequestEvent &event){}
+void selectionNotifyEvent(const XSelectionEvent &event){}
+void colormapNotifyEvent(const XColormapEvent &event){}
+void clientMessageEvent(const XClientMessageEvent &event){}
+void mappingNotifyEvent(const XMappingEvent &event){}
+void genericEvent(const XGenericEvent &event){}
 
 int main(int argc, char **argv)
 {
@@ -122,10 +145,29 @@ int main(int argc, char **argv)
 			case FocusOut:focusOutEvent(event.xfocus);break;
 			case KeymapNotify:keymapNotifyEvent(event.xkeymap);break;
 			case Expose:exposeEvent(event.xexpose);break;
-			case ConfigureNotify:
-				width = event.xconfigure.width;
-				height = event.xconfigure.height;
-			break;
+			case GraphicsExpose:graphicsExposeEvent(event.xgraphicsexpose);break;
+			case NoExpose:noExposeEvent(event.xnoexpose);break;
+			case VisibilityNotify:visibilityNotifyEvent(event.xvisibility);break;
+			case CreateNotify:createNotifyEvent(event.xcreatewindow);break;
+			case DestroyNotify:destroyNotifyEvent(event.xdestroywindow);break;
+			case UnmapNotify:unmapNotifyEvent(event.xunmap);break;
+			case MapNotify:mapNotifyEvent(event.xmap);break;
+			case MapRequest:mapRequestEvent(event.xmaprequest);break;
+			case ReparentNotify:reparentNotifyEvent(event.xreparent);break;
+			case ConfigureNotify:configureNotifyEvent(event.xconfigure);break;
+			case ConfigureRequest:configureRequestEvent(event.xconfigurerequest);break;
+			case GravityNotify:gravityNotifyEvent(event.xgravity);break;
+			case ResizeRequest:resizeRequestEvent(event.xresizerequest);break;
+			case CirculateNotify:circulateNotifyEvent(event.xcirculate);break;
+			case CirculateRequest:circulateRequestEvent(event.xcirculaterequest);break;
+			case PropertyNotify:propertyNotifyEvent(event.xproperty);break;
+			case SelectionClear:selectionClearEvent(event.xselectionclear);break;
+			case SelectionRequest:selectionRequestEvent(event.xselectionrequest);break;
+			case SelectionNotify:selectionNotifyEvent(event.xselection);break;
+			case ColormapNotify:colormapNotifyEvent(event.xcolormap);break;
+			case ClientMessage:clientMessageEvent(event.xclient);break;
+			case MappingNotify:mappingNotifyEvent(event.xmapping);break;
+			case GenericEvent:genericEvent(event.xgeneric);break;
 			default:break;
 		}
 	}
