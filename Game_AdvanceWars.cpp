@@ -3,8 +3,7 @@
 
 Game_AdvanceWars::Game_AdvanceWars(){
 	auto scene=new GameScene_Main();
-	allScenes.push_back(scene);
-	currentScene=scene;
+	subObjects.push_back(scene);
 }
 Game_AdvanceWars::~Game_AdvanceWars(){}
 
