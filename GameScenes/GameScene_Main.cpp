@@ -6,7 +6,7 @@
 #define SLICE_FADEOUT 1000000
 
 enum Status{
-	FadeIn,Delay,FadeOut
+	FadeIn,Delay,FadeOut,StatusOver
 };
 
 GameScene_Main::GameScene_Main():status(0),countDown(0),contentBrightness(0){
@@ -58,10 +58,6 @@ static void militaryDeploy(){//军事部署
 }
 
 void GameScene_Main::consumeTimeSlice(){
-	//消耗时间片
-	if(timeSlice<MIN_TIME_SLICE)return;
-	timeSlice-=MIN_TIME_SLICE;
-
 	switch(status){
 		case FadeIn://1秒显示内容
 			countDown+=MIN_TIME_SLICE;
@@ -69,6 +65,7 @@ void GameScene_Main::consumeTimeSlice(){
 			if(countDown>=SLICE_FADEIN){//状态切换
 				countDown=SLICE_DELAY;
 				status=Delay;
+				printf("Fade in over\n");
 			}
 		break;
 		case Delay://2秒停顿
@@ -76,11 +73,18 @@ void GameScene_Main::consumeTimeSlice(){
 			if(countDown<=0){
 				countDown=SLICE_FADEOUT;
 				status=FadeOut;
+				printf("Delay over\n");
 			}
 		break;
 		case FadeOut://1秒消失
 			countDown-=MIN_TIME_SLICE;
 			contentBrightness=countDown*255/SLICE_FADEOUT;
+			if(countDown<0){
+				countDown=0;
+				status=StatusOver;
+				printf("Fade out over\n");
+			}
 		break;
+		default:;
 	}
 }

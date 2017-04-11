@@ -7,7 +7,9 @@
 
 //主场景,显示一下商标
 class GameScene_Main:public GameScene{
+public:
 	GameScene_Main();
+protected:
 	void consumeTimeSlice();
 private:
 	int status;
