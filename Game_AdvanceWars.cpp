@@ -1,5 +1,6 @@
 #include"Game_AdvanceWars.h"
 #include"GameScene_Main.h"
+#include<stdio.h>
 
 Game_AdvanceWars::Game_AdvanceWars(){
 	auto scene=new GameScene_Main();
