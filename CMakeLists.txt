@@ -21,6 +21,6 @@ if(${TARGET_SYSTEM_NAME} STREQUAL Linux)
 add_executable(AdvanceWarsGLUT ../libGamesEngines/executable/GamesGLUT.cpp)
 add_executable(AdvanceWarsGLFW ../libGamesEngines/executable/GamesGLFW.cpp)
 
-target_link_libraries(AdvanceWarsGLUT AdvanceWars GamesEngines glut GL)
+target_link_libraries(AdvanceWarsGLUT AdvanceWars GamesEngines glut GL Cpp11)
 target_link_libraries(AdvanceWarsGLFW AdvanceWars GamesEngines glfw GL)
 endif()
