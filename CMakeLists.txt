@@ -20,7 +20,11 @@ target_link_libraries(${PROJECT_NAME} GamesEngines)
 if(${TARGET_SYSTEM_NAME} STREQUAL Linux)
 add_executable(AdvanceWarsGLUT ../libGamesEngines/executable/GamesGLUT.cpp)
 add_executable(AdvanceWarsGLFW ../libGamesEngines/executable/GamesGLFW.cpp)
-
 target_link_libraries(AdvanceWarsGLUT AdvanceWars GamesEngines glut GL Cpp11)
 target_link_libraries(AdvanceWarsGLFW AdvanceWars GamesEngines glfw GL)
+
+elseif(${TARGET_SYSTEM_NAME} STREQUAL Android)
+add_library(AdvanceWarsAndroid SHARED
+../libGamesEngines/executable/GamesNativeActivity.cpp
+${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 endif()
