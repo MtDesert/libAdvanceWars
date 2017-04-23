@@ -9,6 +9,8 @@
 class GameScene_Main:public GameScene{
 public:
 	GameScene_Main();
+	
+	void render()const;
 protected:
 	void consumeTimeSlice();
 private:

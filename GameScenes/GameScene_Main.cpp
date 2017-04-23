@@ -57,6 +57,12 @@ static void militaryDeploy(){//军事部署
 	//CO换装
 }
 
+#include"gl.h"
+void GameScene_Main::render()const{
+	GLfloat f=contentBrightness/255.0;
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(f,f,f,1);
+}
 void GameScene_Main::consumeTimeSlice(){
 	switch(status){
 		case FadeIn://1秒显示内容
