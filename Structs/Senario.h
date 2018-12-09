@@ -5,9 +5,10 @@
 #include"Commander.h"
 #include"Unit.h"
 
-#include<lua.h>
-#include<String.h>
+#include"lua.hpp"
 #include<pthread.h>
+#include<string>
+using namespace std;
 
 int luaopen_AdvanceWars(lua_State* tolua_S);
 
@@ -23,32 +24,29 @@ public:
 
 	static Senario *senario;
 
-	//battle map & units
-	BattleField battleField;
-	UnitList unitList;
 	//for move
-	struct MovePoint:public Point
+	struct MovePoint:public Point2D<uint>
 	{
-		MovePoint(const Point &p=Point()):Point(p){}
+		MovePoint(const Point2D<uint> &p=Point2D<uint>()):Point2D<uint>(p){}
 		uchar remainMovement,remainFuel;
 	};
 	bool isFogWar;
-	List<MovePoint> movablePoints;
-	List<MovePoint> movePath;
-	List<Point> visiblePoints;
-	List<Point> firablePoints;
-	List<Point> dropablePoints;
+	list<MovePoint> movablePoints;
+	list<MovePoint> movePath;
+	list<Point2D<uint> > visiblePoints;
+	list<Point2D<uint> > firablePoints;
+	list<Point2D<uint> > dropablePoints;
 
 	//game menu
 	bool showingMenu;
-	List<string> menuItems;
+	list<string> menuItems;
 	bool menuChanged;
 
 	//conversation
 	int speakPosY;
-	String speakerHeadImage;//maybe a filename
-	String speakerName;
-	String speakerContent;
+	string speakerHeadImage;//maybe a filename
+	string speakerName;
+	string speakerContent;
 	bool speakSkip;
 
 	//pass to lua
