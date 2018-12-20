@@ -14,6 +14,8 @@
 
 //#include"GameDialog.h"
 
+extern string errorString;
+
 static Scene_Main *sceneMain=nullptr;
 //static GameDialog *gameDialog=nullptr;
 //static GameScene_FileList *scene_FileList;//文件列表场景,若需要读取本地文件,则进入此界面
@@ -54,7 +56,6 @@ Game_AdvanceWars::~Game_AdvanceWars(){
 	mTerrainCodeList.clear();
 	mTroopsList.clear();
 	mWeathersList.clear();
-	settings.closeTranslationFile();
 	//清除纹理
 	corpsTextures.clearCache();
 	commandersHeadTextures.clearCache();
@@ -66,21 +67,17 @@ Game* Game::newGame(){
 	game=new Game_AdvanceWars();
 	return game;
 }
-string Game_AdvanceWars::gameName()const{return translate("AdvanceWars");}
+string Game_AdvanceWars::gameName()const{return Game::translate("AdvanceWars");}
 
 void Game_AdvanceWars::reset(){
 	//读取配置
-	auto errStr=settings.loadFile("settings.lua");
-	if(!errStr.empty()){
-		showGameDialog(errStr);
+	auto loadOK=settings.loadFile("settings.lua");
+	if(!loadOK){
+		showGameDialog(errorString);
 		return;
 	}
 	//读取翻译文件
-	errStr=settings.loadTranslationFile("chinese.lua");
-	if(!errStr.empty()){
-		showGameDialog(errStr);
-		return;
-	}
+	loadOK=loadTranslationFile(settings.language+".csv");
 	//重启场景
 	if(!sceneMain){
 		sceneMain=new Scene_Main();
@@ -107,6 +104,7 @@ void Game_AdvanceWars::render()const{
 }
 
 void Game_AdvanceWars::showGameDialog(const string &content){
+	printf("error %s\n",content.data());
 	/*if(!gameDialog){
 		gameDialog=new GameDialog();
 		gameDialog->position=Game::resolution/2;
@@ -129,18 +127,18 @@ string Game_AdvanceWars::gotoScene_FileData(FileType type,const string &filename
 	string errStr;
 	switch(type){
 		case File_Corps:{//加载兵种数据和纹理
-			errStr=loadCorpsList();
+			//errStr=loadCorpsList();
 			loadCorpsTextures(true);
 		}break;
 		case File_COs:{
-			errStr=loadCommandersList();
+			//errStr=loadCommandersList();
 			loadCommandersTextures(true);
 		}break;
 		case File_Troops:{
-			errStr=loadTroopsList();
+			//errStr=loadTroopsList();
 		}break;
 		case File_Terrains:{
-			errStr=loadTerrainCodeList();
+			//errStr=loadTerrainCodeList();
 		}break;
 		case File_Weathers:
 			//errMsg=loadWeathersList();
@@ -244,12 +242,8 @@ void Game_AdvanceWars::consumeTimeSlice(){
 	}*/
 }
 
-const char* Game_AdvanceWars::translate(const string &english){
-	return Game_AdvanceWars::currentGame()->settings.translate(english);
-}
-
 //数据表加载过程
-#define GAME_DATA_LIST(Name) \
+/*#define GAME_DATA_LIST(Name) \
 string Game_AdvanceWars::load##Name##List(bool forceReload){\
 	string ret;\
 	if(forceReload){\
@@ -268,7 +262,7 @@ string Game_AdvanceWars::load##Name##List(bool forceReload){\
 GAME_DATA_LIST(Corps)//兵种表
 GAME_DATA_LIST(Commanders)//指挥官资料表
 GAME_DATA_LIST(Troops)//部队表
-GAME_DATA_LIST(TerrainCode)//地形表
+GAME_DATA_LIST(TerrainCode)//地形表*/
 
 #undef GAME_DATA_LIST
 

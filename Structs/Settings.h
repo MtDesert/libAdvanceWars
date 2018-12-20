@@ -1,6 +1,7 @@
 #ifndef SETTINGS
 #define SETTINGS
 
+#include"EnumType.h"
 #include"StringList.h"
 #include"Map.h"
 
@@ -11,9 +12,10 @@ public:
 	Settings();
 	~Settings();
 
+	string language;//语言名称
 	//数据文件名以及图片路径
 #define DATA_FILENAME_AND_IMAGEPATH(name)\
-	StringList filenames##name;\
+	EnumType filenames##name;\
 	string imagePath##name;
 
 	DATA_FILENAME_AND_IMAGEPATH(Corps)
@@ -30,13 +32,7 @@ public:
 
 	//保存/加载设置
 	bool saveFile(const string &filename)const;
-	string loadFile(const string &filename);
-
-	//翻译
-	string loadTranslationFile(const string &filename);
-	void closeTranslationFile();
-	const char* translate(const string &english)const;
-	Map<string,string> translateMap;//翻译映射表
+	bool loadFile(const string &filename);
 };
 
 #endif

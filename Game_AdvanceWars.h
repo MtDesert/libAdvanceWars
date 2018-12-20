@@ -56,7 +56,6 @@ public:
 
 	//资料数据区
 	Settings settings;//设置数据,游戏应该先读入设置数据
-	static const char* translate(const string &english);//翻译(英文原文),返回译文,翻译失败则返回原文
 
 	//资料表及其加载过程
 #define GAME_DATA_LIST(Name) \

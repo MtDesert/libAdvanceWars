@@ -37,7 +37,7 @@ menu.position=Game::resolution/2;
 
 Scene_Main::Scene_Main():status(0),countDown(0){
 	//主菜单
-	textTitle.setString(Game_AdvanceWars::translate("AdvanceWars_LifeTime"));
+	textTitle.setString(Game::currentGame()->translate("AdvanceWars_LifeTime"));
 	subObjects.push_back(&textTitle);//渲染
 	textTitle.position=Game::resolution/2;//放在屏幕中央
 	//生成菜单项
