@@ -20,7 +20,7 @@ static int sliceValue[StatusOver]={
 
 //插入菜单项
 #define INSERT_ITEM(name,menu)\
-menu.insertItem(Game_AdvanceWars::translate(#name));
+menu.addString(Game_AdvanceWars::currentGame()->translate(#name));
 
 //以下宏用于Scene_Main.h的菜单宏的MACRO参数
 #define MAIN_MENU_ITEM(name) INSERT_ITEM(name,menuMain)
@@ -32,8 +32,8 @@ menu.insertItem(Game_AdvanceWars::translate(#name));
 //生成菜单并调整尺寸
 #define MAKE_MENU(MENU_MACRO,menu)\
 MENU_MACRO(MENU_MACRO##_ITEM)\
-menu.refresh();\
-menu.position=Game::resolution/2;
+menu.position=Game::resolution/2;\
+menu.itemWidth=200;
 
 Scene_Main::Scene_Main():status(0),countDown(0){
 	//主菜单
@@ -41,13 +41,13 @@ Scene_Main::Scene_Main():status(0),countDown(0){
 	subObjects.push_back(&textTitle);//渲染
 	textTitle.position=Game::resolution/2;//放在屏幕中央
 	//生成菜单项
-	/*MAKE_MENU(MAIN_MENU,menuMain)
+	MAKE_MENU(MAIN_MENU,menuMain)
 	MAKE_MENU(SINGLE_MODE_MENU,menuSingleMode)
 	MAKE_MENU(ONLINE_MODE_MENU,menuOnlineMode)
 	MAKE_MENU(MILITARY_FILES_MENU,menuMilitaryFiles)
 	MAKE_MENU(MILITARY_DEPLOY_MENU,menuMilitaryDeploy)
 
-	currentMenu=&menuMain;*/
+	//currentMenu=&menuMain;
 }
 Scene_Main::~Scene_Main(){}
 
@@ -70,7 +70,7 @@ void Scene_Main::consumeTimeSlice(){
 		case ShowMainMenu:
 			subObjects.remove(&textTitle);//移除文本标题
 			//我们可以在这里播个碉堡的音乐
-			//subObjects.push_back(&menuMain);//添加主菜单
+			subObjects.push_back(&menuMain);//添加主菜单
 		break;
 		default:;
 	}

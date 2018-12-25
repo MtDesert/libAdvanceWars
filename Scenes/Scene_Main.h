@@ -91,14 +91,14 @@ class Scene_Main:public GameScene{
 #undef ENUM
 	//控件
 	GameString textTitle;//文本标题
-	/*GameMenu_String menuMain;//主菜单
+	GameMenu_String menuMain;//主菜单
 	GameMenu_String menuSingleMode;//单机模式菜单
 	GameMenu_String menuOnlineMode;//联机模式菜单
 	GameMenu_String menuMilitaryFiles;//军事资料菜单
 	GameMenu_String menuMilitaryDeploy;//军事部署菜单
 	GameMenu_String menuAbout;//关于菜单
 
-	GameMenu_String *currentMenu;//指向当前操作的菜单*/
+	GameMenu_String *currentMenu;//指向当前操作的菜单
 protected:
 	void consumeTimeSlice();
 public:
