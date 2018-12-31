@@ -14,7 +14,7 @@ MACRO(MilitaryFiles)\
 MACRO(MilitaryDeploy)\
 MACRO(MilitaryRecord)\
 MACRO(GameSetting)\
-MACRO(AboutThisWork)
+MACRO(About)
 
 //单机模式菜单
 #define SINGLE_MODE_MENU(MACRO)\
@@ -51,6 +51,13 @@ MACRO(WeathersFiles)
 #define MILITARY_DEPLOY_MENU(MACRO)\
 MACRO(DesignMaps)\
 MACRO(DesignCommanders)
+
+//军事记录
+#define MILITARY_RECORD_MENU(MACRO)\
+//军事记录
+#define GAME_SETTING_MENU(MACRO)\
+//军事记录
+#define ABOUT_MENU(MACRO)\
 
 //主场景,显示一下简短信息,然后播放一下动画,然后进入主界面菜单显示
 class Scene_Main:public GameScene{
@@ -91,12 +98,18 @@ class Scene_Main:public GameScene{
 #undef ENUM
 	//控件
 	GameString textTitle;//文本标题
-	GameMenu_String menuMain;//主菜单
-	GameMenu_String menuSingleMode;//单机模式菜单
-	GameMenu_String menuOnlineMode;//联机模式菜单
-	GameMenu_String menuMilitaryFiles;//军事资料菜单
-	GameMenu_String menuMilitaryDeploy;//军事部署菜单
-	GameMenu_String menuAbout;//关于菜单
+
+//菜单声明
+#define MENU_DECLARE(name)\
+private:\
+	GameMenu_String menu##name;/*菜单对象*/\
+public:\
+	void menu##name##Confirm();/*菜单确认函数*/\
+	void menu##name##Cancel();/*菜单取消函数*/
+
+	MENU_DECLARE(Main)//主菜单
+	MAIN_MENU(MENU_DECLARE)//所有子菜单
+#undef MENU_DECLARE
 
 	GameMenu_String *currentMenu;//指向当前操作的菜单
 protected:
