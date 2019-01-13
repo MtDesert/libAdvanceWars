@@ -40,6 +40,7 @@ public:
 	//override
 	virtual void reset();
 	virtual void render()const;
+	//加载文件
 	//提示信息
 	void showGameDialog(const string &content);
 	void hideGameDialog();

@@ -2,7 +2,7 @@
 //#include"Table_CorpsData.h"
 
 #include"BattleField.h"
-#include"ShapeRenderer.h"
+#include"extern.h"
 
 #include"lua.h"
 #include<stdio.h>
@@ -84,12 +84,6 @@ void Game_AdvanceWars::reset(){
 		subObjects.push_back(sceneMain);
 	}
 	sceneMain->reset();
-	//检查参数
-	/*if(parametersList.size()>1){//除了程序名之外无参数
-		auto itr=parametersList.begin();
-		++itr;
-		gotoScene_BattleField(*itr);
-	}*/
 }
 void Game_AdvanceWars::render()const{
 	Game::render();
@@ -196,13 +190,6 @@ bool Game_AdvanceWars::gotoScene_Settings(){
 }
 
 void Game_AdvanceWars::consumeTimeSlice(){
-	//检查参数
-	/*if(parametersList.size()>1){//除了程序名之外无参数
-		auto itr=parametersList.begin();
-		++itr;
-		gotoScene_BattleField(*itr);
-		parametersList.clear();
-	}*/
 	//处理场景事件
 	/*auto scene=subObjects.front();
 	if(scene==&scene_FileList){//处理文件打开的过程

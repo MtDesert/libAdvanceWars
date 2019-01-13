@@ -42,13 +42,13 @@ static Scene_Main *sceneMain=nullptr;
 #define STATIC_CALL_MEMBER(functionName)\
 static void functionName(){sceneMain->functionName();}\
 
-#define SCENE_MAIN_CONFIRM_CANCEL(name)\
+#define SCENEMAIN_CONFIRM_CANCEL(name)\
 STATIC_CALL_MEMBER(menu##name##Confirm)\
 STATIC_CALL_MEMBER(menu##name##Cancel)
 
 //静态函数调用成员函数
-SCENE_MAIN_CONFIRM_CANCEL(Main)
-MAIN_MENU(SCENE_MAIN_CONFIRM_CANCEL)
+SCENEMAIN_CONFIRM_CANCEL(Main)
+MAIN_MENU(SCENEMAIN_CONFIRM_CANCEL)
 
 Scene_Main::Scene_Main():status(0),countDown(0){
 	//主菜单
@@ -56,6 +56,7 @@ Scene_Main::Scene_Main():status(0),countDown(0){
 	subObjects.push_back(&textTitle);//渲染
 	textTitle.position=Game::resolution/2;//放在屏幕中央
 	//生成菜单项
+	menuMain.renderItemAmount=7;
 	MAKE_MENU(MAIN_MENU,Main)
 	MAKE_MENU(SINGLE_MODE_MENU,SingleMode)
 	MAKE_MENU(ONLINE_MODE_MENU,OnlineMode)
@@ -66,7 +67,6 @@ Scene_Main::Scene_Main():status(0),countDown(0){
 	MAKE_MENU(ABOUT_MENU,About)
 
 	//菜单事件
-	//currentMenu=&menuMain;
 	sceneMain=this;
 }
 Scene_Main::~Scene_Main(){
@@ -74,6 +74,7 @@ Scene_Main::~Scene_Main(){
 }
 
 void Scene_Main::reset(){
+	status=FadeIn;
 	countDown=sliceValue[FadeIn];//以完全透明出场
 }
 
@@ -101,70 +102,42 @@ void Scene_Main::consumeTimeSlice(){
 		++status;
 		countDown=(status >= StatusOver?0:sliceValue[status]);
 	}
-	//处理菜单响应
-	/*if(status==StatusOver && currentMenu){
-		//处理主菜单
-		if(currentMenu->menuStatus==GameMenuStatus::Confirm){
-			currentMenu->menuStatus=GameMenuStatus::Selecting;
-			if(currentMenu==&menuMain){//主菜单事件
-				subObjects.remove(currentMenu);
-				currentMenu=nullptr;
-				//不显示主菜单,显示子菜单
-				switch(menuMain.selectingIndex()){
-					case SingleMode:currentMenu=&menuSingleMode;break;//单机模式
-					case OnlineMode:currentMenu=&menuOnlineMode;break;//网络模式
-					case MilitaryFiles:currentMenu=&menuMilitaryFiles;break;//军事资料
-					case MilitaryDeploy:currentMenu=&menuMilitaryDeploy;break;//军事部署
-					case MilitaryRecord:
-					case GameSetting:
-					case AboutThisWork:
-						currentMenu=&menuMain;
-					break;//关于游戏
-				}
-				if(currentMenu){
-					subObjects.push_back(currentMenu);
-				}
-			}else if(currentMenu==&menuMilitaryFiles){
-				//切换场景(加载资料的场景)
-				switch(menuMilitaryFiles.selectingIndex()){
-					case CorpsFiles:break;
-					case CommandersFiles:break;
-					case TroopsFiles:break;
-					case TerrainsFiles:break;
-					case WeathersFiles:break;
-				}
-				Game_AdvanceWars::currentGame()->gotoScene_FileData((Game_AdvanceWars::FileType)menuMilitaryFiles.selectingIndex(),"");
-			}else if(currentMenu==&menuMilitaryDeploy){
-				if(currentMenu->selectingIndex()==0){//加载战场文件
-					//Game_AdvanceWars::currentGame()->gotoScene_FileList(Game_AdvanceWars::File_BattleField);
-				}
-			}
-		}else if(currentMenu->menuStatus==GameMenuStatus::Cancel){
-			currentMenu->menuStatus=GameMenuStatus::Selecting;
-			if(currentMenu==&menuMain){//暂时没有动作
-			}else{
-				subObjects.remove(currentMenu);
-				subObjects.push_back(&menuMain);
-				currentMenu=&menuMain;
-			}
-		}
-	}*/
 }
 
 //事件函数
-void Scene_Main::menuMainConfirm(){}
-void Scene_Main::menuMainCancel(){}
-void Scene_Main::menuSingleModeConfirm(){}
-void Scene_Main::menuSingleModeCancel(){}
+void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
+	subObjects.remove(&menuMain);
+	switch(menuMain.selectingItemIndex){
+#define CASE(name) case name:subObjects.push_back(&menu##name);break;
+		MAIN_MENU(CASE)
+#undef CASE
+	}
+}
+
+//子菜单取消后,显示主菜单
+#define SCENEMAIN_SUBMENU_CANCEL(name)\
+void Scene_Main::menu##name##Cancel(){\
+	subObjects.remove(&menu##name);\
+	subObjects.push_back(&menuMain);\
+}
+MAIN_MENU(SCENEMAIN_SUBMENU_CANCEL)
+
+void Scene_Main::menuMainCancel(){reset();}
+void Scene_Main::menuSingleModeConfirm(){
+	switch(menuSingleMode.selectingItemIndex){
+		case ScenarioMode:break;
+		case MissionMode:break;
+		case VersusMode:{//打开文件菜单
+			auto scene=Game::currentGame()->showScene_FileList();
+			scene->textTitle.setString(Game_AdvanceWars::currentGame()->translate("SelectMap"));
+		}break;
+		case SurvivalMode:break;
+		case CombatMode:break;
+	}
+}
 void Scene_Main::menuOnlineModeConfirm(){}
-void Scene_Main::menuOnlineModeCancel(){}
 void Scene_Main::menuMilitaryFilesConfirm(){}
-void Scene_Main::menuMilitaryFilesCancel(){}
 void Scene_Main::menuMilitaryDeployConfirm(){}
-void Scene_Main::menuMilitaryDeployCancel(){}
 void Scene_Main::menuMilitaryRecordConfirm(){}
-void Scene_Main::menuMilitaryRecordCancel(){}
 void Scene_Main::menuGameSettingConfirm(){}
-void Scene_Main::menuGameSettingCancel(){}
 void Scene_Main::menuAboutConfirm(){}
-void Scene_Main::menuAboutCancel(){}

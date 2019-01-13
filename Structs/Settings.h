@@ -26,9 +26,9 @@ public:
 #undef DATA_FILENAME_AND_IMAGEPATH
 
 	//设定数据
-	bool battleAnimation;
-	bool mapAnimation;
-	bool showGrid;
+	bool battleAnimation;//战斗动画是否显示
+	bool mapAnimation;//地图动画是否播放
+	bool showGrid;//是否显示网格线
 
 	//保存/加载设置
 	bool saveFile(const string &filename)const;
