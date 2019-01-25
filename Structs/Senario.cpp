@@ -2,7 +2,6 @@
 
 //#include<lua.hpp>
 #include<iostream>
-#include<unistd.h>
 
 Senario* Senario::senario=NULL;
 
@@ -83,7 +82,7 @@ int Senario::showSay(lua_State *state)
 	while(senario->speakPosY<100)
 	{
 		++senario->speakPosY;
-		usleep(5000);
+		//usleep(5000);
 	}
 	return 0;
 }
@@ -102,7 +101,7 @@ int Senario::hideSay(lua_State *state)
 	while(senario->speakPosY>0)
 	{
 		--senario->speakPosY;
-		usleep(5000);
+		//usleep(5000);
 	}
 	return 0;
 }
