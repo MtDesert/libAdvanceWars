@@ -285,7 +285,7 @@ void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forc
 		for(auto &troop:mTroopsList){
 			Texture tex;
 			for(uint i=0;i<4;++i){
-				fileBmp.colorsList.setColor(i+6,troop.colors[i]);
+				fileBmp.bgrasList.setColor(i+6,troop.colors[i]);
 			}
 			tex.texImage2D(fileBmp);
 			corpsTextures.insert(idx*256+index,tex);
@@ -323,7 +323,7 @@ void Game_AdvanceWars::loadTerrainsTextures(const TerrainCodeList &mTerrainsList
 			for(auto &troop:mTroopsList){
 				Texture tex;
 				for(uint i=0;i<4;++i){
-					fileBmp.colorsList.setColor(i+2,troop.colors[i]);
+					fileBmp.bgrasList.setColor(i+2,troop.colors[i]);
 				}
 				tex.texImage2D(fileBmp);
 				terrainsTextures.insert(idx*256+index,tex);

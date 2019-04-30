@@ -36,6 +36,7 @@ menu##name.position=Game::resolution/2;\
 menu##name.itemWidth=200;\
 menu##name.onConfirm=::menu##name##Confirm;\
 menu##name.onCancel=::menu##name##Cancel;\
+menu##name.updateRenderParameters();
 
 //静态变量和函数
 static Scene_Main *sceneMain=nullptr;

@@ -321,7 +321,7 @@ static GameString gameString_terrainName;//显示地形名
 static GameString gameString_terrainDefend;//地形防御
 
 void Scene_BattleField::renderTerrainInfo()const{
-	if(!battleField)return;
+	/*if(!battleField)return;
 	//判断光标位置
 	decltype(position) pos=cursorPos()-position;
 	if(pos.x()<Game::resolution.x()/2){
@@ -348,7 +348,7 @@ void Scene_BattleField::renderTerrainInfo()const{
 	gameString_terrainDefend.render();
 	gameString_terrainName.anchorPoint=Point2D<float>(0,0);
 	gameString_terrainName.position=Point2D<int>(pos.x()+40,8);
-	gameString_terrainName.render();
+	gameString_terrainName.render();*/
 }
 //单位信息显示
 static Texture *unitIcon=nullptr;//单位图标
@@ -357,7 +357,7 @@ static GameString gameString_unitHP;//显示单位HP
 static GameString gameString_unitGasAndAmmu;//显示汽油弹药
 
 void Scene_BattleField::renderUnitInfo()const{
-	if(!battleField || !unitIcon)return;
+	/*if(!battleField || !unitIcon)return;
 	//判断光标位置
 	decltype(position) pos=cursorPos()-position;
 	if(pos.x()<Game::resolution.x()/2){
@@ -384,11 +384,11 @@ void Scene_BattleField::renderUnitInfo()const{
 	gameString_unitHP.render();
 	gameString_unitGasAndAmmu.anchorPoint=Point2D<float>(0,0);
 	gameString_unitGasAndAmmu.position=Point2D<int>(pos.x(),184);
-	gameString_unitGasAndAmmu.render();
+	gameString_unitGasAndAmmu.render();*/
 }
 void Scene_BattleField::renderTeamInfo()const{
 	//判断光标位置
-	decltype(position) pos=cursorPos()-position;
+	/*decltype(position) pos=cursorPos()-position;
 	if(pos.x()<Game::resolution.x()/2){
 		pos.x()=Game::resolution.x()-256-32;
 	}else{
@@ -397,7 +397,7 @@ void Scene_BattleField::renderTeamInfo()const{
 	//画方框
 	sr.hasFill=true;
 	sr.fillColor=ColorRGBA(0,0,0,192);
-	sr.drawRectangle(pos.x(),112,pos.x()+256,224);
+	sr.drawRectangle(pos.x(),112,pos.x()+256,224);*/
 }
 
 Point2D<int> Scene_BattleField::cursorPos()const{

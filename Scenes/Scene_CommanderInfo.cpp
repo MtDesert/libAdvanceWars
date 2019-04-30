@@ -12,7 +12,7 @@ Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr)
 	txtD2D.lineCharAmount=32;
 	//名字
 	stringName.setString("名字");
-	stringName.position=Point2D<int>(start0,Game_AdvanceWars::currentGame()->resolution.y());
+	stringName.position=Point3D<int>(start0,Game_AdvanceWars::currentGame()->resolution.y(),0);
 	stringName.anchorPoint=Point2D<float>(0,1);
 	subObjects.push_back(&stringName);
 
