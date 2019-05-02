@@ -13,6 +13,8 @@ public:
 	~Settings();
 
 	string language;//语言名称
+	string mapsPath;//地图路径
+	string senarioScriptsPath;//剧情脚本文件的路径
 	//数据文件名以及图片路径
 #define DATA_FILENAME_AND_IMAGEPATH(name)\
 	EnumType filenames##name;\

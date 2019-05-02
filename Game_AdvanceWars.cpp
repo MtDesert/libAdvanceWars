@@ -12,12 +12,12 @@
 //#include"Scene_BattleField.h"
 //#include"Scene_CommanderInfo.h"
 
-//#include"GameDialog.h"
+#include"GameDialog.h"
 
 extern string errorString;
 
 static Scene_Main *sceneMain=nullptr;
-//static GameDialog *gameDialog=nullptr;
+static GameDialog *gameDialog=nullptr;
 //static GameScene_FileList *scene_FileList;//文件列表场景,若需要读取本地文件,则进入此界面
 //static Scene_DataTable *scene_DataTable=nullptr;//数据表场景,用来显示各种表格
 //static Scene_BattleField *scene_BattleField;//战场场景,用来显示战场内容
@@ -69,15 +69,19 @@ Game* Game::newGame(){
 }
 string Game_AdvanceWars::gameName()const{return Game::translate("AdvanceWars");}
 
+#define ASSERT(code)\
+ok=code;\
+if(!ok){\
+showGameDialog(errorString);\
+return;\
+}
+
 void Game_AdvanceWars::reset(){
+	bool ok;
 	//读取配置
-	auto loadOK=settings.loadFile("settings.lua");
-	if(!loadOK){
-		showGameDialog(errorString);
-		return;
-	}
+	ASSERT(settings.loadFile("settings.lua"))
 	//读取翻译文件
-	loadOK=loadTranslationFile(settings.language+".csv");
+	ASSERT(loadTranslationFile(settings.language+".csv"))
 	//重启场景
 	if(!sceneMain){
 		sceneMain=new Scene_Main();
@@ -87,29 +91,28 @@ void Game_AdvanceWars::reset(){
 }
 void Game_AdvanceWars::render()const{
 	Game::render();
-	//绘制提示对话框
-	/*if(gameDialog){
-		gameDialog->render();
-	}*/
 	//绘制屏幕边框
-	ShapeRenderer sr;
-	sr.hasFill=false;
-	sr.drawRectangle(1,0,Game::resolution.x(),Game::resolution.y()-1);
+	if(gameDialog){
+		gameDialog->render();
+	}
+	shapeRenderer.hasFill=false;
+	shapeRenderer.drawRectangle(1,0,Game::resolution.x(),Game::resolution.y()-1);
 }
 
+static void hideGameDialog(){Game_AdvanceWars::currentGame()->hideGameDialog();}
 void Game_AdvanceWars::showGameDialog(const string &content){
-	printf("error %s\n",content.data());
-	/*if(!gameDialog){
+	if(!gameDialog){
 		gameDialog=new GameDialog();
 		gameDialog->position=Game::resolution/2;
 		gameDialog->setText(content);
-	}*/
+		gameDialog->mGameButton.onClicked=::hideGameDialog;
+	}
+	subObjects.push_back(gameDialog);
 }
 void Game_AdvanceWars::hideGameDialog(){
-	/*if(gameDialog){
-		delete gameDialog;
-		gameDialog=nullptr;
-	}*/
+	subObjects.remove(gameDialog);
+	delete gameDialog;
+	gameDialog=nullptr;
 }
 
 Game_AdvanceWars *Game_AdvanceWars::currentGame(){
@@ -140,13 +143,6 @@ string Game_AdvanceWars::gotoScene_FileData(FileType type,const string &filename
 		default:;
 	}
 	//无错误,可以显示场景
-	/*if(errStr.empty()){
-		if(!scene_DataTable)scene_DataTable=new Scene_DataTable();//没有则新建
-		scene_DataTable->setTableType(type);
-		subObjects.push_front(scene_DataTable);
-	}else{
-		showGameDialog(errStr);
-	}*/
 	return errStr;
 }
 string Game_AdvanceWars::gotoScene_BattleField(const string &filename){
@@ -285,7 +281,7 @@ void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forc
 		for(auto &troop:mTroopsList){
 			Texture tex;
 			for(uint i=0;i<4;++i){
-				fileBmp.colorsList.setColor(i+6,troop.colors[i]);
+				fileBmp.bgrasList.setColor(i+6,troop.colors[i]);
 			}
 			tex.texImage2D(fileBmp);
 			corpsTextures.insert(idx*256+index,tex);
@@ -323,7 +319,7 @@ void Game_AdvanceWars::loadTerrainsTextures(const TerrainCodeList &mTerrainsList
 			for(auto &troop:mTroopsList){
 				Texture tex;
 				for(uint i=0;i<4;++i){
-					fileBmp.colorsList.setColor(i+2,troop.colors[i]);
+					fileBmp.bgrasList.setColor(i+2,troop.colors[i]);
 				}
 				tex.texImage2D(fileBmp);
 				terrainsTextures.insert(idx*256+index,tex);

@@ -34,6 +34,7 @@ menu##menuName.addString(Game_AdvanceWars::currentGame()->translate(#name));
 MENU(MENU##_ITEM)\
 menu##name.position=Game::resolution/2;\
 menu##name.itemWidth=200;\
+menu##name.updateRenderParameters();\
 menu##name.onConfirm=::menu##name##Confirm;\
 menu##name.onCancel=::menu##name##Cancel;\
 
@@ -124,17 +125,24 @@ MAIN_MENU(SCENEMAIN_SUBMENU_CANCEL)
 
 void Scene_Main::menuMainCancel(){reset();}
 void Scene_Main::menuSingleModeConfirm(){
+	auto game=Game_AdvanceWars::currentGame();
 	switch(menuSingleMode.selectingItemIndex){
-		case ScenarioMode:break;
+		case ScenarioMode:{
+			auto scene=game->showScene_FileList();
+			scene->textTitle.setString(game->translate("SelectScript"));
+			scene->changeDirectory(game->settings.senarioScriptsPath);
+		}break;
 		case MissionMode:break;
 		case VersusMode:{//打开文件菜单
-			auto scene=Game::currentGame()->showScene_FileList();
-			scene->textTitle.setString(Game_AdvanceWars::currentGame()->translate("SelectMap"));
+			auto scene=game->showScene_FileList();
+			scene->textTitle.setString(game->translate("SelectMap"));
+			scene->changeDirectory(game->settings.mapsPath);
 		}break;
 		case SurvivalMode:break;
 		case CombatMode:break;
 	}
 }
+
 void Scene_Main::menuOnlineModeConfirm(){}
 void Scene_Main::menuMilitaryFilesConfirm(){}
 void Scene_Main::menuMilitaryDeployConfirm(){}

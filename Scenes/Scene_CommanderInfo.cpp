@@ -7,7 +7,7 @@ static ShapeRenderer sr;//绘制边框用
 //static GameString gameString;//绘制文字用
 
 Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr),coIndex(0){
-	int start0=144,start1=start0+32*3;
+	/*int start0=144,start1=start0+32*3;
 	txtNote.lineCharAmount=32;
 	txtD2D.lineCharAmount=32;
 	//名字
@@ -55,7 +55,7 @@ Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr)
 	subObjects.push_back(&txtD2D);
 	//全身像
 	spriteBody.anchorPoint=Point2D<float>(0,0);
-	subObjects.push_back(&spriteBody);
+	subObjects.push_back(&spriteBody);*/
 }
 Scene_CommanderInfo::~Scene_CommanderInfo(){}
 

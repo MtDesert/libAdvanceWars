@@ -17,6 +17,9 @@ bool Settings::loadFile(const string &filename){
 	LUASTATE_ASSERT(luaState.readEnum("TroopFilenames",filenamesTroops),luaState.errorString);
 	LUASTATE_ASSERT(luaState.readEnum("CommanderFilenames",filenamesCommanders),luaState.errorString);
 	LUASTATE_ASSERT(luaState.readEnum("TerrainFilenames",filenamesTerrainCode),luaState.errorString);
+	LUASTATE_ASSERT(luaState.getGlobalString("senarioScriptsPath",senarioScriptsPath),"No senario scripts path!");
+	LUASTATE_ASSERT(luaState.getGlobalString("mapsPath",mapsPath),"No maps path!");
+	luaState.clearStack();
 	//读取资源路径名
 	return true;
 }
