@@ -4,7 +4,6 @@
 Weapon::Weapon():minRange(1),maxRange(1),ammunitionMax(0){}
 Corp::Corp():id(0),price(0),vision(0),movement(0),gasMax(0),
 capturable(false),suppliable(false),hidable(false),repairable(false),explodable(false),buildable(false),flarable(false){}
-Corp::~Corp(){}
 
 string CorpsList::loadFile_lua(const string &filename){
 	lua_State *state=luaL_newstate();

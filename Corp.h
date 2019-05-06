@@ -15,7 +15,6 @@ struct Weapon{
 /*兵种数据*/
 struct Corp{
 	Corp();
-	~Corp();
 
 	int id;//兵种id,用于外部管理
 	string name;//兵种名字
