@@ -1,7 +1,5 @@
 #include "BattleField.h"
 
-#include"LuaState.h"
-
 #include<stdlib.h>
 #include<fstream>
 #include<iostream>
@@ -100,9 +98,6 @@ int BattleField::loadMap(const string &filename){
 		suffix[i]=tolower(suffix[i]);
 	}
 	//开始比对
-	if(suffix==".lua"){
-		loadMap_LUA(filename);
-	}
 	return -1;
 }
 
@@ -178,124 +173,12 @@ string BattleField::loadMap_CSV(const string &filename){
 	return "";
 }
 
-#define BATTLEFIELD_SET_GLOBAL_STRING(listName)\
-if(listName){\
-	for(auto &item:*listName){\
-		luaState.setGlobalString(item.name.data(),item.name.data());\
-	}\
-}
-
-bool BattleField::loadMap_LUA(const string &filename){
-	if(!corpsList)return "No corps list";
-	if(!troopsList)return "No troops list";
-	if(!terrainsList)return "No terrains list";
-	//设置全局变量,用于地图解码
-	LuaState luaState;
-	BATTLEFIELD_SET_GLOBAL_STRING(corpsList)
-	BATTLEFIELD_SET_GLOBAL_STRING(troopsList)
-	BATTLEFIELD_SET_GLOBAL_STRING(terrainsList)
-	//加载文件
-	luaState.doFile(filename);
-	//读取作者信息
-	luaState.getGlobalString("name",mapName);
-	luaState.getGlobalString("author",author);
-	luaState.getGlobalTable("size");
-	//搜索地形表
-	luaState.getGlobalTable("Terrains");
-	/*lua_getglobal(state,"Terrains");
-	if(lua_gettop(state)!=1)RETURN("No table \'Terrains\'");
-	if(!lua_istable(state,1))RETURN("\'Terrains\' not table");
-	//遍历地形表
-	lua_pushnil(state);
-	while(lua_next(state,-2)){//-2是key的位置
-		if(!lua_istable(state,-1))continue;//-1是value的位置
-		//分析用的变量
-		int x=0,y=0;
-		string name,troop;
-		Terrain terrain;
-		//扫描所有地形
-		lua_pushnil(state);
-		while(lua_next(state,-2)){
-			switch(lua_tointeger(state,-2)){
-				case 1:x=lua_tointeger(state,-1);break;
-				case 2:y=lua_tointeger(state,-1);break;
-				case 3:name=lua_tostring(state,-1);break;
-				case 4:troop=lua_tostring(state,-1);break;
-				default:;
-			}
-			lua_pop(state,1);
-		}
-		//解析地形
-		setTerrain(x,y,name,troop);
-		lua_pop(state,1);//下一个
-	}
-	lua_pop(state,1);
-	//自动调整地形
-	autoAdjustTerrainsTiles();
-	//搜索兵种表
-	lua_getglobal(state,"Units");
-	if(lua_gettop(state)!=1)RETURN("No table \'Units\'");
-	if(!lua_istable(state,1))RETURN("\'Units\' not table");
-	//遍历兵种表
-	chessPieces.clear();
-	lua_pushnil(state);
-	while(lua_next(state,-2)){//-2是key的位置
-		if(!lua_istable(state,-1))continue;//-1是value的位置
-		//分析用的变量
-		int x=0,y=0;
-		string name,troop;
-		Unit unit;
-		//扫描所有单位
-		lua_pushnil(state);
-		while(lua_next(state,-2)){
-			switch(lua_tointeger(state,-2)){
-				case 1:x=lua_tointeger(state,-1);break;
-				case 2:y=lua_tointeger(state,-1);break;
-				case 3:name=lua_tostring(state,-1);break;
-				case 4:troop=lua_tostring(state,-1);break;
-				default:;
-			}
-			lua_pop(state,1);//下一个
-		}
-		uint crpIndex=0,trpIndex=0;
-		auto corp=corpsList->dataName(name,crpIndex);
-		if(corp){
-			unit.corpType=crpIndex;//兵种
-			if(troop!="" && troopsList->dataName(troop,trpIndex)){
-				unit.color=trpIndex;//势力
-			}
-			unit.coordinate=decltype(unit.coordinate)(x,y);//坐标
-			unit.fuel=corp->gasMax;//燃料
-			for(auto &wpn:corp->weapons){
-				unit.ammunition=wpn.ammunitionMax;
-				break;
-			}
-			chessPieces.push_back(unit);
-		}
-		lua_pop(state,1);//下一个
-	}
-	lua_pop(state,1);*/
-	//读取完成
-	return false;
-}
-
 int BattleField::saveMap_CSV(const string &filename)const{
 	if(!corpsList || !troopsList || !terrainsList)return -1;
 	//写LUA文件
 	FILE *file=fopen(filename.data(),"wb");
 	if(!file)return -1;
 	saveMap_CSV(file);
-	//写入完毕
-	fflush(file);
-	fclose(file);
-	return 0;
-}
-int BattleField::saveMap_LUA(const string &filename)const{
-	if(!corpsList || !troopsList || !terrainsList)return -1;
-	//写LUA文件
-	FILE *file=fopen(filename.data(),"wb");
-	if(!file)return -1;
-	saveMap_LUA(file);
 	//写入完毕
 	fflush(file);
 	fclose(file);
@@ -349,57 +232,6 @@ void BattleField::saveMap_CSV(FILE *file)const{
 			fprintf(file,"%d,%d,%s",x,y,code->name.data());
 		}
 	}
-}
-void BattleField::saveMap_LUA(FILE *file)const{
-	//基本信息
-	int w=getWidth();
-	int h=getHeight();
-	fprintf(file,"name=\'%s\'\n",mapName.data());
-	fprintf(file,"author=\'%s\'\n",author.data());
-	fprintf(file,"size={%d,%d}\n",w,h);
-	//打印地形信息
-	Terrain terrain;
-	fprintf(file,"Terrains={\n");
-	for(decltype(h) y=0;y<h;++y){
-		for(decltype(w) x=0;x<w;++x){
-			if(getTerrain(x,y,terrain)){
-				auto code=terrainsList->data(terrain.terrainType);
-				if(!code)continue;
-				if(code->capturable){
-					auto troop=troopsList->data(terrain.status);
-					if(troop){
-						fprintf(file,"\t{%d,%d,%s,%s}",x,y,code->name.data(),troop->name.data());
-					}else{
-						fprintf(file,"\t{%d,%d,%s}",x,y,code->name.data());
-					}
-				}else{
-					fprintf(file,"\t{%d,%d,%s}",x,y,code->name.data());
-				}
-				//打印逗号
-				if(!(y+1==h && x+1==w))fprintf(file,",\n");
-				else fprintf(file,"\n");
-			}
-		}
-	}
-	fprintf(file,"}\n");//Terrains
-	//打印单位信息
-	fprintf(file,"Units={\n");
-	for(auto &unit:chessPieces){
-		auto x=unit.coordinate.x();
-		auto y=unit.coordinate.y();
-		auto code=corpsList->data(unit.corpType);//查兵种表以确认兵种
-		if(!code)continue;
-		auto troop=troopsList->data(unit.color);//查部队表以确认据点所属
-		if(troop){
-			fprintf(file,"\t{%d,%d,%s,%s}",x,y,code->name.data(),troop->name.data());
-		}else{
-			fprintf(file,"\t{%d,%d,%s}",x,y,code->name.data());
-		}
-		//打印逗号
-		if(!(y+1==h && x+1==w))fprintf(file,",\n");
-		else fprintf(file,"\n");
-	}
-	fprintf(file,"}");//Units
 }
 
 //static bool func(const int &a,const int &b){return a<b;}

@@ -20,12 +20,9 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	//读取地图
 	int loadMap(const string &filename);
 	string loadMap_CSV(const string &filename);
-	bool loadMap_LUA(const string &filename);
 	//保存地图
 	int saveMap_CSV(const string &filename)const;
-	int saveMap_LUA(const string &filename)const;
 	void saveMap_CSV(FILE *file)const;
-	void saveMap_LUA(FILE *file)const;
 	//int saveMap(const string &filename,void(BattleField::*callback)(FILE *file))const;
 	//保存地图-BabyWars
 	int saveMap_LUA_BabyWars(const string &filename)const;
