@@ -23,7 +23,6 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	//保存地图
 	int saveMap_CSV(const string &filename)const;
 	void saveMap_CSV(FILE *file)const;
-	//int saveMap(const string &filename,void(BattleField::*callback)(FILE *file))const;
 	//保存地图-BabyWars
 	int saveMap_LUA_BabyWars(const string &filename)const;
 	int saveMap_TMX_BabyWars(const string &filename)const;

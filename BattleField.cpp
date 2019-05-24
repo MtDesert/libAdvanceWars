@@ -1,8 +1,6 @@
 #include "BattleField.h"
 
 #include<stdlib.h>
-#include<fstream>
-#include<iostream>
 
 BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(nullptr){}
 BattleField::~BattleField(){}
@@ -124,7 +122,7 @@ string BattleField::loadMap_CSV(const string &filename){
 	if(!troopsList)return "No troops list";
 	if(!terrainsList)return "No terrains list";
 	//打开文件
-	FILE *file=fopen(filename.data(),"r");
+	FILE *file=fopen(filename.data(),"rb");
 	if(!file)return "File open error";
 	//开始读取地图名和作者
 	char buffer[BUFSIZ];
