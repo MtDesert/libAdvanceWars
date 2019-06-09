@@ -347,7 +347,7 @@ void Campaign::cursorSelect(){
 					else if(name=="ShipFactory")corpType="NavyForce";
 					for(auto &corp:*battleField->corpsList){
 						if(corpType==corp.corpType){
-							produceMenu.push_back(corp.id);
+							//produceMenu.push_back(corp.id);
 						}
 					}
 				}

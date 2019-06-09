@@ -16,7 +16,6 @@ struct Weapon{
 struct Corp{
 	Corp();
 
-	int id;//兵种id,用于外部管理
 	string name;//兵种名字
 	string corpType;//兵种类型
 	int price;//造价

@@ -17,14 +17,13 @@ public:
 	string senarioScriptsPath;//剧情脚本文件的路径
 	//数据文件名以及图片路径
 #define DATA_FILENAME_AND_IMAGEPATH(name)\
-	EnumType filenames##name;\
-	string imagePath##name;
+	string Filename##name;\
+	string ImagesPath##name;
 
 	DATA_FILENAME_AND_IMAGEPATH(Corps)
 	DATA_FILENAME_AND_IMAGEPATH(Troops)
 	DATA_FILENAME_AND_IMAGEPATH(Commanders)
-	string imagePathCommandersBodies;
-	DATA_FILENAME_AND_IMAGEPATH(TerrainCode)
+	DATA_FILENAME_AND_IMAGEPATH(Terrains)
 #undef DATA_FILENAME_AND_IMAGEPATH
 
 	//设定数据

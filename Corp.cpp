@@ -2,35 +2,31 @@
 #include"LuaState.h"
 
 Weapon::Weapon():minRange(1),maxRange(1),ammunitionMax(0){}
-Corp::Corp():id(0),price(0),vision(0),movement(0),gasMax(0),
+Corp::Corp():price(0),vision(0),movement(0),gasMax(0),
 capturable(false),suppliable(false),hidable(false),repairable(false),explodable(false),buildable(false),flarable(false){}
 
+#define LUA_TO_TYPE(name,type)\
+if(str==#name){\
+	corp.name=lua_to##type(state,-1);\
+}else\
+
 string CorpsList::loadFile_lua(const string &filename){
-	lua_State *state=luaL_newstate();
-	//加载文件
+	LUASTATE_OPENFILE(filename.data());
 	//搜索兵种表
 	lua_getglobal(state,"Corps");
 	if(lua_gettop(state)!=1)return("No table \'Corps\'");
 	if(!lua_istable(state,1))return("\'Corps\' not table");
 	//遍历兵种表
-	int corpID=0;
-	lua_pushnil(state);//遍历前要push nil
-	while(lua_next(state,-2)){//-2是key的位置
+	LUASTATE_TABLE_FOREACH(state,
 		if(lua_istable(state,-1)){//-1是value的位置
 			Corp corp;//读取用的缓冲
-			corp.id=corpID;
-			lua_pushnil(state);
-			while(lua_next(state,-2)){
+			LUASTATE_TABLE_FOREACH(state,
 				string str=lua_tostring(state,-2);
-				if(str=="name"){//兵种名称
-					corp.name=lua_tostring(state,-1);
-				}else if(str=="corpType"){//兵种类型
-					corp.corpType=lua_tostring(state,-1);
-				}else if(str=="price"){//造价
-					corp.price=lua_tointeger(state,-1);
-				}else if(str=="vision"){//视野
-					corp.vision=lua_tointeger(state,-1);
-				}else if(str=="move" && lua_istable(state,-1)){
+				LUA_TO_TYPE(name,string)
+				LUA_TO_TYPE(corpType,string)
+				LUA_TO_TYPE(price,integer)
+				LUA_TO_TYPE(vision,integer)
+				if(str=="move" && lua_istable(state,-1)){
 					lua_pushnil(state);
 					while(lua_next(state,-2)){
 						string str0=lua_tostring(state,-2);
@@ -80,12 +76,11 @@ string CorpsList::loadFile_lua(const string &filename){
 					corp.flarable=lua_toboolean(state,-1);
 				}
 				lua_pop(state,1);
-			}
+			);
 			push_back(corp);
-			++corpID;
 		}
-		lua_pop(state,1);
-	}
+	);
 	//结束
+	lua_close(state);
 	return "";
 }

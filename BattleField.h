@@ -30,7 +30,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	//外部数据表
 	CorpsList *corpsList;//兵种码表,解读地图用
 	TroopsList *troopsList;//部队码表,解读地图用
-	TerrainCodeList *terrainsList;//地形码表,解读地图用
+	TerrainsList *terrainsList;//地形码表,解读地图用
 
 	//地图信息
 	string mapName;//地图名

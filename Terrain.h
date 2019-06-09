@@ -37,10 +37,9 @@ struct TerrainCode{
 };
 
 //地形代码表
-struct TerrainCodeList:public DataList<TerrainCode>{
+struct TerrainsList:public DataList<TerrainCode>{
 	string loadFile_lua(const string &filename);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
 	bool canAdjustTile(int terrainType)const;//能否调整图块
 	bool canAdjustTile(int terrainTypeA,int terrainTypeB)const;
 };
-
-#endif // TERRAIN_H
+#endif
