@@ -12,45 +12,45 @@ Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr)
 	txtD2D.lineCharAmount=32;
 	//名字
 	stringName.setString("名字");
-	stringName.position=Point3D<int>(start0,Game_AdvanceWars::currentGame()->resolution.y(),0);
+	stringName.position=Point3D<int>(start0,Game_AdvanceWars::currentGame()->resolution.y,0);
 	stringName.anchorPoint=Point2D<float>(0,1);
 	subObjects.push_back(&stringName);
 
 	strName.position=stringName.position;
-	strName.position.x()=start1;
+	strName.position.x=start1;
 	strName.anchorPoint=stringName.anchorPoint;
 	subObjects.push_back(&strName);
 	//口头禅
 	stringQuote.setString("口癖");
 	stringQuote.position=stringName.position;
-	stringQuote.position.y()-=stringName.charSize.y();
+	stringQuote.position.y-=stringName.charSize.y;
 	stringQuote.anchorPoint=stringName.anchorPoint;
 	subObjects.push_back(&stringQuote);
 
 	strQuote.position=stringQuote.position;
-	strQuote.position.x()=start1;
+	strQuote.position.x=start1;
 	strQuote.anchorPoint=stringQuote.anchorPoint;
 	subObjects.push_back(&strQuote);
 	//CO说明
 	stringNote.setString("说明");
 	stringNote.position=stringQuote.position;
-	stringNote.position.y()-=stringQuote.charSize.y();
+	stringNote.position.y-=stringQuote.charSize.y;
 	stringNote.anchorPoint=stringQuote.anchorPoint;
 	subObjects.push_back(&stringNote);
 
 	txtNote.position=stringNote.position;
-	txtNote.position.x()=start1;
+	txtNote.position.x=start1;
 	txtNote.anchorPoint=stringNote.anchorPoint;
 	subObjects.push_back(&txtNote);
 	//
 	stringD2D.setString("日常");
 	stringD2D.position=stringNote.position;
-	stringD2D.position.y()=Game_AdvanceWars::currentGame()->resolution.y()/2;
+	stringD2D.position.y=Game_AdvanceWars::currentGame()->resolution.y/2;
 	stringD2D.anchorPoint=stringNote.anchorPoint;
 	subObjects.push_back(&stringD2D);
 
 	txtD2D.position=stringD2D.position;
-	txtD2D.position.x()=start1;
+	txtD2D.position.x=start1;
 	txtD2D.anchorPoint=stringD2D.anchorPoint;
 	subObjects.push_back(&txtD2D);
 	//全身像

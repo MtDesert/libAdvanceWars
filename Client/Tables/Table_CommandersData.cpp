@@ -11,7 +11,7 @@ static Texture texNone;
 Table_CommandersData::Table_CommandersData(){
 	//static
 	gameString=GameString();
-	gameSprite.anchorPoint.x()=0;
+	gameSprite.anchorPoint.x=0;
 	//必须先创建缓冲区
 	uint amount=12;
 	itemBuffers=new ItemBuffer[amount];
@@ -41,8 +41,8 @@ void Table_CommandersData::renderItem(const typename List<Commander>::iterator &
 	sr.drawRectangle(itemRect);
 	//画文字
 	auto center=itemRect.center();
-	gameString.position.x()=center.x();
-	gameString.position.y()=center.y();
+	gameString.position.x=center.x;
+	gameString.position.y=center.y;
 	gameString.color=isSelecting?0xFF000000:0xFFFFFFFF;
 	auto &item=itemBuffers[row];
 	switch(column){
@@ -53,8 +53,8 @@ void Table_CommandersData::renderItem(const typename List<Commander>::iterator &
 	gameString.stringCode=DataBlock();
 	if(column==0){
 		gameSprite.texture=item.icon;
-		gameSprite.position.x()=itemRect.p0.x();
-		gameSprite.position.y()=center.y();
+		gameSprite.position.x=itemRect.p0.x;
+		gameSprite.position.y=center.y;
 		gameSprite.render();
 	}*/
 }

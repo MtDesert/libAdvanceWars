@@ -229,8 +229,8 @@ static void makeLayerData(const BattleField &bf){
 	for(auto &unit:bf.chessPieces){
 		auto code=bf.corpsList->data(unit.corpType);//查兵种表以确认兵种
 		if(!code)continue;
-		auto x=unit.coordinate.x();
-		auto y=unit.coordinate.y();
+		auto x=unit.coordinate.x;
+		auto y=unit.coordinate.y;
 		uint8 status=0;
 		for(auto &index:bf.playerIndexList){
 			if(index==unit.color)break;

@@ -38,21 +38,21 @@ void Table_UnitsData::render()const{
 	if(!source)return;
 	//画数据
 	/*rect=rectF();
-	gameString.position.y()=rect.p1.y()-itemHeight;
+	gameString.position.y=rect.p1.y-itemHeight;
 	uint index=0;
 	uint renderTo=renderItemFrom+renderItemAmount;
 	for(auto item:*source){
 		if(index>=renderItemFrom && index < renderTo){//需要渲染的部分
-			gameString.position.y()-=itemHeight;
-			gameString.position.x()=rect.p0.x();
+			gameString.position.y-=itemHeight;
+			gameString.position.x=rect.p0.x;
 			//设置颜色
 			if(index==selectingItem){//当前项,我们设置成白底黑字
 				gameString.color=0xFF000000;//黑字
 				sr.fillColor=color;//当前底
 				sr.drawRectangle(
-					rect.p0.x(),
-					gameString.position.y(),
-					rect.p1.x(),gameString.position.y()+itemHeight);
+					rect.p0.x,
+					gameString.position.y,
+					rect.p1.x,gameString.position.y+itemHeight);
 			}else{//非当前项,我们设置成白字
 				gameString.color=0xFFFFFFFF;
 			}
@@ -63,55 +63,55 @@ void Table_UnitsData::render()const{
 				if(tex)tex->draw(gameString.posF());
 			}
 			//兵种名
-			gameString.position.x()+=32;
+			gameString.position.x+=32;
 			gameString.setString(item.name);
 			gameString.anchorPoint=Point2D<float>();
 			gameString.render();
-			gameString.position.x()-=32;
+			gameString.position.x-=32;
 			switch(page){
 				case 0:{
 					//兵种类型
 					gameString.setString(item.corpType);
-					gameString.anchorPoint.x()=0.5;
-					gameString.position.x()+=columnWidth(0);
-					gameString.position.x()+=columnWidth(1)/2;
+					gameString.anchorPoint.x=0.5;
+					gameString.position.x+=columnWidth(0);
+					gameString.position.x+=columnWidth(1)/2;
 					gameString.render();
-					gameString.position.x()+=columnWidth(1)/2;
+					gameString.position.x+=columnWidth(1)/2;
 					//造价
 					char tmp[12];
 					sprintf(tmp,"%d",item.price);
 					gameString.setString(tmp);
-					gameString.position.x()+=columnWidth(2)/2;
+					gameString.position.x+=columnWidth(2)/2;
 					gameString.render();
-					gameString.position.x()+=columnWidth(2)/2;
+					gameString.position.x+=columnWidth(2)/2;
 					//视野
 					sprintf(tmp,"%d",item.vision);
 					gameString.setString(tmp);
-					gameString.position.x()+=columnWidth(3)/2;
+					gameString.position.x+=columnWidth(3)/2;
 					gameString.render();
-					gameString.position.x()+=columnWidth(3)/2;
+					gameString.position.x+=columnWidth(3)/2;
 				}break;
 				case 1:{
 					//移动力
 					char tmp[12];
 					sprintf(tmp,"%d",item.movement);
 					gameString.setString(tmp);
-					gameString.anchorPoint.x()=0.5;
-					gameString.position.x()+=columnWidth(0);
-					gameString.position.x()+=columnWidth(1)/2;
+					gameString.anchorPoint.x=0.5;
+					gameString.position.x+=columnWidth(0);
+					gameString.position.x+=columnWidth(1)/2;
 					gameString.render();
-					gameString.position.x()+=columnWidth(1)/2;
+					gameString.position.x+=columnWidth(1)/2;
 					//移动类型
 					gameString.setString(item.moveType);
-					gameString.position.x()+=columnWidth(2)/2;
+					gameString.position.x+=columnWidth(2)/2;
 					gameString.render();
-					gameString.position.x()+=columnWidth(2)/2;
+					gameString.position.x+=columnWidth(2)/2;
 					//燃料
 					sprintf(tmp,"%d",item.gasMax);
 					gameString.setString(tmp);
-					gameString.position.x()+=columnWidth(3)/2;
+					gameString.position.x+=columnWidth(3)/2;
 					gameString.render();
-					gameString.position.x()+=columnWidth(3)/2;
+					gameString.position.x+=columnWidth(3)/2;
 				}break;
 			}
 		}

@@ -31,8 +31,8 @@ void Scene_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
 		(key==Keyboard::Key_Left)||
 		(key==Keyboard::Key_Right);
 	if(isDirectionKey && !pressed){
-		auto x=campaign->cursor.x();
-		auto y=campaign->cursor.y();
+		auto x=campaign->cursor.x;
+		auto y=campaign->cursor.y;
 		switch(key){
 			case Keyboard::Key_Up:
 				if(y>0)--y;
@@ -88,8 +88,8 @@ void Scene_BattleField::mouseMove(int x,int y){
 	if(mouseKeyDown){//有可能是拖动
 		if(isTouchMove){//移动地图
 			//改变位置
-			position.x()-=(x-touchMovePoint.x());
-			position.y()-=(y-touchMovePoint.y());
+			position.x-=(x-touchMovePoint.x);
+			position.y-=(y-touchMovePoint.y);
 			//进行可靠修正
 			//fixPosition();
 		}else{//判断移动距离是不是很大,是的话切换到移动模式
@@ -97,20 +97,20 @@ void Scene_BattleField::mouseMove(int x,int y){
 				isTouchMove=true;
 			}
 		}
-		touchMovePoint.x()=x;
-		touchMovePoint.y()=y;
+		touchMovePoint.x=x;
+		touchMovePoint.y=y;
 	}else{//鼠标移动
 		auto res=Game::resolution;
 		auto fieldLen=sizeF();
-		if(fieldLen.x()<=res.x()){//宽度没超出分辨率
-			x-=(res.x()-fieldLen.x())/2;
+		if(fieldLen.x<=res.x){//宽度没超出分辨率
+			x-=(res.x-fieldLen.x)/2;
 		}else{
-			x+=position.x();
+			x+=position.x;
 		}
-		if(fieldLen.y()<=res.y()){//高度没超出分辨率
-			y-=(res.y()-fieldLen.y())/2;
+		if(fieldLen.y<=res.y){//高度没超出分辨率
+			y-=(res.y-fieldLen.y)/2;
 		}else{
-			y+=position.y();
+			y+=position.y;
 		}
 		setCursorPos(x,y);
 	}
@@ -125,42 +125,42 @@ void Scene_BattleField::renderX()const{
 	auto fieldRect=rectF();
 	Point2D<int> minXY,maxXY;//需要绘制的格子坐标
 	//渲染宽度
-	if(fieldSize.x()<gameCamera.size.x()){
-		minXY.x()=0;
-		maxXY.x()=w;
+	if(fieldSize.x<gameCamera.size.x){
+		minXY.x=0;
+		maxXY.x=w;
 	}else{
-		minXY.x()=(gameCamera.leftX()-fieldRect.p0.x())/latticeSize;
-		maxXY.x()=(gameCamera.rightX()-fieldRect.p0.x())/latticeSize+1;
+		minXY.x=(gameCamera.leftX()-fieldRect.p0.x)/latticeSize;
+		maxXY.x=(gameCamera.rightX()-fieldRect.p0.x)/latticeSize+1;
 	}
 	//渲染高度
-	if(fieldSize.y()<gameCamera.size.y()){
-		minXY.y()=0;
-		maxXY.y()=h;
+	if(fieldSize.y<gameCamera.size.y){
+		minXY.y=0;
+		maxXY.y=h;
 	}else{
-		minXY.y()=(fieldRect.p1.y()-gameCamera.topY())/latticeSize;
-		maxXY.y()=(fieldRect.p1.y()-gameCamera.bottomY())/latticeSize+1;
+		minXY.y=(fieldRect.p1.y-gameCamera.topY())/latticeSize;
+		maxXY.y=(fieldRect.p1.y-gameCamera.bottomY())/latticeSize+1;
 	}
-	auto top=fieldRect.p1.y(),left=fieldRect.p0.x();
+	auto top=fieldRect.p1.y,left=fieldRect.p0.x;
 	//网格绘制设定
 	sr.hasFill=false;
 	sr.edgeColor=ColorRGBA(0,255,0,128);
 	//画地形图块
 	if(!terrainsTextures)return;
 	Terrain terrain;
-	for(int x=minXY.x();x<maxXY.x();++x){
-		for(int y=minXY.y();y<maxXY.y();++y){
+	for(int x=minXY.x;x<maxXY.x;++x){
+		for(int y=minXY.y;y<maxXY.y;++y){
 			if(battleField->getTerrain(x,y,terrain)){
 				//画地形
 				/*auto tex=terrainsTextures->value(terrain.terrainType+terrain.status*256);
 				if(tex){
 					glColor4ub(color.red,color.green,color.blue,color.alpha);
 					tex->draw(Point2D<float>(
-						renderPos.x()+(x-minXY.x())*latticeSize,
-						renderPos.y()+(maxXY.y()-1-y)*latticeSize),
+						renderPos.x+(x-minXY.x)*latticeSize,
+						renderPos.y+(maxXY.y-1-y)*latticeSize),
 						Point2D<float>(tex->getWidth()*2,tex->getHeight()*2));
 				}*/
-				float xx=left+(x-minXY.x())*latticeSize+1;
-				float yy=top-(y-minXY.y())*latticeSize+1;
+				float xx=left+(x-minXY.x)*latticeSize+1;
+				float yy=top-(y-minXY.y)*latticeSize+1;
 				sr.drawRectangle(xx,yy,xx+latticeSize-1,yy-latticeSize+1);
 			}
 		}
@@ -172,53 +172,53 @@ void Scene_BattleField::renderX()const{
 	/*sr.hasFill=true;
 	sr.fillColor=ColorRGBA(0,0,255,128);
 	for(auto &p:campaign->movablePoints){
-		int x=p.x(),y=p.y();
-		if(p.x()>=minXY.x() && p.x()<maxXY.x() && p.y()>=minXY.y() && p.y()<maxXY.y()){
+		int x=p.x,y=p.y;
+		if(p.x>=minXY.x && p.x<maxXY.x && p.y>=minXY.y && p.y<maxXY.y){
 			sr.drawRectangle(
-				renderPos.x()+(x-minXY.x())*latticeSize+1,
-				renderPos.y()+(maxXY.y()-1-y)*latticeSize+1,
-				renderPos.x()+(x-minXY.x()+1)*latticeSize,
-				renderPos.y()+(maxXY.y()-y)*latticeSize);
+				renderPos.x+(x-minXY.x)*latticeSize+1,
+				renderPos.y+(maxXY.y-1-y)*latticeSize+1,
+				renderPos.x+(x-minXY.x+1)*latticeSize,
+				renderPos.y+(maxXY.y-y)*latticeSize);
 		}
 	}
 	//画移动路径
 	sr.hasFill=true;
 	sr.fillColor=ColorRGBA(0,255,0,128);
 	for(auto &p:campaign->movePath){
-		int x=p.x(),y=p.y();
-		if(p.x()>=minXY.x() && p.x()<maxXY.x() && p.y()>=minXY.y() && p.y()<maxXY.y()){
+		int x=p.x,y=p.y;
+		if(p.x>=minXY.x && p.x<maxXY.x && p.y>=minXY.y && p.y<maxXY.y){
 			sr.drawRectangle(
-				renderPos.x()+(x-minXY.x())*latticeSize+1,
-				renderPos.y()+(maxXY.y()-1-y)*latticeSize+1,
-				renderPos.x()+(x-minXY.x()+1)*latticeSize,
-				renderPos.y()+(maxXY.y()-y)*latticeSize);
+				renderPos.x+(x-minXY.x)*latticeSize+1,
+				renderPos.y+(maxXY.y-1-y)*latticeSize+1,
+				renderPos.x+(x-minXY.x+1)*latticeSize,
+				renderPos.y+(maxXY.y-y)*latticeSize);
 		}
 	}
 	//画攻击范围
 	sr.hasFill=true;
 	sr.fillColor=ColorRGBA(255,0,0,128);
 	for(auto &p:campaign->firablePoints){
-		int x=p.x(),y=p.y();
-		if(p.x()>=minXY.x() && p.x()<maxXY.x() && p.y()>=minXY.y() && p.y()<maxXY.y()){
+		int x=p.x,y=p.y;
+		if(p.x>=minXY.x && p.x<maxXY.x && p.y>=minXY.y && p.y<maxXY.y){
 			sr.drawRectangle(
-				renderPos.x()+(x-minXY.x())*latticeSize+1,
-				renderPos.y()+(maxXY.y()-1-y)*latticeSize+1,
-				renderPos.x()+(x-minXY.x()+1)*latticeSize,
-				renderPos.y()+(maxXY.y()-y)*latticeSize);
+				renderPos.x+(x-minXY.x)*latticeSize+1,
+				renderPos.y+(maxXY.y-1-y)*latticeSize+1,
+				renderPos.x+(x-minXY.x+1)*latticeSize,
+				renderPos.y+(maxXY.y-y)*latticeSize);
 		}
 	}
 	//画单位
 	glColor4ub(color.red,color.green,color.blue,color.alpha);
 	for(auto &unit:battleField->chessPieces){
 		auto p=unit.coordinate;
-		if(p.x()<minXY.x()||p.x()>=maxXY.x())continue;
-		if(p.y()<minXY.y()||p.y()>=maxXY.y())continue;
+		if(p.x<minXY.x||p.x>=maxXY.x)continue;
+		if(p.y<minXY.y||p.y>=maxXY.y)continue;
 		//画单位
 		auto tex=corpsTextures->value(unit.corpType + unit.color*256);
 		if(tex){
 			tex->draw(Point2D<float>(
-				renderPos.x()+(p.x()-minXY.x())*latticeSize,
-				renderPos.y()+(maxXY.y()-1-p.y())*latticeSize));
+				renderPos.x+(p.x-minXY.x)*latticeSize,
+				renderPos.y+(maxXY.y-1-p.y)*latticeSize));
 		}
 	}
 	//画光标
@@ -226,10 +226,10 @@ void Scene_BattleField::renderX()const{
 	sr.edgeColor=ColorRGBA(255,0,0,255);
 	auto curPos=cursorPos();
 	//计算绘画位置
-	int x=curPos.x()+1-position.x();
-	int y=curPos.y()+1-position.y();
-	if(fieldLen.x()<=res.x())x=curPos.x()+1+renderPos.x();
-	if(fieldLen.y()<=res.y())x=curPos.y()+1+renderPos.y();
+	int x=curPos.x+1-position.x;
+	int y=curPos.y+1-position.y;
+	if(fieldLen.x<=res.x)x=curPos.x+1+renderPos.x;
+	if(fieldLen.y<=res.y)x=curPos.y+1+renderPos.y;
 	//开始绘制
 	sr.drawTriangle(x,y,x+8,y,x,y+8);//左下
 	x+=latticeSize-1;
@@ -256,8 +256,8 @@ void Scene_BattleField::renderX()const{
 Point2D<float> Scene_BattleField::sizeF()const{
 	decltype(sizeF()) ret;
 	if(battleField){
-		ret.x()=battleField->getWidth()*latticeSize;
-		ret.y()=battleField->getHeight()*latticeSize;
+		ret.x=battleField->getWidth()*latticeSize;
+		ret.y=battleField->getHeight()*latticeSize;
 	}
 	return ret;
 }
@@ -321,30 +321,30 @@ void Scene_BattleField::renderTerrainInfo()const{
 	/*if(!battleField)return;
 	//判断光标位置
 	decltype(position) pos=cursorPos()-position;
-	if(pos.x()<Game::resolution.x()/2){
-		pos.x()=Game::resolution.x()-256-32;
+	if(pos.x<Game::resolution.x/2){
+		pos.x=Game::resolution.x-256-32;
 	}else{
-		pos.x()=32;
+		pos.x=32;
 	}
 	//画方框
 	sr.hasFill=true;
 	sr.fillColor=ColorRGBA(0,0,0,192);
-	sr.drawRectangle(pos.x(),0,pos.x()+256,112);
+	sr.drawRectangle(pos.x,0,pos.x+256,112);
 	//画地形图标
 	if(terrainIcon){
 		glColor4ub(color.red,color.green,color.blue,color.alpha);
-		terrainIcon->draw(Point2D<float>(pos.x()+8,8),
+		terrainIcon->draw(Point2D<float>(pos.x+8,8),
 			Point2D<float>(terrainIcon->getWidth()*2,terrainIcon->getHeight()*2));
 	}
 	//画文字
 	gameString_terrainCoord.anchorPoint=Point2D<float>(0,0);
-	gameString_terrainCoord.position=Point2D<int>(pos.x()+0,72);
+	gameString_terrainCoord.position=Point2D<int>(pos.x+0,72);
 	gameString_terrainCoord.render();
 	gameString_terrainDefend.anchorPoint=Point2D<float>(0,0);
-	gameString_terrainDefend.position=Point2D<int>(pos.x()+40,40);
+	gameString_terrainDefend.position=Point2D<int>(pos.x+40,40);
 	gameString_terrainDefend.render();
 	gameString_terrainName.anchorPoint=Point2D<float>(0,0);
-	gameString_terrainName.position=Point2D<int>(pos.x()+40,8);
+	gameString_terrainName.position=Point2D<int>(pos.x+40,8);
 	gameString_terrainName.render();*/
 }
 //单位信息显示
@@ -357,52 +357,52 @@ void Scene_BattleField::renderUnitInfo()const{
 	/*if(!battleField || !unitIcon)return;
 	//判断光标位置
 	decltype(position) pos=cursorPos()-position;
-	if(pos.x()<Game::resolution.x()/2){
-		pos.x()=Game::resolution.x()-256-32;
+	if(pos.x<Game::resolution.x/2){
+		pos.x=Game::resolution.x-256-32;
 	}else{
-		pos.x()=32;
+		pos.x=32;
 	}
 	//画方框
 	sr.hasFill=true;
 	sr.fillColor=ColorRGBA(0,0,0,192);
-	sr.drawRectangle(pos.x(),112,pos.x()+256,224);
+	sr.drawRectangle(pos.x,112,pos.x+256,224);
 	//画单位
 	if(unitIcon){
 		glColor4ub(color.red,color.green,color.blue,color.alpha);
-		unitIcon->draw(Point2D<float>(pos.x()+8,120),
+		unitIcon->draw(Point2D<float>(pos.x+8,120),
 			Point2D<float>(unitIcon->getWidth(),unitIcon->getHeight()));
 	}
 	//画文字
 	gameString_unitName.anchorPoint=Point2D<float>(0,0);
-	gameString_unitName.position=Point2D<int>(pos.x()+40,120);
+	gameString_unitName.position=Point2D<int>(pos.x+40,120);
 	gameString_unitName.render();
 	gameString_unitHP.anchorPoint=Point2D<float>(0,0);
-	gameString_unitHP.position=Point2D<int>(pos.x()+40,152);
+	gameString_unitHP.position=Point2D<int>(pos.x+40,152);
 	gameString_unitHP.render();
 	gameString_unitGasAndAmmu.anchorPoint=Point2D<float>(0,0);
-	gameString_unitGasAndAmmu.position=Point2D<int>(pos.x(),184);
+	gameString_unitGasAndAmmu.position=Point2D<int>(pos.x,184);
 	gameString_unitGasAndAmmu.render();*/
 }
 void Scene_BattleField::renderTeamInfo()const{
 	//判断光标位置
 	/*decltype(position) pos=cursorPos()-position;
-	if(pos.x()<Game::resolution.x()/2){
-		pos.x()=Game::resolution.x()-256-32;
+	if(pos.x<Game::resolution.x/2){
+		pos.x=Game::resolution.x-256-32;
 	}else{
-		pos.x()=32;
+		pos.x=32;
 	}
 	//画方框
 	sr.hasFill=true;
 	sr.fillColor=ColorRGBA(0,0,0,192);
-	sr.drawRectangle(pos.x(),112,pos.x()+256,224);*/
+	sr.drawRectangle(pos.x,112,pos.x+256,224);*/
 }
 
 Point2D<int> Scene_BattleField::cursorPos()const{
 	decltype(cursorPos()) ret;
 	if(battleField){
 		auto h=battleField->getHeight();
-		ret.x()=campaign->cursor.x()*latticeSize;
-		ret.y()=(h-1-campaign->cursor.y())*latticeSize;
+		ret.x=campaign->cursor.x*latticeSize;
+		ret.y=(h-1-campaign->cursor.y)*latticeSize;
 	}
 	return ret;
 }
@@ -442,7 +442,7 @@ void Scene_BattleField::getCursorInfo()const{
 		char str[30];
 		sprintf(str,"防御%d",code->defendLV);
 		gameString_terrainDefend.setString(str);
-		sprintf(str,"X=%d,Y=%d",campaign->cursor.x(),campaign->cursor.y());
+		sprintf(str,"X=%d,Y=%d",campaign->cursor.x,campaign->cursor.y);
 		gameString_terrainCoord.setString(str);
 	}
 	//获取单位信息

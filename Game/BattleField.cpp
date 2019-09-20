@@ -6,9 +6,9 @@ BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(n
 BattleField::~BattleField(){}
 
 bool BattleField::getTerrain(uint x,uint y,Terrain &terrain)const{return getValue(x,y,terrain);}
-bool BattleField::getTerrain(const Point2D<int> &p,Terrain &terrain)const{return getTerrain(p.x(),p.y(),terrain);}
+bool BattleField::getTerrain(const Point2D<int> &p,Terrain &terrain)const{return getTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(uint x,uint y,const Terrain &terrain){return setValue(x,y,terrain);}
-bool BattleField::setTerrain(const Point2D<int> &p,const Terrain &terrain){return setTerrain(p.x(),p.y(),terrain);}
+bool BattleField::setTerrain(const Point2D<int> &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(uint x,uint y,const string &terrainName,const string &status){
 	Terrain terrain;
 	uint trnIndex=0,trpIndex=0;
@@ -218,8 +218,8 @@ void BattleField::saveMap_CSV(FILE *file)const{
 	}
 	//打印单位信息
 	for(auto &unit:chessPieces){
-		auto x=unit.coordinate.x();
-		auto y=unit.coordinate.y();
+		auto x=unit.coordinate.x;
+		auto y=unit.coordinate.y;
 		auto code=corpsList->data(unit.corpType);//查兵种表以确认兵种
 		if(!code)continue;
 		fprintf(file,"\n");

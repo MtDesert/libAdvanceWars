@@ -30,13 +30,13 @@ CampaignTeam* Campaign::findTeam(int teamID)const{
 void Campaign::setCursor(int x,int y){
 	//获取地形
 	if(battleField->getTerrain(x,y,cursorTerrain)){
-		cursor.x()=x;cursor.y()=y;//赋值
+		cursor.x=x;cursor.y=y;//赋值
 		cursorTerrainCode=battleField->terrainsList->data(cursorTerrain.terrainType);
 	}else return;
 	//获取单位
 	cursorUnit=nullptr;
 	for(auto &unit:battleField->chessPieces){
-		if(unit.coordinate.x()==x && unit.coordinate.y()==y){
+		if(unit.coordinate.x==x && unit.coordinate.y==y){
 			cursorUnit=&unit;
 			break;
 		}
@@ -107,8 +107,8 @@ void Campaign::caculateMovement(const Unit &unit){
 	if(!cursorCorp)return;
 	//记录起点信息、剩余移动力、剩余燃料
 	MovePoint mp;
-	mp.x()=unit.coordinate.x();
-	mp.y()=unit.coordinate.y();
+	mp.x=unit.coordinate.x;
+	mp.y=unit.coordinate.y;
 	mp.remainMovement=cursorCorp->movement;
 	mp.remainFuel=unit.fuel;
 	//这里加入CO对移动力的修正,对了还有个别CO是可以以地形损耗1通过所有地形的
@@ -140,11 +140,11 @@ void Campaign::caculateMovement(const Unit &unit){
 
 void Campaign::tryToMoveTo(const MovePoint &currentPos,const CoordType &offset){
 	CoordType targetPos=currentPos;
-	targetPos.x()+=offset.x();
-	targetPos.y()+=offset.y();
+	targetPos.x+=offset.x;
+	targetPos.y+=offset.y;
 	//坐标边界判定
 	Terrain terrain;
-	if(!battleField->getTerrain(targetPos.x(),targetPos.y(),terrain))return;
+	if(!battleField->getTerrain(targetPos.x,targetPos.y,terrain))return;
 	//获取地形信息，判断是否可移动的地形
 	int moveCost=0;
 	auto intPtr=movementCostCache.value(terrain.terrainType);//搜索缓冲
@@ -176,13 +176,13 @@ void Campaign::tryToMoveTo(const MovePoint &currentPos,const CoordType &offset){
 
 	//创建新的移动点
 	MovePoint p;
-	p.x()=targetPos.x();p.y()=targetPos.y();
+	p.x=targetPos.x;p.y=targetPos.y;
 	p.remainMovement = currentPos.remainMovement - moveCost;
 	p.remainFuel = currentPos.remainFuel - costFuel;
 	//检查是否重复
 	MovePoint *exist=nullptr;
 	for(auto &mp:movablePoints){
-		if(mp.x()==p.x() && mp.y()==p.y()){
+		if(mp.x==p.x && mp.y==p.y){
 			exist=&mp;//嗯貌似别的路径也能走过这个点，那么应该找最优
 			break;
 		}
@@ -310,16 +310,16 @@ void Campaign::caculateFlightshot_byCenter(const CoordType &center,int minDistan
 void Campaign::caculateFlightshot_byCenter(const CoordType &center,int distance){
 	int d=distance;
 	for(int i=1;i<=d;++i){
-		firablePoints.push_back(CoordType(center.x()+i,center.y()+(i-d)));
-		firablePoints.push_back(CoordType(center.x()+(d-i),center.y()+i));
-		firablePoints.push_back(CoordType(center.x()-i,center.y()+(d-i)));
-		firablePoints.push_back(CoordType(center.x()+(i-d),center.y()-i));
+		firablePoints.push_back(CoordType(center.x+i,center.y+(i-d)));
+		firablePoints.push_back(CoordType(center.x+(d-i),center.y+i));
+		firablePoints.push_back(CoordType(center.x-i,center.y+(d-i)));
+		firablePoints.push_back(CoordType(center.x+(i-d),center.y-i));
 	}
 }
 void Campaign::caculateFlightshot_removeNotInRange(){
 	auto itr=firablePoints.begin();
 	while(itr!=firablePoints.end()){
-		if(battleField->isInRange(itr->x(),itr->y())){
+		if(battleField->isInRange(itr->x,itr->y)){
 			++itr;
 		}else{
 			itr=firablePoints.erase(itr);
@@ -370,7 +370,7 @@ void Campaign::cursorCancel(){
 	produceMenu.clear();
 	//刷新
 	selectUnit=nullptr;
-	setCursor(cursor.x(),cursor.y());
+	setCursor(cursor.x,cursor.y);
 }
 void Campaign::executeMenuSelect(int index){
 	if(corpMenu.size()){
@@ -432,7 +432,7 @@ void Campaign::executeProduceMenu(int index){
 	}
 	if(command<0)return;
 	//确定了兵种,我们可以进行生产
-	printf("生产单位%d,%d\n",cursor.x(),cursor.y());
+	printf("生产单位%d,%d\n",cursor.x,cursor.y);
 	Unit unit;
 	unit.corpType=command;
 	unit.color=cursorTerrain.status;
@@ -484,7 +484,7 @@ bool Campaign::showMenuItem_Load(){
 bool Campaign::showMenuItem_Drop(){
 	auto canStayAt=[=](const string &moveType,const CoordType &p,bool checkBarrier){
 		Terrain terrain;
-		if(!battleField->getTerrain(p.x(),p.y(),terrain))return false;//p要在地图范围内
+		if(!battleField->getTerrain(p.x,p.y,terrain))return false;//p要在地图范围内
 		auto trnCode=battleField->terrainsList->data(terrain.terrainType);
 		if(!trnCode)return false;//必须有地形信息
 		int moveCost=luaFunc_movementCost(moveType,trnCode->name,"Normal");
