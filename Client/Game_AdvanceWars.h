@@ -39,10 +39,6 @@ public:
 	//override
 	virtual void reset();
 	virtual void render()const;
-	//加载文件
-	//提示信息
-	void showGameDialog(const string &content);
-	void hideGameDialog();
 
 	//场景跳转
 	string gotoScene_FileData(FileType type,const string &filename);//选择好文件后,跳转到选择文件的场景,返回错误信息

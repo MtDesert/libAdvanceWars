@@ -54,7 +54,7 @@ MAIN_MENU(SCENEMAIN_CONFIRM_CANCEL)
 Scene_Main::Scene_Main():status(0),countDown(0){
 	//主菜单
 	textTitle.setString(Game::currentGame()->translate("AdvanceWars_LifeTime"));
-	subObjects.push_back(&textTitle);//渲染
+	addSubObject(&textTitle);//渲染
 	//生成菜单项
 	menuMain.renderItemAmount=7;
 	MAKE_MENU(MAIN_MENU,Main)
@@ -91,9 +91,9 @@ void Scene_Main::consumeTimeSlice(){
 			textTitle.color.alpha=countDown*255/sliceValue[status];
 		break;
 		case ShowMainMenu:
-			subObjects.remove(&textTitle);//移除文本标题
+			removeSubObject(&textTitle);//移除文本标题
 			//我们可以在这里播个碉堡的音乐
-			subObjects.push_back(&menuMain);//添加主菜单
+			addSubObject(&menuMain);//添加主菜单
 		break;
 		default:;
 	}
@@ -106,9 +106,9 @@ void Scene_Main::consumeTimeSlice(){
 
 //事件函数
 void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
-	subObjects.remove(&menuMain);
+	removeSubObject(&menuMain);
 	switch(menuMain.selectingItemIndex){
-#define CASE(name) case name:subObjects.push_back(&menu##name);break;
+#define CASE(name) case name:addSubObject(&menu##name);break;
 		MAIN_MENU(CASE)
 #undef CASE
 	}
@@ -117,8 +117,8 @@ void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
 //子菜单取消后,显示主菜单
 #define SCENEMAIN_SUBMENU_CANCEL(name)\
 void Scene_Main::menu##name##Cancel(){\
-	subObjects.remove(&menu##name);\
-	subObjects.push_back(&menuMain);\
+	removeSubObject(&menu##name);\
+	addSubObject(&menuMain);\
 }
 MAIN_MENU(SCENEMAIN_SUBMENU_CANCEL)
 
@@ -148,7 +148,14 @@ void Scene_Main::menuSingleModeConfirm(){
 	}
 }
 
-void Scene_Main::menuOnlineModeConfirm(){}
+void Scene_Main::menuOnlineModeConfirm(){
+	switch(menuOnlineMode.selectingItemIndex){
+		case Register:break;
+		case Login:
+			showLoginDialog();
+		break;
+	}
+}
 void Scene_Main::menuMilitaryFilesConfirm(){}
 void Scene_Main::menuMilitaryDeployConfirm(){}
 void Scene_Main::menuMilitaryRecordConfirm(){}

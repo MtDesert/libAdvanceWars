@@ -30,8 +30,8 @@ void Scene_DataTable::setTableType(int type){
 	}
 	if(table){
 		table->position=Game::resolution/2;
-		subObjects.push_back(table);
-		subObjects.push_back(&gameString_Title);
+		addSubObject(table);
+		addSubObject(&gameString_Title);
 	}*/
 }
 
@@ -48,7 +48,7 @@ void Scene_DataTable::consumeTimeSlice(){
 #undef CPP_MACRO
 		switch(status){
 			case GameMenuStatus::Cancel:
-				Game::game->subObjects.remove(this);//返回上层
+				Game::game->removeSubObject(this);//返回上层
 			break;
 			case GameMenuStatus::Confirm:
 				if(table==&tableCommandersData){//查看CO信息

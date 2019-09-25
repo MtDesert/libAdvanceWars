@@ -14,48 +14,48 @@ Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr)
 	stringName.setString("名字");
 	stringName.position=Point3D<int>(start0,Game_AdvanceWars::currentGame()->resolution.y,0);
 	stringName.anchorPoint=Point2D<float>(0,1);
-	subObjects.push_back(&stringName);
+	addSubObject(&stringName);
 
 	strName.position=stringName.position;
 	strName.position.x=start1;
 	strName.anchorPoint=stringName.anchorPoint;
-	subObjects.push_back(&strName);
+	addSubObject(&strName);
 	//口头禅
 	stringQuote.setString("口癖");
 	stringQuote.position=stringName.position;
 	stringQuote.position.y-=stringName.charSize.y;
 	stringQuote.anchorPoint=stringName.anchorPoint;
-	subObjects.push_back(&stringQuote);
+	addSubObject(&stringQuote);
 
 	strQuote.position=stringQuote.position;
 	strQuote.position.x=start1;
 	strQuote.anchorPoint=stringQuote.anchorPoint;
-	subObjects.push_back(&strQuote);
+	addSubObject(&strQuote);
 	//CO说明
 	stringNote.setString("说明");
 	stringNote.position=stringQuote.position;
 	stringNote.position.y-=stringQuote.charSize.y;
 	stringNote.anchorPoint=stringQuote.anchorPoint;
-	subObjects.push_back(&stringNote);
+	addSubObject(&stringNote);
 
 	txtNote.position=stringNote.position;
 	txtNote.position.x=start1;
 	txtNote.anchorPoint=stringNote.anchorPoint;
-	subObjects.push_back(&txtNote);
+	addSubObject(&txtNote);
 	//
 	stringD2D.setString("日常");
 	stringD2D.position=stringNote.position;
 	stringD2D.position.y=Game_AdvanceWars::currentGame()->resolution.y/2;
 	stringD2D.anchorPoint=stringNote.anchorPoint;
-	subObjects.push_back(&stringD2D);
+	addSubObject(&stringD2D);
 
 	txtD2D.position=stringD2D.position;
 	txtD2D.position.x=start1;
 	txtD2D.anchorPoint=stringD2D.anchorPoint;
-	subObjects.push_back(&txtD2D);
+	addSubObject(&txtD2D);
 	//全身像
 	spriteBody.anchorPoint=Point2D<float>(0,0);
-	subObjects.push_back(&spriteBody);*/
+	addSubObject(&spriteBody);*/
 }
 Scene_CommanderInfo::~Scene_CommanderInfo(){}
 

@@ -1,26 +1,15 @@
 #include"Game_AdvanceWars.h"
-//#include"Table_CorpsData.h"
 
 #include"BattleField.h"
 #include"extern.h"
 
-#include"lua.h"
-#include<stdio.h>
-
 #include"Scene_Main.h"
-//#include"Scene_DataTable.h"
 #include"Scene_BattleField.h"
-//#include"Scene_CommanderInfo.h"
-
-#include"GameDialog.h"
 
 extern string errorString;
-
+//场景
 static Scene_Main *sceneMain=nullptr;
-static GameDialog *gameDialog=nullptr;
-//static Scene_DataTable *scene_DataTable=nullptr;//数据表场景,用来显示各种表格
-static Scene_BattleField *scene_BattleField;//战场场景,用来显示战场内容
-//static Scene_CommanderInfo *scene_CommanderInfo;//CO信息场景,显示CO信息
+static Scene_BattleField *scene_BattleField=nullptr;//战场场景,用来显示战场内容
 
 Game_AdvanceWars::Game_AdvanceWars(){
 	//读取配置
@@ -41,7 +30,7 @@ Game_AdvanceWars::Game_AdvanceWars(){
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
-	subObjects.remove(sceneMain);
+	removeSubObject(sceneMain);
 	delete sceneMain;
 	//清除数据
 	mCorpsList.clear();
@@ -65,7 +54,7 @@ string Game_AdvanceWars::gameName()const{return Game::translate("AdvanceWars");}
 #define ASSERT(code)\
 ok=code;\
 if(!ok){\
-showGameDialog(errorString);\
+printf("%s\n",errorString.data());\
 return;\
 }
 
@@ -78,32 +67,11 @@ void Game_AdvanceWars::reset(){
 	//重启场景
 	if(!sceneMain){
 		sceneMain=new Scene_Main();
-		subObjects.push_back(sceneMain);
+		addSubObject(sceneMain);
 	}
 	sceneMain->reset();
 }
-void Game_AdvanceWars::render()const{
-	Game::render();
-	//绘制屏幕边框
-	if(gameDialog){
-		gameDialog->render();
-	}
-}
-
-static void hideGameDialog(){Game_AdvanceWars::currentGame()->hideGameDialog();}
-void Game_AdvanceWars::showGameDialog(const string &content){
-	if(!gameDialog){
-		gameDialog=new GameDialog();
-		gameDialog->setText(content);
-		gameDialog->mGameButton.onClicked=::hideGameDialog;
-	}
-	subObjects.push_back(gameDialog);
-}
-void Game_AdvanceWars::hideGameDialog(){
-	subObjects.remove(gameDialog);
-	delete gameDialog;
-	gameDialog=nullptr;
-}
+void Game_AdvanceWars::render()const{Game::render();}
 
 Game_AdvanceWars *Game_AdvanceWars::currentGame(){
 	return dynamic_cast<Game_AdvanceWars*>(game);
@@ -193,17 +161,17 @@ void Game_AdvanceWars::consumeTimeSlice(){
 		}else if(scene_FileList.gameTable_Dir.menuStatus==GameMenuStatus::Cancel){
 			scene_FileList.openFilename.clear();
 			scene_FileList.reset();
-			subObjects.remove(&scene_FileList);
+			removeSubObject(&scene_FileList);
 		}
 	}else if(scene==&scene_BattleField){
 		if(scene_BattleField.color.alpha==0){//debug
 			scene_BattleField.color.alpha=255;
-			subObjects.remove(&scene_BattleField);
+			removeSubObject(&scene_BattleField);
 		}
 	}else if(scene==&scene_DataTable){
 		switch(scene_DataTable.tableCorpData.menuStatus){
 			case GameMenu::Confirm:case GameMenu::Cancel:
-				subObjects.remove(scene);
+				removeSubObject(scene);
 			break;
 			default:;
 		}
