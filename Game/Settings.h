@@ -30,6 +30,9 @@ public:
 	bool battleAnimation;//战斗动画是否显示
 	bool mapAnimation;//地图动画是否播放
 	bool showGrid;//是否显示网格线
+	//网络部分
+	string serverAddress;
+	int serverPort;
 
 	//保存/加载设置
 	bool saveFile(const string &filename)const;

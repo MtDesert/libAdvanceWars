@@ -12,16 +12,6 @@ static Scene_Main *sceneMain=nullptr;
 static Scene_BattleField *scene_BattleField=nullptr;//战场场景,用来显示战场内容
 
 Game_AdvanceWars::Game_AdvanceWars(){
-	//读取配置
-	/*
-	//设定表格数据源
-	scene_DataTable.tableCorpData.source=&mCorpsList;
-	scene_DataTable.tableCorpData.textures=&corpsTextures;
-	scene_DataTable.tableCommandersData.setSourceList(mCommandersList);
-	scene_DataTable.tableCommandersData.textures=&commandersHeadTextures;
-	//CO信息数据源
-	scene_CommanderInfo.source=&mCommandersList;
-	scene_CommanderInfo.bodyTextures=&commandersBodyTextures;*/
 	//战场数据源
 	battleField.corpsList=&mCorpsList;
 	battleField.troopsList=&mTroopsList;

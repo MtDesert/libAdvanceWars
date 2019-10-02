@@ -4,7 +4,7 @@
 
 extern string errorString;
 
-Settings::Settings(){}
+Settings::Settings():serverPort(0){}
 Settings::~Settings(){}
 
 #define SETTING_STRING(name)\
@@ -28,6 +28,10 @@ bool Settings::loadFile(const string &filename){
 	//其他数据路径
 	LUASTATE_ASSERT(luaState.getGlobalString("senarioScriptsPath",senarioScriptsPath),"No senario scripts path!");
 	LUASTATE_ASSERT(luaState.getGlobalString("mapsPath",mapsPath),"No maps path!");
+	//网络部分
+	SETTING_STRING(serverAddress);
+	luaState.getGlobalInteger("serverPort",serverPort);
+	//结束
 	luaState.clearStack();
 	return true;
 }

@@ -17,7 +17,7 @@ static int sliceValue[StatusOver]={
 
 //插入菜单项
 #define INSERT_ITEM(name,menuName)\
-menu##menuName.addString(Game_AdvanceWars::currentGame()->translate(#name));
+menu##menuName.addString(#name);
 
 //以下宏用于Scene_Main.h的菜单宏的MACRO参数
 #define MAIN_MENU_ITEM(name) INSERT_ITEM(name,Main)
@@ -52,8 +52,9 @@ SCENEMAIN_CONFIRM_CANCEL(Main)
 MAIN_MENU(SCENEMAIN_CONFIRM_CANCEL)
 
 Scene_Main::Scene_Main():status(0),countDown(0){
+	GameString::translateMode=true;
 	//主菜单
-	textTitle.setString(Game::currentGame()->translate("AdvanceWars_LifeTime"));
+	textTitle.setString("AdvanceWars_LifeTime");
 	addSubObject(&textTitle);//渲染
 	//生成菜单项
 	menuMain.renderItemAmount=7;
@@ -122,6 +123,12 @@ void Scene_Main::menu##name##Cancel(){\
 }
 MAIN_MENU(SCENEMAIN_SUBMENU_CANCEL)
 
+/*static void connectSuccess(){
+	printf("连接成功\n");
+}
+static void connectFailed(){
+	Game_AdvanceWars::currentGame()->showDialogMessage("Connect Failed");
+}*/
 //对战模式选择地图后
 void whenSingleVersusSelectedFile(const string &filename){
 	Game_AdvanceWars::currentGame()->gotoScene_BattleField(filename);
@@ -133,13 +140,13 @@ void Scene_Main::menuSingleModeConfirm(){
 	switch(menuSingleMode.selectingItemIndex){
 		case ScenarioMode:{
 			auto scene=game->showScene_FileList();
-			scene->textTitle.setString(game->translate("SelectScript"));
+			scene->textTitle.setString("SelectScript");
 			scene->changeDirectory(game->settings.senarioScriptsPath);
 		}break;
 		case MissionMode:break;
 		case VersusMode:{//打开文件菜单
 			auto scene=game->showScene_FileList();
-			scene->textTitle.setString(game->translate("SelectMap"));
+			scene->textTitle.setString("SelectMap");
 			scene->changeDirectory(game->settings.mapsPath);
 			scene->whenConfirmFile=whenSingleVersusSelectedFile;
 		}break;
@@ -150,7 +157,9 @@ void Scene_Main::menuSingleModeConfirm(){
 
 void Scene_Main::menuOnlineModeConfirm(){
 	switch(menuOnlineMode.selectingItemIndex){
-		case Register:break;
+		case Register:
+			showLoginDialog(true);
+		break;
 		case Login:
 			showLoginDialog();
 		break;

@@ -258,7 +258,7 @@ bool AwbwAllCategories::loadFile(const string &filename){
 	return true;
 }
 
-void AwbwAllCategories::loadAllCategoriesFiles(){	FOR_ALL_CATEGORIES(category.loadFile(category.dataFilename()))}
+void AwbwAllCategories::loadAllCategoriesFiles(){FOR_ALL_CATEGORIES(category.loadFile(category.dataFilename()))}
 void AwbwAllCategories::updateAllCategories(){FOR_ALL_CATEGORIES(category.updateMapsID())}
 void AwbwAllCategories::clearAllCache(){FOR_ALL_CATEGORIES(category.clearPageCache())}
 
