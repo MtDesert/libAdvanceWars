@@ -23,7 +23,7 @@ public:
 	~Game_AdvanceWars();
 
 	static Game_AdvanceWars* currentGame();
-	virtual string gameName()const;//游戏的名字
+	string gameName()const;
 
 	enum FileType{//加载特定数据文件用,指明文件存放的是什么数据
 		File_Corps,//兵种资料

@@ -39,7 +39,7 @@ Game* Game::newGame(){
 	game=new Game_AdvanceWars();
 	return game;
 }
-string Game_AdvanceWars::gameName()const{return Game::translate("AdvanceWars");}
+string Game_AdvanceWars::gameName()const{return"AdvanceWars";}
 
 #define ASSERT(code)\
 ok=code;\
@@ -52,6 +52,9 @@ void Game_AdvanceWars::reset(){
 	bool ok;
 	//读取配置
 	ASSERT(settings.loadFile("settings.lua"))
+	auto client=Game_AdvanceWars::currentClient();
+	client->serverIPaddress=&settings.serverAddress;
+	client->serverPort=&settings.serverPort;
 	//读取翻译文件
 	ASSERT(loadTranslationFile(settings.language+".csv"))
 	//重启场景
