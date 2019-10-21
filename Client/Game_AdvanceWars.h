@@ -8,7 +8,6 @@
 #include"Terrain.h"
 #include"Weather.h"
 #include"Campaign.h"
-#include"Senario.h"
 
 #include"Game.h"
 #include"Texture.h"
@@ -68,7 +67,6 @@ public:
 	//游戏数据区
 	BattleField battleField;//地图数据,负责存放地形和单位
 	Campaign campaign;//竞赛,除了关联地图外,还包括了玩家信息以及规则设定
-	Senario senario;//剧情
 
 	//纹理缓冲区
 	TextureCache corpsTextures;//兵种纹理(数量为兵种数*势力数)

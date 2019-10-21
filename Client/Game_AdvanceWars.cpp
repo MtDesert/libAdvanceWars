@@ -117,7 +117,6 @@ string Game_AdvanceWars::gotoScene_BattleField(const string &filename){
 		//设置各种属性
 		scene_BattleField->battleField=&battleField;
 		scene_BattleField->campaign=&campaign;
-		scene_BattleField->senario=&senario;
 		scene_BattleField->terrainsTextures=&terrainsTextures;
 		scene_BattleField->corpsTextures=&corpsTextures;
 	}

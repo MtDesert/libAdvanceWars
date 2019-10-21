@@ -13,8 +13,6 @@ protected:
 		DataBlock name,quote;
 	};
 	ItemBuffer *itemBuffers;
-	//渲染
-	void renderItem(const List<Commander>::iterator &itr,uint row,uint column,const Rectangle2D<float> &itemRect)const;
 public:
 	Table_CommandersData();
 	~Table_CommandersData();

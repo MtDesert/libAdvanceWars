@@ -3,7 +3,6 @@
 
 #include"BattleField.h"
 #include"Campaign.h"
-#include"Senario.h"
 
 #include"Scene_DataTable.h"
 //#include"GameMenu_String.h"
@@ -20,7 +19,6 @@ public:
 	//地图数据
 	BattleField *battleField;//这是战场,主要存地形和单位
 	Campaign *campaign;//这是比赛,主要存参赛对手信息以及行动规则
-	Senario *senario;//这是剧情,主要执行剧情脚本
 	//纹理数据
 	TextureCache *terrainsTextures;//地形纹理
 	TextureCache *corpsTextures;//兵种纹理
