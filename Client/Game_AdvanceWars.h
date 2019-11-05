@@ -12,8 +12,13 @@
 #include"Game.h"
 #include"Texture.h"
 
+//所有剧情脚本函数,需要的函数在此调用
+#define ALL_SENARIO_SCRIPTS(MACRO)\
+MACRO(say)\
+MACRO(bodySay)\
+
 /*高级战争的Game本体,负责管理场景的调度,即管理怎么从一个场景跳到另一个场景
-除此之外,还负责管理一些基础数据和纹理
+除此之外,还负责管理一些基础数据和纹理,以及脚本的调度
 */
 class Game_AdvanceWars:public Game{
 public:
@@ -24,28 +29,14 @@ public:
 	static Game_AdvanceWars* currentGame();
 	string gameName()const;
 
-	enum FileType{//加载特定数据文件用,指明文件存放的是什么数据
-		File_Corps,//兵种资料
-		File_COs,//指挥官资料
-		File_Troops,//部队资料
-		File_Terrains,//地形资料
-		File_Weathers,//天气资料
-		File_DamageCaculator,//损伤计算器
-		File_BattleField,//战场文件
-		AmountOf_FileType
-	};
-
 	//override
 	virtual void reset();
 	virtual void render()const;
 
 	//场景跳转
-	string gotoScene_FileData(FileType type,const string &filename);//选择好文件后,跳转到选择文件的场景,返回错误信息
 	string gotoScene_BattleField(const string &filename);//根据文件名跳转到对应的战场场景中,返回错误信息
 	bool gotoScene_CommanderInfo(uint index);//显示CO信息的场景
 	bool gotoScene_Settings();
-	//控制变量
-	FileType currentFileType;//当前文件类型,用于调用特定的打开方式处理文件
 
 	virtual void consumeTimeSlice();//处理文件列表场景的选择结果,并进入响应的资料显示场景
 
@@ -80,5 +71,13 @@ public:
 	void loadCorpsTextures(const TroopsList &troopsList,bool forceReload=false);//读取兵种纹理,战场地图用
 	void loadCommandersTextures(bool forceReload=false);
 	void loadTerrainsTextures(const TerrainsList &terrainsList,bool forceReload=false);
+
+	//脚本
+	lua_State *luaState;
+	void loadSenarioScript(const string &filename);//加载剧情脚本
+	void scriptInit();//执行脚本前先对环境进行初始化
+	//脚本函数注册
+#define GAME_SCRIPT_FUNCTION(name) static int name(lua_State *state);
+	ALL_SENARIO_SCRIPTS(GAME_SCRIPT_FUNCTION)
 };
 #endif

@@ -11,7 +11,7 @@ extern string errorString;
 static Scene_Main *sceneMain=nullptr;
 static Scene_BattleField *scene_BattleField=nullptr;//战场场景,用来显示战场内容
 
-Game_AdvanceWars::Game_AdvanceWars(){
+Game_AdvanceWars::Game_AdvanceWars():luaState(nullptr){
 	//战场数据源
 	battleField.corpsList=&mCorpsList;
 	battleField.troopsList=&mTroopsList;
@@ -68,32 +68,6 @@ void Game_AdvanceWars::render()const{Game::render();}
 
 Game_AdvanceWars *Game_AdvanceWars::currentGame(){
 	return dynamic_cast<Game_AdvanceWars*>(game);
-}
-
-string Game_AdvanceWars::gotoScene_FileData(FileType type,const string &filename){
-	string errStr;
-	switch(type){
-		case File_Corps:{//加载兵种数据和纹理
-			//errStr=loadCorpsList();
-			loadCorpsTextures(true);
-		}break;
-		case File_COs:{
-			//errStr=loadCommandersList();
-			loadCommandersTextures(true);
-		}break;
-		case File_Troops:{
-			//errStr=loadTroopsList();
-		}break;
-		case File_Terrains:{
-			//errStr=loadTerrainCodeList();
-		}break;
-		case File_Weathers:
-			//errMsg=loadWeathersList();
-		break;
-		default:;
-	}
-	//无错误,可以显示场景
-	return errStr;
 }
 
 #define GAME_ERRMSG(code) \
@@ -284,3 +258,24 @@ void Game_AdvanceWars::loadTerrainsTextures(const TerrainsList &mTerrainsList,bo
 		++index;*/
 	}
 }
+
+void Game_AdvanceWars::loadSenarioScript(const string &filename){
+	scriptInit();//初始化
+	auto ok=luaL_loadfile(luaState,filename.data());
+	if(ok==LUA_OK){
+		showDialogMessage("OK");
+	}else{
+		showDialogMessage("error");
+	}
+}
+void Game_AdvanceWars::scriptInit(){
+	if(luaState)return;
+	//开始初始化,注册所有可能要用的函数
+	luaState=luaL_newstate();
+#define REGISTER_FUNCTION(name) lua_register(luaState,#name,name);
+	ALL_SENARIO_SCRIPTS(REGISTER_FUNCTION)
+#undef REGISTER_FUNCTION
+}
+//脚本函数
+int Game_AdvanceWars::say(lua_State *state){return 0;}
+int Game_AdvanceWars::bodySay(lua_State *state){return 0;}
