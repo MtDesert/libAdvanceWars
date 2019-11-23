@@ -11,6 +11,7 @@
 
 #include"Game.h"
 #include"Texture.h"
+#include"LuaState.h"
 
 //所有剧情脚本函数,需要的函数在此调用
 #define ALL_SENARIO_SCRIPTS(MACRO)\
@@ -31,14 +32,10 @@ public:
 
 	//override
 	virtual void reset();
-	virtual void render()const;
 
 	//场景跳转
 	string gotoScene_BattleField(const string &filename);//根据文件名跳转到对应的战场场景中,返回错误信息
 	bool gotoScene_CommanderInfo(uint index);//显示CO信息的场景
-	bool gotoScene_Settings();
-
-	virtual void consumeTimeSlice();//处理文件列表场景的选择结果,并进入响应的资料显示场景
 
 	//资料数据区
 	Settings settings;//设置数据,游戏应该先读入设置数据
@@ -73,9 +70,9 @@ public:
 	void loadTerrainsTextures(const TerrainsList &terrainsList,bool forceReload=false);
 
 	//脚本
-	lua_State *luaState;
-	void loadSenarioScript(const string &filename);//加载剧情脚本
+	LuaState *senarioScript;//剧情脚本
 	void scriptInit();//执行脚本前先对环境进行初始化
+	void loadSenarioScript(const string &filename);//加载剧情脚本
 	//脚本函数注册
 #define GAME_SCRIPT_FUNCTION(name) static int name(lua_State *state);
 	ALL_SENARIO_SCRIPTS(GAME_SCRIPT_FUNCTION)

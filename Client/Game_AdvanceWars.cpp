@@ -5,13 +5,34 @@
 
 #include"Scene_Main.h"
 #include"Scene_BattleField.h"
+#include"Layer_Conversation.h"
 
-extern string errorString;
 //场景
-static Scene_Main *sceneMain=nullptr;
-static Scene_BattleField *scene_BattleField=nullptr;//战场场景,用来显示战场内容
+#define ALL_SCENES(MACRO)\
+MACRO(Main)\
+MACRO(BattleField)
+//图层
+#define ALL_LAYERS(MACRO)\
+MACRO(Conversation)
 
-Game_AdvanceWars::Game_AdvanceWars():luaState(nullptr){
+#define STATIC_SCENES(name) static Scene_##name *scene##name=nullptr;
+#define STATIC_LAYERS(name) static Layer_##name *layer##name=nullptr;
+ALL_SCENES(STATIC_SCENES)
+ALL_LAYERS(STATIC_LAYERS)
+
+#define GOTO_SCENE(name)\
+if(!scene##name){\
+	scene##name=new Scene_##name();\
+	gotoScene(scene##name);\
+}
+
+#define SHOW_LAYER(name)\
+if(!layer##name){\
+	layer##name=new Layer_##name();\
+	Game_AdvanceWars::currentGame()->addSubObject(layer##name);\
+}
+
+Game_AdvanceWars::Game_AdvanceWars():senarioScript(nullptr){
 	//战场数据源
 	battleField.corpsList=&mCorpsList;
 	battleField.troopsList=&mTroopsList;
@@ -22,6 +43,8 @@ Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
 	removeSubObject(sceneMain);
 	delete sceneMain;
+	//删除脚本
+	if(senarioScript)delete senarioScript;
 	//清除数据
 	mCorpsList.clear();
 	mCommandersList.clear();
@@ -41,30 +64,18 @@ Game* Game::newGame(){
 }
 string Game_AdvanceWars::gameName()const{return"AdvanceWars";}
 
-#define ASSERT(code)\
-ok=code;\
-if(!ok){\
-printf("%s\n",errorString.data());\
-return;\
-}
-
 void Game_AdvanceWars::reset(){
-	bool ok;
 	//读取配置
-	ASSERT(settings.loadFile("settings.lua"))
+	settings.loadFile("settings.lua",showDialogMessage);
 	auto client=Game_AdvanceWars::currentClient();
 	client->serverIPaddress=&settings.serverAddress;
 	client->serverPort=&settings.serverPort;
 	//读取翻译文件
-	ASSERT(loadTranslationFile(settings.language+".csv"))
+	loadTranslationFile(settings.language+".csv");
 	//重启场景
-	if(!sceneMain){
-		sceneMain=new Scene_Main();
-		addSubObject(sceneMain);
-	}
+	GOTO_SCENE(Main)
 	sceneMain->reset();
 }
-void Game_AdvanceWars::render()const{Game::render();}
 
 Game_AdvanceWars *Game_AdvanceWars::currentGame(){
 	return dynamic_cast<Game_AdvanceWars*>(game);
@@ -85,14 +96,14 @@ string Game_AdvanceWars::gotoScene_BattleField(const string &filename){
 	loadCorpsTextures(mTroopsList);
 	loadTerrainsTextures(mTerrainsList);
 	//可以加载地图了
-	if(!scene_BattleField){
-		scene_BattleField=new Scene_BattleField();
-		subObjects.push_front(scene_BattleField);
+	if(!sceneBattleField){
+		sceneBattleField=new Scene_BattleField();
+		subObjects.push_front(sceneBattleField);
 		//设置各种属性
-		scene_BattleField->battleField=&battleField;
-		scene_BattleField->campaign=&campaign;
-		scene_BattleField->terrainsTextures=&terrainsTextures;
-		scene_BattleField->corpsTextures=&corpsTextures;
+		sceneBattleField->battleField=&battleField;
+		sceneBattleField->campaign=&campaign;
+		sceneBattleField->terrainsTextures=&terrainsTextures;
+		sceneBattleField->corpsTextures=&corpsTextures;
 	}
 	return battleField.loadMap_CSV(filename);
 }
@@ -100,48 +111,6 @@ bool Game_AdvanceWars::gotoScene_CommanderInfo(uint index){
 	/*scene_CommanderInfo.setCoInfo(index);
 	subObjects.push_front(&scene_CommanderInfo);*/
 	return true;
-}
-bool Game_AdvanceWars::gotoScene_Settings(){
-	return true;
-}
-
-void Game_AdvanceWars::consumeTimeSlice(){
-	//处理场景事件
-	/*auto scene=subObjects.front();
-	if(scene==&scene_FileList){//处理文件打开的过程
-		if(scene_FileList.gameTable_Dir.menuStatus==GameMenuStatus::Confirm){
-			if(scene_FileList.openFilename.length()){//选定了文件而非目录
-				scene_FileList.gameTable_Dir.menuStatus=GameMenuStatus::Selecting;
-				//读取文件过程有可能出错,我们需要得到错误信息并告诉玩家
-				const char* errMsg=nullptr;
-				if(currentFileType==File_BattleField){
-					errMsg=gotoScene_BattleField(scene_FileList.openFilename);
-				}else{
-					errMsg=gotoScene_FileData(currentFileType,scene_FileList.openFilename);
-				}
-				//处理可能的错误情况
-				if(errMsg){
-					//弹出错误提示窗口
-				}
-			}
-		}else if(scene_FileList.gameTable_Dir.menuStatus==GameMenuStatus::Cancel){
-			scene_FileList.openFilename.clear();
-			scene_FileList.reset();
-			removeSubObject(&scene_FileList);
-		}
-	}else if(scene==&scene_BattleField){
-		if(scene_BattleField.color.alpha==0){//debug
-			scene_BattleField.color.alpha=255;
-			removeSubObject(&scene_BattleField);
-		}
-	}else if(scene==&scene_DataTable){
-		switch(scene_DataTable.tableCorpData.menuStatus){
-			case GameMenu::Confirm:case GameMenu::Cancel:
-				removeSubObject(scene);
-			break;
-			default:;
-		}
-	}*/
 }
 
 //数据表加载过程
@@ -259,23 +228,35 @@ void Game_AdvanceWars::loadTerrainsTextures(const TerrainsList &mTerrainsList,bo
 	}
 }
 
-void Game_AdvanceWars::loadSenarioScript(const string &filename){
-	scriptInit();//初始化
-	auto ok=luaL_loadfile(luaState,filename.data());
-	if(ok==LUA_OK){
-		showDialogMessage("OK");
-	}else{
-		showDialogMessage("error");
-	}
-}
 void Game_AdvanceWars::scriptInit(){
-	if(luaState)return;
+	if(senarioScript)return;
 	//开始初始化,注册所有可能要用的函数
-	luaState=luaL_newstate();
-#define REGISTER_FUNCTION(name) lua_register(luaState,#name,name);
+	senarioScript=new LuaState();
+	senarioScript->whenError=showDialogMessage;
+#define REGISTER_FUNCTION(name) senarioScript->registerFunction(#name,name);
 	ALL_SENARIO_SCRIPTS(REGISTER_FUNCTION)
 #undef REGISTER_FUNCTION
 }
+void Game_AdvanceWars::loadSenarioScript(const string &filename){
+	//初始化脚本环境,并载入脚本
+	scriptInit();
+	if(!senarioScript->loadFile(filename))return;
+	//移除主场景,准备开始
+	clearAllScenes();
+	senarioScript->protectCall();
+}
 //脚本函数
-int Game_AdvanceWars::say(lua_State *state){return 0;}
-int Game_AdvanceWars::bodySay(lua_State *state){return 0;}
+int Game_AdvanceWars::say(lua_State *state){
+	if(lua_isstring(state,1)){
+		SHOW_LAYER(Conversation)
+		layerConversation->setDialogText(lua_tostring(state,1));
+	}
+	return 0;
+}
+int Game_AdvanceWars::bodySay(lua_State *state){
+	if(lua_isstring(state,1) && lua_isstring(state,2)){
+		printf("body: %s\n",lua_tostring(state,1));
+		printf("say: %s\n",lua_tostring(state,2));
+	}
+	return 0;
+}

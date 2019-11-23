@@ -31,7 +31,6 @@ public:
 	virtual void renderX()const;//画战场
 	virtual Point2D<float> sizeF()const;//根据地图规格来判断尺寸
 protected:
-	virtual void consumeTimeSlice();//处理菜单操作
 	//渲染
 	void renderTerrainInfo()const;//渲染地形信息
 	void renderUnitInfo()const;//渲染兵种信息

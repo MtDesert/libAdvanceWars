@@ -36,7 +36,7 @@ public:
 
 	//保存/加载设置
 	bool saveFile(const string &filename)const;
-	bool loadFile(const string &filename);
+	bool loadFile(const string &filename,void (*whenError)(const string &errStr));
 };
 
 #endif

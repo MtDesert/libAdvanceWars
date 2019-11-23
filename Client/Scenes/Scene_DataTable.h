@@ -16,7 +16,6 @@ public:
 	Scene_DataTable();
 	~Scene_DataTable();
 
-	void setTableType(int type);
 	//标题
 	GameString gameString_Title;
 	//视图,仅仅用于显示
@@ -25,8 +24,5 @@ public:
 	Table_TroopsData tableTroopsData;
 	Table_TerrainsData tableTerrainsData;
 	Table_WeathersData tableWeathersData;*/
-protected:
-	virtual void consumeTimeSlice();
 };
-
 #endif

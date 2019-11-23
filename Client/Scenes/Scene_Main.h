@@ -59,8 +59,12 @@ MACRO(DesignCommanders)
 
 //主场景,显示一下简短信息,然后播放一下动画,然后进入主界面菜单显示
 class Scene_Main:public GameScene{
-	int status;//实时控制状态
-	int countDown;//倒计时
+public:
+	Scene_Main();
+	~Scene_Main();
+
+	virtual void reset();
+	virtual void addTimeSlice(uint usec);
 
 	//菜单项
 #define ENUM(name) name,
@@ -99,23 +103,11 @@ class Scene_Main:public GameScene{
 
 //菜单声明
 #define MENU_DECLARE(name)\
-private:\
 	GameMenu_String menu##name;/*菜单对象*/\
-public:\
-	void menu##name##Confirm();/*菜单确认函数*/\
-	void menu##name##Cancel();/*菜单取消函数*/
+	void menu##name##Confirm();/*菜单确认函数*/
 
 	MENU_DECLARE(Main)//主菜单
 	MAIN_MENU(MENU_DECLARE)//所有子菜单
 #undef MENU_DECLARE
-
-	GameMenu_String *currentMenu;//指向当前操作的菜单
-protected:
-	void consumeTimeSlice();
-public:
-	Scene_Main();
-	~Scene_Main();
-
-	virtual void reset();
 };
 #endif

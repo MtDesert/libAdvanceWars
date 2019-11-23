@@ -142,8 +142,7 @@ void Scene_BattleField::renderX()const{
 	}
 	auto top=fieldRect.p1.y,left=fieldRect.p0.x;
 	//网格绘制设定
-	sr.hasFill=false;
-	sr.edgeColor=ColorRGBA(0,255,0,128);
+	sr.edgeColor=&ColorRGBA::Black;
 	//画地形图块
 	if(!terrainsTextures)return;
 	Terrain terrain;
@@ -260,55 +259,6 @@ Point2D<float> Scene_BattleField::sizeF()const{
 		ret.y=battleField->getHeight()*latticeSize;
 	}
 	return ret;
-}
-void Scene_BattleField::consumeTimeSlice(){
-	//处理兵种菜单操作
-	/*switch(corpMenu.menuStatus){
-		case GameMenu::Confirm://菜单确认,则执行菜单命令
-			corpMenu.menuStatus=GameMenu::Selecting;
-			campaign->executeMenuSelect(corpMenu.selectingItem);
-		break;
-		case GameMenu::Cancel://取消菜单操作
-			corpMenu.menuStatus=GameMenu::Selecting;
-			campaign->corpMenu.clear();
-		break;
-		default:;
-	}
-	if(!campaign->corpMenu.size()){//实时更新菜单缓存
-		corpMenu.clearAllItems();
-	}
-	//显示生产菜单
-	auto &scene_DataTable=(Game_AdvanceWars::currentGame()->scene_DataTable);
-	if(campaign->produceMenu.size() && producableCorpsList.size()==0){
-		scene_DataTable.setTableType(Game_AdvanceWars::File_Corps);
-		scene_DataTable.gameString_Title.setString("生产单位");
-		scene_DataTable.tableCorpData.source=&producableCorpsList;
-		scene_DataTable.tableCorpData.textures=corpsTextures;
-		scene_DataTable.tableCorpData.troopID=campaign->cursorTerrain.status;
-		//添加菜单项
-		int idx=0;
-		for(auto &corp:*battleField->corpsList){
-			if(campaign->produceMenu.contain(idx)){//根据可生产的兵种来添加
-				producableCorpsList.push_back(corp);
-			}
-			++idx;
-		}
-		Game::game->subObjects.push_front(&scene_DataTable);//场景切换
-	}
-	//处理生产指令
-	switch(scene_DataTable.tableCorpData.menuStatus){
-		case GameMenu::Confirm:
-			//在地图上创建单位
-			campaign->executeMenuSelect(scene_DataTable.tableCorpData.selectingItem);
-		//break;执行和取消一样的清理操作
-		case GameMenu::Cancel://取消生产单位
-			scene_DataTable.tableCorpData.selectingItem=0;
-			scene_DataTable.tableCorpData.renderItemFrom=0;
-			scene_DataTable.tableCorpData.menuStatus=GameMenu::Selecting;
-			producableCorpsList.clear();
-		break;
-		default:;
-	}*/
 }
 
 //地形信息显示

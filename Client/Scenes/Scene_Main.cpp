@@ -1,17 +1,21 @@
 #include"Scene_Main.h"
 #include"Game_AdvanceWars.h"
 
+static int status=0;//实时控制状态
+static uint countDown=0;//倒计时
 //流程控制
 enum Status{
-	FadeIn,Delay,FadeOut,
+	FadeIn,
+	Delay,
+	FadeOut,
 	ShowMainMenu,
 	StatusOver
 };
 
-static int sliceValue[StatusOver]={
-	1000000,
-	2000000,
-	1000000,
+static uint sliceValue[StatusOver]={
+	1000,
+	2000,
+	1000,
 	0
 };
 
@@ -34,24 +38,30 @@ menu##menuName.addString(#name,true);
 MENU(MENU##_ITEM)\
 menu##name.itemWidth=200;\
 menu##name.updateRenderParameters();\
-menu##name.onConfirm=::menu##name##Confirm;\
-menu##name.onCancel=::menu##name##Cancel;\
-menu##name.updateRenderParameters();
+menu##name.onConfirm=::menuConfirm;\
+menu##name.onCancel=::menuCancel;
 
 //静态变量和函数
 static Scene_Main *sceneMain=nullptr;
-#define STATIC_CALL_MEMBER(functionName)\
-static void functionName(){sceneMain->functionName();}\
+//事件函数
+#define CASE(name) if(menu==&sceneMain->menu##name){sceneMain->menu##name##Confirm();}else
+static void menuConfirm(GameMenu *menu){
+	CASE(Main)
+	MAIN_MENU(CASE){}
+}
+#undef CASE
 
-#define SCENEMAIN_CONFIRM_CANCEL(name)\
-STATIC_CALL_MEMBER(menu##name##Confirm)\
-STATIC_CALL_MEMBER(menu##name##Cancel)
+static void menuCancel(GameMenu *menu){
+	if(menu==&sceneMain->menuMain){
+		sceneMain->reset();
+	}else{
+		sceneMain->removeSubObject(menu);
+		sceneMain->addSubObject(&sceneMain->menuMain);
+	}
+}
 
-//静态函数调用成员函数
-SCENEMAIN_CONFIRM_CANCEL(Main)
-MAIN_MENU(SCENEMAIN_CONFIRM_CANCEL)
-
-Scene_Main::Scene_Main():status(0),countDown(0){
+Scene_Main::Scene_Main(){
+	printf("sizeof==%lu\n",sizeof(Scene_Main));
 	//主菜单
 	textTitle.setString("AdvanceWars_LifeTime",true);
 	addSubObject(&textTitle);//渲染
@@ -65,22 +75,18 @@ Scene_Main::Scene_Main():status(0),countDown(0){
 	MAKE_MENU(MILITARY_RECORD_MENU,MilitaryRecord)
 	MAKE_MENU(GAME_SETTING_MENU,GameSetting)
 	MAKE_MENU(ABOUT_MENU,About)
-
-	//菜单事件
 	sceneMain=this;
 }
-Scene_Main::~Scene_Main(){
-	if(sceneMain)sceneMain=nullptr;
-}
+Scene_Main::~Scene_Main(){if(sceneMain)sceneMain=nullptr;}
 
 void Scene_Main::reset(){
+	removeSubObject(&menuMain);
+	addSubObject(&textTitle);
 	status=FadeIn;
 	countDown=sliceValue[FadeIn];//以完全透明出场
 }
-
-void Scene_Main::consumeTimeSlice(){
-	countDown-=minTimeSlice;
-	countDown=max(0,countDown);//保证countDown>=0
+void Scene_Main::addTimeSlice(uint usec){
+	countDown = countDown>usec ? countDown-usec : 0;
 	//实时执行的代码
 	switch(status){
 		case FadeIn://1秒显示内容
@@ -92,7 +98,6 @@ void Scene_Main::consumeTimeSlice(){
 		break;
 		case ShowMainMenu:
 			removeSubObject(&textTitle);//移除文本标题
-			//我们可以在这里播个碉堡的音乐
 			addSubObject(&menuMain);//添加主菜单
 		break;
 		default:;
@@ -114,26 +119,15 @@ void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
 	}
 }
 
-//子菜单取消后,显示主菜单
-#define SCENEMAIN_SUBMENU_CANCEL(name)\
-void Scene_Main::menu##name##Cancel(){\
-	removeSubObject(&menu##name);\
-	addSubObject(&menuMain);\
-}
-MAIN_MENU(SCENEMAIN_SUBMENU_CANCEL)
-
 //单机-剧情模式选择剧本后
 static void whenSingleSenarioMode(const string &filename){
-	auto game=Game_AdvanceWars::currentGame();
-	//清理部分内容
-	game->loadSenarioScript(filename);
+	Game_AdvanceWars::currentGame()->loadSenarioScript(filename);
 }
 //对战模式选择地图后
 static void whenSingleVersusSelectedFile(const string &filename){
 	Game_AdvanceWars::currentGame()->gotoScene_BattleField(filename);
 }
 
-void Scene_Main::menuMainCancel(){reset();}
 void Scene_Main::menuSingleModeConfirm(){
 	auto game=Game_AdvanceWars::currentGame();
 	switch(menuSingleMode.selectingItemIndex){
