@@ -7,16 +7,13 @@
 #include"Troop.h"
 #include"Terrain.h"
 #include"Weather.h"
-#include"Campaign.h"
+#include"BattleField.h"
+#include"ScenarioScript.h"
 
 #include"Game.h"
-#include"Texture.h"
-#include"LuaState.h"
-
-//所有剧情脚本函数,需要的函数在此调用
-#define ALL_SENARIO_SCRIPTS(MACRO)\
-MACRO(say)\
-MACRO(bodySay)\
+#include"Scene_Main.h"
+#include"Scene_BattleField.h"
+#include"Layer_Conversation.h"
 
 /*高级战争的Game本体,负责管理场景的调度,即管理怎么从一个场景跳到另一个场景
 除此之外,还负责管理一些基础数据和纹理,以及脚本的调度
@@ -34,8 +31,8 @@ public:
 	virtual void reset();
 
 	//场景跳转
-	string gotoScene_BattleField(const string &filename);//根据文件名跳转到对应的战场场景中,返回错误信息
-	bool gotoScene_CommanderInfo(uint index);//显示CO信息的场景
+	Scene_Main* gotoScene_Main(bool reset=false);
+	Scene_BattleField* gotoScene_BattleField(bool reset=false);
 
 	//资料数据区
 	Settings settings;//设置数据,游戏应该先读入设置数据
@@ -54,7 +51,6 @@ public:
 
 	//游戏数据区
 	BattleField battleField;//地图数据,负责存放地形和单位
-	Campaign campaign;//竞赛,除了关联地图外,还包括了玩家信息以及规则设定
 
 	//纹理缓冲区
 	TextureCache corpsTextures;//兵种纹理(数量为兵种数*势力数)
@@ -68,13 +64,8 @@ public:
 	void loadCorpsTextures(const TroopsList &troopsList,bool forceReload=false);//读取兵种纹理,战场地图用
 	void loadCommandersTextures(bool forceReload=false);
 	void loadTerrainsTextures(const TerrainsList &terrainsList,bool forceReload=false);
-
-	//脚本
-	LuaState *senarioScript;//剧情脚本
-	void scriptInit();//执行脚本前先对环境进行初始化
-	void loadSenarioScript(const string &filename);//加载剧情脚本
-	//脚本函数注册
-#define GAME_SCRIPT_FUNCTION(name) static int name(lua_State *state);
-	ALL_SENARIO_SCRIPTS(GAME_SCRIPT_FUNCTION)
+	//剧情脚本
+	GAME_USE_CONVERSATION(Layer_Conversation)
+	GAME_USE_SCRIPT(ScenarioScript)
 };
 #endif

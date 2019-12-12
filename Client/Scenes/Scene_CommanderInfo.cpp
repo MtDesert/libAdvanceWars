@@ -76,13 +76,3 @@ void Scene_CommanderInfo::setCoInfo(uint index){
 		++idx;//继续寻找
 	}
 }
-
-void Scene_CommanderInfo::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
-	if(!pressed && source){
-		if(key==Keyboard::Key_Left){
-			if(coIndex>0)setCoInfo(coIndex-1);
-		}else if(key==Keyboard::Key_Right){
-			if(coIndex+1<source->size())setCoInfo(coIndex+1);
-		}
-	}
-}

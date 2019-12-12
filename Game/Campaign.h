@@ -137,5 +137,4 @@ private:
 	CAMPAIGN_CORPMENU(CAMPAIGN_FUNC)
 	#undef CAMPAIGN_FUNC
 };
-
-#endif // CAMPAIGN_H
+#endif

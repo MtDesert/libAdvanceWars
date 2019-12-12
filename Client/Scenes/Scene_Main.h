@@ -63,9 +63,6 @@ public:
 	Scene_Main();
 	~Scene_Main();
 
-	virtual void reset();
-	virtual void addTimeSlice(uint usec);
-
 	//菜单项
 #define ENUM(name) name,
 	enum Enum_MainMenu{
@@ -98,8 +95,6 @@ public:
 		AmountOf_About
 	};
 #undef ENUM
-	//控件
-	GameString textTitle;//文本标题
 
 //菜单声明
 #define MENU_DECLARE(name)\

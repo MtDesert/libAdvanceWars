@@ -473,7 +473,7 @@ bool Campaign::showMenuItem_Load(){
 	if(cursorUnit){
 		if(selectTeam!=cursorTeam)return false;//同一支部队的才能装载？
 		if(selectUnit==cursorUnit)return false;//不能自己与自己结合
-		size_t amount=luaFunc_loadableAmount(cursorCorp->name,selectCorp->name);
+		SizeType amount=luaFunc_loadableAmount(cursorCorp->name,selectCorp->name);
 		if(amount>0 && cursorUnit->loadedUnits.size()<amount){//如果可装载,并且有空位
 			corpMenu.push_back(Menu_Load);
 			return true;

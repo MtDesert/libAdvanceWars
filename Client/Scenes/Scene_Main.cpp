@@ -1,24 +1,6 @@
 #include"Scene_Main.h"
 #include"Game_AdvanceWars.h"
 
-static int status=0;//实时控制状态
-static uint countDown=0;//倒计时
-//流程控制
-enum Status{
-	FadeIn,
-	Delay,
-	FadeOut,
-	ShowMainMenu,
-	StatusOver
-};
-
-static uint sliceValue[StatusOver]={
-	1000,
-	2000,
-	1000,
-	0
-};
-
 //插入菜单项
 #define INSERT_ITEM(name,menuName)\
 menu##menuName.addString(#name,true);
@@ -61,10 +43,6 @@ static void menuCancel(GameMenu *menu){
 }
 
 Scene_Main::Scene_Main(){
-	printf("sizeof==%lu\n",sizeof(Scene_Main));
-	//主菜单
-	textTitle.setString("AdvanceWars_LifeTime",true);
-	addSubObject(&textTitle);//渲染
 	//生成菜单项
 	menuMain.renderItemAmount=7;
 	MAKE_MENU(MAIN_MENU,Main)
@@ -75,39 +53,10 @@ Scene_Main::Scene_Main(){
 	MAKE_MENU(MILITARY_RECORD_MENU,MilitaryRecord)
 	MAKE_MENU(GAME_SETTING_MENU,GameSetting)
 	MAKE_MENU(ABOUT_MENU,About)
+	addSubObject(&menuMain);
 	sceneMain=this;
 }
 Scene_Main::~Scene_Main(){if(sceneMain)sceneMain=nullptr;}
-
-void Scene_Main::reset(){
-	removeSubObject(&menuMain);
-	addSubObject(&textTitle);
-	status=FadeIn;
-	countDown=sliceValue[FadeIn];//以完全透明出场
-}
-void Scene_Main::addTimeSlice(uint usec){
-	countDown = countDown>usec ? countDown-usec : 0;
-	//实时执行的代码
-	switch(status){
-		case FadeIn://1秒显示内容
-			textTitle.color.alpha=(sliceValue[status]-countDown)*255/sliceValue[status];
-		break;
-		case Delay:break;//2秒停顿
-		case FadeOut://1秒消失
-			textTitle.color.alpha=countDown*255/sliceValue[status];
-		break;
-		case ShowMainMenu:
-			removeSubObject(&textTitle);//移除文本标题
-			addSubObject(&menuMain);//添加主菜单
-		break;
-		default:;
-	}
-	//状态切换
-	if(countDown<=0 && status < StatusOver){
-		++status;
-		countDown=(status >= StatusOver?0:sliceValue[status]);
-	}
-}
 
 //事件函数
 void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
@@ -121,25 +70,30 @@ void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
 
 //单机-剧情模式选择剧本后
 static void whenSingleSenarioMode(const string &filename){
-	Game_AdvanceWars::currentGame()->loadSenarioScript(filename);
+	auto game=Game_AdvanceWars::currentGame();
+	auto script=game->useScenarioScript();
+	if(script->executeSenarioScript(filename)){//脚本加载没有问题后,再移除场景
+		game->clearAllScenes();//移除场景
+		game->addSubObject(game->useLayerConversation());//添加对话框
+	}
 }
 //对战模式选择地图后
 static void whenSingleVersusSelectedFile(const string &filename){
-	Game_AdvanceWars::currentGame()->gotoScene_BattleField(filename);
+	//Game_AdvanceWars::currentGame()->gotoScene_BattleField(filename);
 }
 
 void Scene_Main::menuSingleModeConfirm(){
 	auto game=Game_AdvanceWars::currentGame();
 	switch(menuSingleMode.selectingItemIndex){
 		case ScenarioMode:{
-			auto scene=game->showScene_FileList();
+			auto scene=game->gotoScene_FileList();
 			scene->textTitle.setString("SelectScript",true);
-			scene->changeDirectory(game->settings.senarioScriptsPath);
+			scene->changeDirectory(game->settings.scenarioScriptsPath);
 			scene->whenConfirmFile=whenSingleSenarioMode;
 		}break;
 		case MissionMode:break;
 		case VersusMode:{//打开文件菜单
-			auto scene=game->showScene_FileList();
+			auto scene=game->gotoScene_FileList();
 			scene->textTitle.setString("SelectMap",true);
 			scene->changeDirectory(game->settings.mapsPath);
 			scene->whenConfirmFile=whenSingleVersusSelectedFile;
