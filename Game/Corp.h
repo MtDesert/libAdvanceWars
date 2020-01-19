@@ -39,7 +39,7 @@ struct Corp{
 /*兵种数据列表,提供加载文件的功能*/
 class CorpsList:public DataList<Corp>{
 public:
-	string loadFile_lua(const string &filename);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
+	bool loadFile_lua(const string &filename,WhenErrorString whenError);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
 };
 
 #endif

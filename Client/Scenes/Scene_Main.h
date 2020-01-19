@@ -16,6 +16,7 @@ MACRO(About)
 
 //单机模式菜单
 #define SINGLE_MODE_MENU(MACRO)\
+MACRO(MapView)\
 MACRO(ScenarioMode)\
 MACRO(MissionMode)\
 MACRO(VersusMode)\

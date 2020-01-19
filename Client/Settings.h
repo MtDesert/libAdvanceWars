@@ -14,13 +14,13 @@ public:
 	string scenarioScriptsPath;//剧情脚本文件的路径
 	//数据文件名以及图片路径
 #define DATA_FILENAME_AND_IMAGEPATH(name)\
-	string Filename##name;\
-	string ImagesPath##name;
+	string data##name;\
+	string imagesPath##name;
 
 	DATA_FILENAME_AND_IMAGEPATH(Corps)
 	DATA_FILENAME_AND_IMAGEPATH(Troops)
 	DATA_FILENAME_AND_IMAGEPATH(Commanders)
-	DATA_FILENAME_AND_IMAGEPATH(Terrains)
+	DATA_FILENAME_AND_IMAGEPATH(TerrainCodes)
 #undef DATA_FILENAME_AND_IMAGEPATH
 
 	//设定数据

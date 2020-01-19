@@ -40,14 +40,15 @@ public:
 	//资料表及其加载过程
 #define GAME_DATA_LIST(Name) \
 	Name##List m##Name##List;\
-	string load##Name##List(bool forceReload=false);
 
 	GAME_DATA_LIST(Corps)//兵种数据表
 	GAME_DATA_LIST(Commanders)//指挥官资料表
 	GAME_DATA_LIST(Troops)//部队表
-	GAME_DATA_LIST(Terrains)//地形码表
+	GAME_DATA_LIST(TerrainCodes)//地形码表
 	GAME_DATA_LIST(Weathers)//天气表
 #undef GAME_DATA_LIST
+	bool loadAllConfigData();//加载配置数据,这些数据在游戏过程中不应该被改变
+	bool loadAllTextures();//加载所有要用到的纹理
 
 	//游戏数据区
 	BattleField battleField;//地图数据,负责存放地形和单位
@@ -56,14 +57,15 @@ public:
 	TextureCache corpsTextures;//兵种纹理(数量为兵种数*势力数)
 	TextureCache commandersHeadTextures;//指挥官头像纹理
 	TextureCache commandersBodyTextures;//指挥官全身纹理
-	TextureCache terrainsTextures;//地形纹理
+	TextureCache troopsTextures;//部队标记纹理
+	Array<Array<Texture> > terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
 	void clearAllTextureCache();
 
 	//纹理加载过程
 	void loadCorpsTextures(bool forceReload=false);//读取兵种纹理,主要用于生成资料表
 	void loadCorpsTextures(const TroopsList &troopsList,bool forceReload=false);//读取兵种纹理,战场地图用
 	void loadCommandersTextures(bool forceReload=false);
-	void loadTerrainsTextures(const TerrainsList &terrainsList,bool forceReload=false);
+	void loadTerrainsTextures(bool forceReload=false);
 	//剧情脚本
 	GAME_USE_CONVERSATION(Layer_Conversation)
 	GAME_USE_SCRIPT(ScenarioScript)

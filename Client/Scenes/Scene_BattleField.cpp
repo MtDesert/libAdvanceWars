@@ -1,12 +1,14 @@
 #include"Scene_BattleField.h"
 #include"Game_AdvanceWars.h"
-#include"GameCamera.h"
 
 #include"extern.h"
 
 static int latticeSize=32;//格子大小
+static GameSprite trnSprite;//地形渲染用的精灵
 
-Scene_BattleField::Scene_BattleField():terrainsTextures(nullptr),corpsTextures(nullptr){}
+Scene_BattleField::Scene_BattleField():battleField(nullptr),terrainsTexturesArray(nullptr),corpsTextures(nullptr){
+	trnSprite.anchorPoint.y=0;
+}
 Scene_BattleField::~Scene_BattleField(){}
 
 bool Scene_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
@@ -79,7 +81,8 @@ bool Scene_BattleField::mouseMove(int x,int y){
 }
 
 void Scene_BattleField::renderX()const{
-	//网格绘制设定
+	renderTerrains();
+	renderGrid();//网格绘制
 	//画地形图块
 	//画移动范围
 	//画移动路径
@@ -89,12 +92,44 @@ void Scene_BattleField::renderX()const{
 	//看情况显示兵种命令
 }
 Point2D<float> Scene_BattleField::sizeF()const{
-	if(battleField){
-		point2D.setXY(battleField->getWidth()*latticeSize,battleField->getHeight()*latticeSize);
-	}else{
-		point2D.setXY(0,0);
-	}
+	point2D.setXY(
+		battleField ? battleField->getWidth()*latticeSize : 0,
+		battleField ? battleField->getHeight()*latticeSize : 0);
 	return point2D;
 }
 
+void Scene_BattleField::renderTerrains()const{
+	rect=rectF();
+	auto w=battleField->getWidth(),h=battleField->getHeight();
+	Terrain terrain;
+	Point2D<float> p;
+	for(decltype(h) y=0;y<h;++y){
+		for(decltype(w) x=0;x<w;++x){
+			//取地形,并取纹理
+			battleField->getTerrain(x,y,terrain);
+			auto arr=terrainsTexturesArray->data(terrain.terrainType);
+			if(arr){
+				auto tex=arr->data(terrain.status);
+				if(tex){
+					p.setXY(rect.p0.x + x*latticeSize,rect.p0.y + y*latticeSize);
+					tex->draw(p);
+				}
+			}
+		}
+	}
+}
+void Scene_BattleField::renderGrid()const{
+	rect=rectF();
+	Rectangle2D<float> grid;
+	//开始渲染每一个方格
+	auto w=battleField->getWidth(),h=battleField->getHeight();
+	for(decltype(h) y=0;y<h;++y){
+		for(decltype(w) x=0;x<w;++x){
+			//计算grid的参数,并渲染
+			grid.p0.setXY(rect.p0.x + x*latticeSize,rect.p0.y + y*latticeSize);
+			grid.p1.setXY(grid.p0.x +latticeSize-1,grid.p0.y +latticeSize-1);
+			shapeRenderer.drawRectangle(grid,&ColorRGBA::White,nullptr);
+		}
+	}
+}
 void Scene_BattleField::cursorSelect(){}

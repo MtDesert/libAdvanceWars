@@ -19,7 +19,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 
 	//读取地图
 	int loadMap(const string &filename);
-	string loadMap_CSV(const string &filename);
+	bool loadMap_CSV(const string &filename);
 	//保存地图
 	int saveMap_CSV(const string &filename)const;
 	void saveMap_CSV(FILE *file)const;
@@ -30,7 +30,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	//外部数据表
 	CorpsList *corpsList;//兵种码表,解读地图用
 	TroopsList *troopsList;//部队码表,解读地图用
-	TerrainsList *terrainsList;//地形码表,解读地图用
+	TerrainCodesList *terrainsList;//地形码表,解读地图用
 
 	//地图信息
 	string mapName;//地图名
@@ -48,10 +48,11 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	void autoAdjustTerrainsTiles();//调整所有地图块的样式
 	void autoAdjustTerrainTile(uint x,uint y);//调整x,y部分的样式,使其与周边看上去相连
 
+	WhenErrorString whenError;//报错函数
 	//地图分析,统计各个方面的数据
 	void analyse();
 	bool onlySea;//只有海
 	int captureTerrainCount;//据点数
 	Set<int> playerIndexList;//玩家索引表,依赖troopsList
 };
-#endif // BATTLEFIELD_H
+#endif

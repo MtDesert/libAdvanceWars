@@ -21,22 +21,21 @@ Game_AdvanceWars::Game_AdvanceWars(){
 	//战场数据源
 	battleField.corpsList=&mCorpsList;
 	battleField.troopsList=&mTroopsList;
-	battleField.terrainsList=&mTerrainsList;
+	battleField.terrainsList=&mTerrainCodesList;
+	battleField.whenError=whenError;
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
 	deleteSubObject(sceneMain);
+	deleteSubObject(sceneBattleField);
 	//清除数据
 	mCorpsList.clear();
 	mCommandersList.clear();
-	mTerrainsList.clear();
+	mTerrainCodesList.clear();
 	mTroopsList.clear();
 	mWeathersList.clear();
 	//清除纹理
-	corpsTextures.clearCache();
-	commandersHeadTextures.clearCache();
-	commandersBodyTextures.clearCache();
-	terrainsTextures.clearCache();
+	clearAllTextureCache();
 }
 
 Game* Game::newGame(){
@@ -48,9 +47,6 @@ Game_AdvanceWars* Game_AdvanceWars::currentGame(){
 }
 string Game_AdvanceWars::gameName()const{return"AdvanceWars";}
 
-static void gotoSceneMain(){
-	Game_AdvanceWars::currentGame()->gotoScene_Main();
-}
 void Game_AdvanceWars::reset(){
 	settings.loadFile("settings.lua");//读取配置
 	loadTranslationFile(settings.language+".csv");//读取翻译文件
@@ -58,39 +54,31 @@ void Game_AdvanceWars::reset(){
 	/*auto scene=gotoScene_Logo();
 	scene->reset();
 	scene->logoText.setString("AdvanceWars_LifeTime",true);
-	scene->whenLogoOver=gotoSceneMain;*/
-	gotoSceneMain();
+	scene->whenLogoOver=[&](){gotoScene_Main();};*/
+	gotoScene_Main();
 }
 
 GAME_GOTOSCENE_DEFINE(AdvanceWars,Main)
 GAME_GOTOSCENE_DEFINE(AdvanceWars,BattleField)
 
-//数据表加载过程
-/*#define GAME_DATA_LIST(Name) \
-string Game_AdvanceWars::load##Name##List(bool forceReload){\
-	string ret;\
-	if(forceReload){\
-		m##Name##List.clear();\
-	}\
-	if(m##Name##List.size()<=0){\
-		m##Name##List.loadFile_lua(settings.Filename##Name);\
-	}\
-	return ret;\
+#define AW_LOAD_LUA(mList,dataName) if(mList.size()==0)mList.loadFile_lua(settings.dataName,whenError);
+bool Game_AdvanceWars::loadAllConfigData(){
+	AW_LOAD_LUA(mTerrainCodesList,dataTerrainCodes)//地形表
+	AW_LOAD_LUA(mCorpsList,dataCorps)//兵种表
+	AW_LOAD_LUA(mTroopsList,dataTroops)//势力表
+	return true;
 }
-
-GAME_DATA_LIST(Corps)//兵种表
-GAME_DATA_LIST(Commanders)//指挥官资料表
-GAME_DATA_LIST(Troops)//部队表
-GAME_DATA_LIST(Terrains)//地形表
-
-#undef GAME_DATA_LIST
-*/
+bool Game_AdvanceWars::loadAllTextures(){
+	loadTerrainsTextures();
+	loadCorpsTextures(mTroopsList);
+	return false;
+}
 
 void Game_AdvanceWars::clearAllTextureCache(){
 	corpsTextures.clearCache();
 	commandersHeadTextures.clearCache();
 	commandersBodyTextures.clearCache();
-	terrainsTextures.clearCache();
+	troopsTextures.clearCache();
 }
 
 void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
@@ -108,8 +96,47 @@ void Game_AdvanceWars::loadCommandersTextures(bool forceReload){
 		commandersHeadTextures.clearCache();
 	}
 }
-void Game_AdvanceWars::loadTerrainsTextures(const TerrainsList &mTerrainsList,bool forceReload){
-	if(forceReload){
-		terrainsTextures.clearCache();
+void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
+	//未加载,重新加载
+	terrainsTexturesArray.setSize(mTerrainCodesList.size(),true);
+	int trnIndex=0;
+	for(auto &trnCode:mTerrainCodesList){
+		auto texArr=terrainsTexturesArray.data(trnIndex);
+		if(trnCode.capturable){//据点
+			texArr->setSize(mTroopsList.size(),true);
+			//开始用png调色
+			FilePNG filePng;
+			filePng.loadFile(settings.imagesPathTerrainCodes+"/"+trnCode.name+".png",whenError);
+			//开始调色
+			auto plte=filePng.findPLTE();
+			if(plte){
+				auto i=0;
+				for(auto &troop:mTroopsList){//根据部队配色表来进行调色
+					for(int i=0;i<4;++i){
+						plte->setColor(2+i,troop.colors[i]);
+					}
+					//完成配色,生成纹理
+					auto tex=texArr->data(i);
+					tex->texImage2D(filePng);
+				}
+			}
+			//调色完毕
+			filePng.memoryFree();
+		}else if(trnCode.has4direction){//有方向性的图块
+			auto amount=16;
+			char num[3];
+			texArr->setSize(amount,true);
+			for(int i=0;i<amount;++i){
+				sprintf(num,"%X",i);
+				auto tex=texArr->data(i);
+				tex->texImage2D_FilePNG(settings.imagesPathTerrainCodes+"/"+trnCode.name+"s/"+trnCode.name+"_"+num+".png");
+			}
+		}else{//其他地形
+			texArr->setSize(1,true);
+			auto tex=texArr->data(0);
+			tex->texImage2D_FilePNG(settings.imagesPathTerrainCodes+"/"+trnCode.name+".png");
+		}
+		//下一个
+		++trnIndex;
 	}
 }

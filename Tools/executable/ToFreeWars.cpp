@@ -9,7 +9,7 @@ using namespace std;
 
 CorpsList corpsList;
 TroopsList troopsList;
-TerrainsList terrainsList;
+TerrainCodesList terrainsList;
 BattleField battleField;
 AwbwCategory category;
 

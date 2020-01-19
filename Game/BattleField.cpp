@@ -1,8 +1,9 @@
-#include "BattleField.h"
+#include"BattleField.h"
+#include"define.h"
 
 #include<stdlib.h>
 
-BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(nullptr){}
+BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(nullptr),whenError(nullptr){}
 BattleField::~BattleField(){}
 
 bool BattleField::getTerrain(uint x,uint y,Terrain &terrain)const{return getValue(x,y,terrain);}
@@ -11,19 +12,21 @@ bool BattleField::setTerrain(uint x,uint y,const Terrain &terrain){return setVal
 bool BattleField::setTerrain(const Point2D<int> &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(uint x,uint y,const string &terrainName,const string &status){
 	Terrain terrain;
-	uint trnIndex=0,trpIndex=0;
+	SizeType trnIndex=0,trpIndex=0;
 	if(terrainsList->dataName(terrainName,trnIndex)){
 		terrain.terrainType=trnIndex;
-		if(!status.empty() && troopsList->dataName(status,trpIndex)){
-			terrain.status=trpIndex;
+		if(!status.empty()){
+			troopsList->dataName(status,trpIndex);
 		}
+		terrain.status=trpIndex;
+		printf("set(%u,%u,%u,%u)->%s,%s\n",x,y,terrain.terrainType,terrain.status,terrainName.data(),status.data());
 		return setTerrain(x,y,terrain);
 	}
 	return false;
 }
 bool BattleField::addUnit(uint x,uint y,const string &corpName,const string &troopName){
 	Unit unit;
-	uint crpIndex=0,trpIndex=0;
+	SizeType crpIndex=0,trpIndex=0;
 	auto corp=corpsList->dataName(corpName,crpIndex);
 	if(corp){
 		unit.corpType=crpIndex;//兵种
@@ -117,13 +120,13 @@ static void commaSeperate(char *str,char* strAddr[],int &strAddrLen){
 	strAddrLen=i;
 }
 
-string BattleField::loadMap_CSV(const string &filename){
-	if(!corpsList)return "No corps list";
-	if(!troopsList)return "No troops list";
-	if(!terrainsList)return "No terrains list";
+bool BattleField::loadMap_CSV(const string &filename){
+	ASSERT(corpsList,"No corps list")
+	ASSERT(troopsList,"No troops list")
+	ASSERT(terrainsList,"No terrains list")
 	//打开文件
 	FILE *file=fopen(filename.data(),"rb");
-	if(!file)return "File open error";
+	ASSERT_ERRNO(file)
 	//开始读取地图名和作者
 	char buffer[BUFSIZ];
 	mapName=fgets(buffer,BUFSIZ,file);
@@ -168,7 +171,7 @@ string BattleField::loadMap_CSV(const string &filename){
 	}
 	//关闭文件
 	fclose(file);
-	return "";
+	return true;
 }
 
 int BattleField::saveMap_CSV(const string &filename)const{
