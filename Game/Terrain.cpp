@@ -41,10 +41,7 @@ bool TerrainCodesList::loadFile_lua(const string &filename,WhenErrorString callb
 }
 bool TerrainCodesList::canAdjustTile(int terrainType)const{
 	auto code=this->data(terrainType);
-	if(code){
-		return code->has4direction;
-	}
-	return false;
+	return code ? code->has4direction : false;
 }
 bool TerrainCodesList::canAdjustTile(int terrainTypeA,int terrainTypeB)const{
 	auto codeA=this->data(terrainTypeA);

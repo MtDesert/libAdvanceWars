@@ -15,7 +15,6 @@ public:
 	virtual void render()const;
 	//数据源
 	List<Unit> *source;
-	TextureCache *textures;
 protected:
 	virtual DataBlock headerBlock(uint col)const;
 };

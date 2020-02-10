@@ -15,7 +15,6 @@ public:
 	virtual void render()const;
 	//数据源
 	CorpsList *source;
-	TextureCache *textures;
 	int troopID;//兵种势力ID,用于让图标有特定的颜色
 protected:
 	virtual DataBlock headerBlock(uint col)const;

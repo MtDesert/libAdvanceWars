@@ -12,7 +12,7 @@ static GameString gameString;//绘制文字用
 	"兵种名","兵种类型","造价","视野","移动力","移动类型","燃料"
 };*/
 
-Table_CorpsData::Table_CorpsData():source(nullptr),textures(nullptr),troopID(0){
+Table_CorpsData::Table_CorpsData():source(nullptr),troopID(0){
 	renderItemAmount=10;
 	maxPage=2;
 	/*for(int i=0;i<7;++i){

@@ -97,10 +97,7 @@ void Scene_Main::menuSingleModeConfirm(){
 				game->loadAllTextures();//加载纹理
 				game->battleField.loadMap_CSV(filename);//加载地图
 				//切换场景
-				auto scene=game->gotoScene_BattleField();//跳转到战场
-				scene->battleField=&game->battleField;
-				scene->terrainsTexturesArray=&game->terrainsTexturesArray;
-				scene->corpsTextures=&game->corpsTextures;
+				game->gotoScene_BattleField();//跳转到战场
 			};
 		}break;
 		case ScenarioMode:{

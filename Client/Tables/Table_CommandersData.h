@@ -19,8 +19,5 @@ public:
 
 	uint columnAmount()const;
 	uint columnWidth(uint col)const;
-
-	TextureCache *textures;//显示头像用的纹理
 };
-
 #endif

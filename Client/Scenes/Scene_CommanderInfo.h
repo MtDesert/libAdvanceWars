@@ -12,7 +12,6 @@ public:
 	~Scene_CommanderInfo();
 
 	CommandersList *source;//数据源,用来显示信息
-	TextureCache *bodyTextures;//CO的全身像,用来显示对应的CO信息
 	void setCoInfo(uint index);//设置要显示的信息
 protected:
 	uint coIndex;//co的索引号

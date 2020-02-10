@@ -1,13 +1,24 @@
 #include"Scene_BattleField.h"
+#include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
 
 #include"extern.h"
 
 static int latticeSize=32;//格子大小
-static GameSprite trnSprite;//地形渲染用的精灵
+//渲染变量
+static Game_AdvanceWars *game=nullptr;
+static Rectangle2D<float> mapRect;//地图矩形
+static Point2D<float> renderPos;//渲染位置
+static Sprite_Unit spriteUnit;//单位精灵,用于渲染单位
+static void updateRenderPos(int x,int y){
+	renderPos.setXY(mapRect.p0.x + x*latticeSize,mapRect.p0.y + y*latticeSize);
+}
 
-Scene_BattleField::Scene_BattleField():battleField(nullptr),terrainsTexturesArray(nullptr),corpsTextures(nullptr){
-	trnSprite.anchorPoint.y=0;
+Scene_BattleField::Scene_BattleField():battleField(nullptr){
+	game=Game_AdvanceWars::currentGame();
+	battleField=&game->battleField;//读取数据用
+	spriteUnit.anchorPoint.setXY(0,0);
+	spriteUnit.texArray=&game->corpsTexturesArray;//渲染单位用
 }
 Scene_BattleField::~Scene_BattleField(){}
 
@@ -54,8 +65,8 @@ bool Scene_BattleField::mouseMove(int x,int y){
 	if(mouseKeyDown){//有可能是拖动
 		if(isTouchMove){//移动地图
 			//改变位置
-			position.x-=(x-touchMovePoint.x);
-			position.y-=(y-touchMovePoint.y);
+			position.x+=(x-touchMovePoint.x);
+			position.y+=(y-touchMovePoint.y);
 		}else{//判断移动距离是不是很大,是的话切换到移动模式
 			if((touchBeginPoint-Game::mousePos).distance2()>=latticeSize*latticeSize){
 				isTouchMove=true;
@@ -81,13 +92,13 @@ bool Scene_BattleField::mouseMove(int x,int y){
 }
 
 void Scene_BattleField::renderX()const{
-	renderTerrains();
+	mapRect=rectF();
+	renderTerrains();//画地形图块
 	renderGrid();//网格绘制
-	//画地形图块
 	//画移动范围
 	//画移动路径
 	//画攻击范围
-	//画单位
+	renderUnits();//画单位
 	//画光标
 	//看情况显示兵种命令
 }
@@ -99,23 +110,30 @@ Point2D<float> Scene_BattleField::sizeF()const{
 }
 
 void Scene_BattleField::renderTerrains()const{
-	rect=rectF();
-	auto w=battleField->getWidth(),h=battleField->getHeight();
+	int w=battleField->getWidth(),h=battleField->getHeight();
 	Terrain terrain;
-	Point2D<float> p;
-	for(decltype(h) y=0;y<h;++y){
+	for(decltype(h) y=h-1;y>=0;--y){
 		for(decltype(w) x=0;x<w;++x){
 			//取地形,并取纹理
 			battleField->getTerrain(x,y,terrain);
-			auto arr=terrainsTexturesArray->data(terrain.terrainType);
+			auto arr=game->terrainsTexturesArray.data(terrain.terrainType);
 			if(arr){
 				auto tex=arr->data(terrain.status);
 				if(tex){
-					p.setXY(rect.p0.x + x*latticeSize,rect.p0.y + y*latticeSize);
-					tex->draw(p);
+					updateRenderPos(x,y);
+					tex->draw(renderPos);
 				}
 			}
 		}
+	}
+}
+
+void Scene_BattleField::renderUnits()const{
+	for(auto &cp:battleField->chessPieces){
+		spriteUnit.setUnit(cp);
+		updateRenderPos(cp.coordinate.x,cp.coordinate.y);
+		spriteUnit.position.setXY(renderPos.x,renderPos.y);
+		spriteUnit.render();
 	}
 }
 void Scene_BattleField::renderGrid()const{

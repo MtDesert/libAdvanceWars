@@ -54,11 +54,11 @@ public:
 	BattleField battleField;//地图数据,负责存放地形和单位
 
 	//纹理缓冲区
-	TextureCache corpsTextures;//兵种纹理(数量为兵种数*势力数)
 	TextureCache commandersHeadTextures;//指挥官头像纹理
 	TextureCache commandersBodyTextures;//指挥官全身纹理
 	TextureCache troopsTextures;//部队标记纹理
-	Array<Array<Texture> > terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
+	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
+	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
 	void clearAllTextureCache();
 
 	//纹理加载过程

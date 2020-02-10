@@ -6,7 +6,7 @@ static ShapeRenderer sr;//绘制边框用
 //static Rectangle<float> rect;//绘制矩形
 //static GameString gameString;//绘制文字用
 
-Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr),coIndex(0){
+Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),coIndex(0){
 	/*int start0=144,start1=start0+32*3;
 	txtNote.lineCharAmount=32;
 	txtD2D.lineCharAmount=32;
@@ -60,7 +60,7 @@ Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),bodyTextures(nullptr)
 Scene_CommanderInfo::~Scene_CommanderInfo(){}
 
 void Scene_CommanderInfo::setCoInfo(uint index){
-	if(!source || !bodyTextures)return;
+	if(!source)return;
 	uint idx=0;
 	for(auto co:*source){
 		if(idx==index){
@@ -69,8 +69,6 @@ void Scene_CommanderInfo::setCoInfo(uint index){
 			strQuote.setString(co.quote);
 			txtNote.setString(co.note);
 			txtD2D.setString(co.d2d);
-			auto tex=bodyTextures->value(idx);
-			if(tex)spriteBody.texture=*tex;
 			break;
 		}
 		++idx;//继续寻找

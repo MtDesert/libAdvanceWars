@@ -48,6 +48,7 @@ Game_AdvanceWars* Game_AdvanceWars::currentGame(){
 string Game_AdvanceWars::gameName()const{return"AdvanceWars";}
 
 void Game_AdvanceWars::reset(){
+	Game::reset();
 	settings.loadFile("settings.lua");//读取配置
 	loadTranslationFile(settings.language+".csv");//读取翻译文件
 	//进入场景
@@ -74,29 +75,62 @@ bool Game_AdvanceWars::loadAllTextures(){
 	return false;
 }
 
+#define CLEAR_TEX_CACHE_ARRAY(array)\
+for(auto &cache:array)cache.clearCache();
+
 void Game_AdvanceWars::clearAllTextureCache(){
-	corpsTextures.clearCache();
 	commandersHeadTextures.clearCache();
 	commandersBodyTextures.clearCache();
+	terrainsTexturesArray.clearCache();
+	corpsTexturesArray.clearCache();
 	troopsTextures.clearCache();
 }
 
 void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
-	if(forceReload){
-		corpsTextures.clearCache();
-	}
+	if(forceReload){}
 }
 void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forceReload){
+	//强行重新加载一定要清除数据
 	if(forceReload){
-		corpsTextures.clearCache();
+		corpsTexturesArray.clearCache();
+	}
+	if(corpsTexturesArray.size())return;
+	//未加载,重新加载
+	corpsTexturesArray.setSize(mCorpsList.size(),true);
+	int corpIndex=0;
+	for(auto &corp:mCorpsList){
+		auto texArr=corpsTexturesArray.data(corpIndex);
+		texArr->setSize(mTroopsList.size(),true);
+		//开始用png调色
+		FilePNG filePng;
+		filePng.loadFile(settings.imagesPathCorps+"/"+corp.name+".png",whenError);
+		filePng.parseData();
+		auto plte=filePng.findPLTE();
+		if(plte){
+			auto i=0;
+			for(auto &troop:mTroopsList){//根据部队配色表来进行调色
+				for(int i=0;i<4;++i){
+					plte->setColor(6+i,troop.colors[i]);
+				}
+				//完成配色,生成纹理
+				auto tex=texArr->data(i);
+				tex->texImage2D(filePng);
+				//下一个
+				++i;
+			}
+		}
+		//调色完毕,下一个
+		filePng.memoryFree();
+		++corpIndex;
 	}
 }
-void Game_AdvanceWars::loadCommandersTextures(bool forceReload){
-	if(forceReload){
-		commandersHeadTextures.clearCache();
-	}
-}
+void Game_AdvanceWars::loadCommandersTextures(bool forceReload){}
 void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
+	//强行重新加载一定要清除数据
+	if(forceReload){
+		terrainsTexturesArray.clearCache();
+	}
+	if(terrainsTexturesArray.size())return;
 	//未加载,重新加载
 	terrainsTexturesArray.setSize(mTerrainCodesList.size(),true);
 	int trnIndex=0;
@@ -107,6 +141,7 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 			//开始用png调色
 			FilePNG filePng;
 			filePng.loadFile(settings.imagesPathTerrainCodes+"/"+trnCode.name+".png",whenError);
+			filePng.parseData();
 			//开始调色
 			auto plte=filePng.findPLTE();
 			if(plte){
@@ -118,6 +153,8 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 					//完成配色,生成纹理
 					auto tex=texArr->data(i);
 					tex->texImage2D(filePng);
+					//下一个
+					++i;
 				}
 			}
 			//调色完毕
@@ -129,12 +166,12 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 			for(int i=0;i<amount;++i){
 				sprintf(num,"%X",i);
 				auto tex=texArr->data(i);
-				tex->texImage2D_FilePNG(settings.imagesPathTerrainCodes+"/"+trnCode.name+"s/"+trnCode.name+"_"+num+".png");
+				tex->texImage2D_FilePNG(settings.imagesPathTerrainCodes+"/"+trnCode.name+"s/"+trnCode.name+"_"+num+".png",whenError);
 			}
 		}else{//其他地形
 			texArr->setSize(1,true);
 			auto tex=texArr->data(0);
-			tex->texImage2D_FilePNG(settings.imagesPathTerrainCodes+"/"+trnCode.name+".png");
+			tex->texImage2D_FilePNG(settings.imagesPathTerrainCodes+"/"+trnCode.name+".png",whenError);
 		}
 		//下一个
 		++trnIndex;

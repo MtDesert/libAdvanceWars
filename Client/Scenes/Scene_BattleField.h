@@ -15,9 +15,6 @@ public:
 
 	//地图数据
 	BattleField *battleField;//这是战场,主要存地形和单位
-	//纹理数据
-	Array< Array<Texture> > *terrainsTexturesArray;//地形纹理
-	TextureCache *corpsTextures;//兵种纹理
 
 	//输入事件
 	virtual bool keyboardKey(Keyboard::KeyboardKey key,bool pressed);//处理光标移动
@@ -27,7 +24,8 @@ public:
 	virtual void renderX()const;//画战场
 	virtual Point2D<float> sizeF()const;//根据地图规格来判断尺寸
 protected:
-	void renderTerrains()const;
+	void renderTerrains()const;//渲染地形
+	void renderUnits()const;//渲染单位
 	void renderGrid()const;//渲染网格
 	//光标定位
 	void cursorSelect();//根据选择后的结果来刷新显存

@@ -19,7 +19,6 @@ bool BattleField::setTerrain(uint x,uint y,const string &terrainName,const strin
 			troopsList->dataName(status,trpIndex);
 		}
 		terrain.status=trpIndex;
-		printf("set(%u,%u,%u,%u)->%s,%s\n",x,y,terrain.terrainType,terrain.status,terrainName.data(),status.data());
 		return setTerrain(x,y,terrain);
 	}
 	return false;
@@ -61,6 +60,8 @@ void BattleField::autoAdjustTerrainsTiles(){
 		}
 	}
 }
+
+static Point2D<int> direction4[4];//autoAdjustTerrainTile专用,用于计算周围的4个点
 void BattleField::autoAdjustTerrainTile(uint x,uint y){
 	if(!terrainsList)return;
 	//获取当前地形
@@ -68,16 +69,16 @@ void BattleField::autoAdjustTerrainTile(uint x,uint y){
 	if(!getTerrain(x,y,terrain))return;
 	if(!terrainsList->canAdjustTile(terrain.terrainType))return;
 	//生成四周的坐标
-	List<Point2D<int> > pList;
-	pList.push_back(Point2D<int>(x,y-1));
-	pList.push_back(Point2D<int>(x,y+1));
-	pList.push_back(Point2D<int>(x-1,y));
-	pList.push_back(Point2D<int>(x+1,y));
+	direction4[0].setXY(x,y+1);
+	direction4[1].setXY(x,y-1);
+	direction4[2].setXY(x-1,y);
+	direction4[3].setXY(x+1,y);
 	Terrain terrainX;
 	//根据坐标判断连通性
+	terrain.status=0;
 	auto bit=1;
-	for(auto &item:pList){
-		if(getTerrain(item,terrainX)){
+	for(int i=0;i<4;++i){
+		if(getTerrain(direction4[i],terrainX)){
 			if(terrainsList->canAdjustTile(terrain.terrainType,terrainX.terrainType)){
 				terrain.status|=bit;
 			}
@@ -126,7 +127,6 @@ bool BattleField::loadMap_CSV(const string &filename){
 	ASSERT(terrainsList,"No terrains list")
 	//打开文件
 	FILE *file=fopen(filename.data(),"rb");
-	ASSERT_ERRNO(file)
 	//开始读取地图名和作者
 	char buffer[BUFSIZ];
 	mapName=fgets(buffer,BUFSIZ,file);
@@ -137,7 +137,7 @@ bool BattleField::loadMap_CSV(const string &filename){
 	int w,h;
 	if(fgets(buffer,BUFSIZ,file) && sscanf(buffer,"%d,%d",&w,&h)==2){
 		newData(w,h);//申请内存
-		for(int y=0;y<h;++y){
+		for(int y=h-1;y>=0;--y){
 			if(fgets(buffer,BUFSIZ,file)){//逐行处理
 				char* strAddr[w];//缓存地形名称
 				int total=w;//实际数量(有可能读到的数量不为w)
