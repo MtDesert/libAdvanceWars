@@ -23,6 +23,8 @@ Game_AdvanceWars::Game_AdvanceWars(){
 	battleField.troopsList=&mTroopsList;
 	battleField.terrainsList=&mTerrainCodesList;
 	battleField.whenError=whenError;
+	campaign.battleField=&battleField;
+	campaign.luaState.whenError=whenError;
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
@@ -67,6 +69,7 @@ bool Game_AdvanceWars::loadAllConfigData(){
 	AW_LOAD_LUA(mTerrainCodesList,dataTerrainCodes)//地形表
 	AW_LOAD_LUA(mCorpsList,dataCorps)//兵种表
 	AW_LOAD_LUA(mTroopsList,dataTroops)//势力表
+	campaign.luaState.doFile(settings.ruleMove);//移动规则
 	return true;
 }
 bool Game_AdvanceWars::loadAllTextures(){
@@ -111,6 +114,8 @@ void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forc
 			for(auto &troop:mTroopsList){//根据部队配色表来进行调色
 				for(int i=0;i<4;++i){
 					plte->setColor(6+i,troop.colors[i]);
+					ColorRGBA tmp;
+					tmp.fromBGRA(troop.colors[i]);
 				}
 				//完成配色,生成纹理
 				auto tex=texArr->data(i);
@@ -149,6 +154,8 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 				for(auto &troop:mTroopsList){//根据部队配色表来进行调色
 					for(int i=0;i<4;++i){
 						plte->setColor(2+i,troop.colors[i]);
+						ColorRGBA tmp;
+						tmp.fromBGRA(troop.colors[i]);
 					}
 					//完成配色,生成纹理
 					auto tex=texArr->data(i);

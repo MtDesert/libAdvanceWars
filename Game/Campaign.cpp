@@ -15,7 +15,7 @@ Campaign::Campaign():
 	selectCorp(nullptr),
 	selectTeam(nullptr),
 	isEditMode(false),
-	luaState(nullptr){}
+	whenError(nullptr){}
 Campaign::~Campaign(){}
 
 CampaignTeam* Campaign::findTeam(int teamID)const{
@@ -30,7 +30,7 @@ CampaignTeam* Campaign::findTeam(int teamID)const{
 void Campaign::setCursor(int x,int y){
 	//获取地形
 	if(battleField->getTerrain(x,y,cursorTerrain)){
-		cursor.x=x;cursor.y=y;//赋值
+		cursor.setXY(x,y);
 		cursorTerrainCode=battleField->terrainsList->data(cursorTerrain.terrainType);
 	}else return;
 	//获取单位
@@ -57,38 +57,29 @@ void Campaign::setCursor(int x,int y){
 
 static const Campaign::CoordType pUp(0,1),pDown(0,-1),pLeft(-1,0),pRight(1,0);
 
-int Campaign::luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName)const{
+int Campaign::luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName){
 	int ret=-1;
-	lua_getglobal(luaState,"movementCost");
-	lua_pushstring(luaState,moveType.data());//移动类型名
-	lua_pushstring(luaState,terrainName.data());//地形名
-	lua_pushstring(luaState,weatherName.data());//天气名
-	if(lua_pcall(luaState,3,1,0)==LUA_OK){
-		if(!lua_isnil(luaState,-1)){
-			ret=lua_tointeger(luaState,-1);
+	if(luaState.getGlobalFunction("movementCost")){
+		luaState.push(moveType).push(terrainName).push(weatherName);
+		if(luaState.protectCall()){
+			luaState.getTopInteger(ret);
 		}
-	}else{
-		printf("%s\n",lua_tostring(luaState,-1));
 	}
 	return ret;
 }
-int Campaign::luaFunc_fuelCost(const string &weatherName)const{
+int Campaign::luaFunc_fuelCost(const string &weatherName){
 	int ret=-1;
-	lua_getglobal(luaState,"fuelCost");
-	lua_pushstring(luaState,weatherName.data());//天气名
-	if(lua_pcall(luaState,1,1,0)==LUA_OK){
-		if(lua_isnil(luaState,-1))return ret;
-		else{
-			ret=lua_tointeger(luaState,-1);
+	if(luaState.getGlobalFunction("fuelCost")){
+		luaState.push(weatherName);
+		if(luaState.protectCall()){
+			luaState.getTopInteger(ret);
 		}
-	}else{
-		printf("%s\n",lua_tostring(luaState,-1));
 	}
 	return ret;
 }
 int Campaign::luaFunc_loadableAmount(const string &loaderCorpName,const string &beLoaderCorpName)const{
 	int ret=-1;
-	lua_getglobal(luaState,"loadableAmount");
+	/*lua_getglobal(luaState,"loadableAmount");
 	lua_pushstring(luaState,loaderCorpName.data());
 	lua_pushstring(luaState,beLoaderCorpName.data());
 	if(lua_pcall(luaState,2,1,0)==LUA_OK){
@@ -98,87 +89,80 @@ int Campaign::luaFunc_loadableAmount(const string &loaderCorpName,const string &
 		}
 	}else{
 		printf("%s\n",lua_tostring(luaState,-1));
-	}
+	}*/
 	return ret;
 }
 
-static Map<int,int> movementCostCache;//<地形编号,移动损耗>缓冲
-void Campaign::caculateMovement(const Unit &unit){
-	if(!cursorCorp)return;
+void Campaign::selectCursorUnit(){
+	selectUnit=cursorUnit;
+	selectCorp=cursorCorp;
+	selectTeam=cursorTeam;
+}
+
+static Array<int> movementCostCache;//<地形编号,移动损耗>缓冲
+void Campaign::caculateMovement(const Unit &unit, const Corp &corp){
 	//记录起点信息、剩余移动力、剩余燃料
 	MovePoint mp;
-	mp.x=unit.coordinate.x;
-	mp.y=unit.coordinate.y;
-	mp.remainMovement=cursorCorp->movement;
+	mp.setP(unit.coordinate);
+	mp.remainMovement=corp.movement;
 	mp.remainFuel=unit.fuel;
 	//这里加入CO对移动力的修正,对了还有个别CO是可以以地形损耗1通过所有地形的
+	//清除缓冲
+	movementCostCache.setSize(battleField->terrainsList->size(),true);
+	for(auto &move:movementCostCache)move=-1;
 	//开始对点进行推算
 	movablePoints.clear();
 	movablePoints.push_back(mp);
 	movePath.clear();
 	movePath.push_back(mp);
 
-	for(auto &p:movablePoints){
+	for(SizeType i=0;i<movablePoints.size();++i){
+		auto p=*movablePoints.data(i);
 		tryToMoveTo(p,pUp);
 		tryToMoveTo(p,pDown);
 		tryToMoveTo(p,pLeft);
 		tryToMoveTo(p,pRight);
 	}
-	movementCostCache.clear();//计算完成,清除缓冲
-	//根据情况计算攻击范围
-	caculateFlightshot_byMovement();
-	/*if select.corp.weapons then
-		local min=select.corp.weapons[1].minRange
-		local max=select.corp.weapons[1].maxRange
-		if min==1 and max==1 then
-			caculateFlightshot_byMovement()
-		else
-			caculateFlightshot_byCenter(select.unit.coordinate,min,max)
-		end
-	end*/
 }
 
 void Campaign::tryToMoveTo(const MovePoint &currentPos,const CoordType &offset){
-	CoordType targetPos=currentPos;
-	targetPos.x+=offset.x;
-	targetPos.y+=offset.y;
+	CoordType targetPos = currentPos + offset;
 	//坐标边界判定
 	Terrain terrain;
 	if(!battleField->getTerrain(targetPos.x,targetPos.y,terrain))return;
 	//获取地形信息，判断是否可移动的地形
 	int moveCost=0;
-	auto intPtr=movementCostCache.value(terrain.terrainType);//搜索缓冲
-	if(intPtr){//有缓冲结果,可直接用
-		if(*intPtr>=0)moveCost=*intPtr;
-		else return;
+	auto intPtr=movementCostCache.data(terrain.terrainType);//搜索缓冲
+	if(intPtr && *intPtr>=0){//有缓冲结果,可直接用
+		moveCost = *intPtr;
 	}else{//无缓冲结果,查询地形表
 		auto trnCode=battleField->terrainsList->data(terrain.terrainType);
-		//传递给lua来判断损耗
-		moveCost=luaFunc_movementCost(cursorCorp->moveType,trnCode->name,"Normal");
-		movementCostCache.insert(terrain.terrainType,moveCost);//缓存起来
-		if(moveCost<0)return;
+		if(trnCode){
+			moveCost=luaFunc_movementCost(cursorCorp->moveType,trnCode->name,"Normal");
+			(*movementCostCache.data(terrain.terrainType))=moveCost;//缓存起来
+			if(moveCost<0)return;
+		}
 	}
 	//碰撞检测，检测是否发生碰撞
-	for(auto &unit:battleField->chessPieces){
+	/*for(auto &unit:battleField->chessPieces){
 		if(unit.coordinate==targetPos && unit.color!=selectUnit->color && unit.isVisible){
 			auto team=findTeam(unit.color);//判断是敌人还是朋友,不是朋友的一般都会采取拦截措施
 			if(!team)return;
 			if(!team->friendsTeams.contain(selectUnit->color))return;
 		}
-	}
+	}*/
 	//检查剩余的移动力和燃料
 	//if moveCost1 then moveCost=1 end某些指挥官貌似走可走的地形都是1
 	if(currentPos.remainMovement < moveCost)return;
 	//传递给lua来判断损耗
-	int costFuel=luaFunc_fuelCost("Normal");
-	if(costFuel<0)return;
-	if(currentPos.remainFuel < costFuel)return;
+	int fuelCost=luaFunc_fuelCost("Normal");
+	if(fuelCost<0 || currentPos.remainFuel < fuelCost)return;
 
 	//创建新的移动点
 	MovePoint p;
-	p.x=targetPos.x;p.y=targetPos.y;
+	p.setP(targetPos);
 	p.remainMovement = currentPos.remainMovement - moveCost;
-	p.remainFuel = currentPos.remainFuel - costFuel;
+	p.remainFuel = currentPos.remainFuel - fuelCost;
 	//检查是否重复
 	MovePoint *exist=nullptr;
 	for(auto &mp:movablePoints){
@@ -201,41 +185,41 @@ p为目标点，该函数会进行自动寻路
 false表示路径没有变化，true表示路径发生了变化*/
 bool Campaign::selectPath(const CoordType &p){
 	//检查目标点在不在移动路径内
-	for(auto itr=movePath.begin();itr!=movePath.end();++itr){
-		if(p==*itr){//在路径内,那么需要判断路径是否需要发生变化
-			++itr;
-			if(itr==movePath.end())return false;
-			//删除多余的路径
-			while(itr!=movePath.end())itr=movePath.erase(itr);
+	for(SizeType i=0;i<movePath.size();++i){
+		auto pathP=movePath.data(i);
+		if(p==*pathP){//在路径内,那么需要判断路径是否需要发生变化
+			if(i+1==movePath.size())return false;//没变化
+			//删除多余路径
+			movePath.setSize(i+1);
 			return true;
 		}
 	}
 	//--检查目标点在不在移动范围内
 	for(auto &mp:movablePoints){
-		if(p==mp){
-			//试图移动到新的点
-			if(tryToPathTo(mp))return false;
-			else{//不能沿着新的路径移动过去，那么我们就调整路径
-				movePath.clear();
-				movePath.push_front(mp);
-				auto pp = movePath.front();
-				while(true){
-					if(tryToBackPathTo(pp,pUp));
-					else if(tryToBackPathTo(pp,pDown));
-					else if(tryToBackPathTo(pp,pLeft));
-					else if(tryToBackPathTo(pp,pRight));
-					else break;
-					pp = movePath.front();
-				}
+		if(p!=mp)continue;
+		//试图移动到新的点
+		if(tryToPathTo(mp))return false;
+		else{//不能沿着新的路径移动过去，那么我们就调整路径
+			movePath.clear();
+			movePath.push_front(mp);
+			auto pp = movePath.data(0);
+			while(true){
+				if(tryToBackPathTo(*pp,pUp));
+				else if(tryToBackPathTo(*pp,pDown));
+				else if(tryToBackPathTo(*pp,pLeft));
+				else if(tryToBackPathTo(*pp,pRight));
+				else break;
+				pp = movePath.data(0);
 			}
-			break;
 		}
+		break;
 	}
 	return true;
 }
 bool Campaign::tryToPathTo(const MovePoint &target){
+	if(movePath.size()<=0)return false;
 	//这个点必须和路径的最后一个点是相邻的
-	auto lastP=movePath.rbegin();
+	auto lastP=movePath.data(movePath.size()-1);
 	CoordType delta=target-(*lastP);
 	if(delta.manhattanLength()!=1)return false;
 	//取地形
@@ -285,23 +269,27 @@ bool Campaign::moveWithPath(){
 }
 
 void Campaign::caculateFlightshot_byMovement(){//根据移动范围来计算射程
-	firablePoints.clear();
-	for(auto &p:movablePoints){
+	firablePoints.push_back(selectUnit->coordinate);
+	for(SizeType i=0;i<movablePoints.size();++i){
+		auto p=*movablePoints.data(i);
 		firablePoints.push_back(p+pUp);
 		firablePoints.push_back(p+pDown);
 		firablePoints.push_back(p+pLeft);
 		firablePoints.push_back(p+pRight);
 	}
-	firablePoints.unique();
-	//移除超出地图的点
-	caculateFlightshot_removeNotInRange();
-	//移除和移动范围一样的点
-	for(auto &p:movablePoints){
-		firablePoints.remove(p);
+	firablePoints.unique();//去掉重复
+	caculateFlightshot_removeNotInRange();//移除超出地图的点
+}
+void Campaign::caculateFlightshot_byCenter(){
+	firablePoints.clear();
+	if(selectUnit && selectCorp){
+		auto wpn=selectCorp->weapons.data(0);//取首个武器判断
+		if(wpn && wpn->isIndirectAttack()){
+			caculateFlightshot_byCenter(selectUnit->coordinate,wpn->minRange,wpn->maxRange);
+		}
 	}
 }
 void Campaign::caculateFlightshot_byCenter(const CoordType &center,int minDistance,int maxDistance){
-	firablePoints.clear();
 	for(int i=minDistance;i<=maxDistance;++i){//计算射程
 		caculateFlightshot_byCenter(center,i);
 	}
@@ -317,60 +305,70 @@ void Campaign::caculateFlightshot_byCenter(const CoordType &center,int distance)
 	}
 }
 void Campaign::caculateFlightshot_removeNotInRange(){
-	auto itr=firablePoints.begin();
-	while(itr!=firablePoints.end()){
-		if(battleField->isInRange(itr->x,itr->y)){
-			++itr;
-		}else{
-			itr=firablePoints.erase(itr);
-		}
-	}
+	firablePoints.remove_if([this](const CoordType &p){
+		return !battleField->isInRange(p.x,p.y);
+	});
 }
 
 void Campaign::cursorSelect(){
-	if(isEditMode){//地图编辑模式
-	}else{
-		if(!selectUnit){//未选择单位的时候
-			if(cursorUnit){//如果选择了单位,则计算移动范围
-				selectUnit=cursorUnit;
-				selectCorp=cursorCorp;
-				selectTeam=cursorTeam;
-				caculateMovement(*cursorUnit);
-			}else if(cursorTerrainCode){//如果没有单位,则有可能是制造单位的工厂
-				if(cursorTerrainCode->buildable){//可建造部队,那么我们需要显示菜单
-					//printf("%s可生产部队\n",cursorTerrainCode->name.data());
-					produceMenu.clear();
-					string corpType;//可生产的兵种类型
-					const string &name(cursorTerrainCode->name);
-					if(name=="Factory")corpType="LandForce";
-					else if(name=="AirFactory")corpType="AirForce";
-					else if(name=="ShipFactory")corpType="NavyForce";
-					for(auto &corp:*battleField->corpsList){
-						if(corpType==corp.corpType){
-							//produceMenu.push_back(corp.id);
-						}
-					}
+	if(!selectUnit){//未选择单位的时候
+		if(cursorUnit && cursorCorp){//如果选择了单位,则计算移动范围
+			selectCursorUnit();
+			caculateMovement(*selectUnit,*selectCorp);//计算移动范围
+			if(selectCorp->isDirectAttack()){//计算火力范围(直接攻击部队的情况下)
+				caculateFlightshot_byMovement();
+				for(auto &p:movablePoints){//移除和移动范围一样的点
+					firablePoints.remove(p);
 				}
 			}
-		}else{//选择单位并点击无单位的地方,可能是移动,也可能是取消
-			if(*movePath.rbegin()==cursor){//在移动范围内,弹出菜单
-				showCorpMenu();
-			}else{//不在移动范围内,清除移动范围
-				cursorCancel();
+		}else if(cursorTerrainCode){//如果没有单位,则有可能是制造单位的工厂
+			if(cursorTerrainCode->buildable){//可建造部队,那么我们需要显示菜单
+				/*produceMenu.clear();
+				string corpType;//可生产的兵种类型
+				const string &name(cursorTerrainCode->name);
+				if(name=="Factory")corpType="LandForce";
+				else if(name=="AirFactory")corpType="AirForce";
+				else if(name=="ShipFactory")corpType="NavyForce";
+				for(auto &corp:*battleField->corpsList){
+					if(corpType==corp.corpType){
+						//produceMenu.push_back(corp.id);
+					}
+				}*/
 			}
+		}
+	}else{//选择单位并点击无单位的地方,可能是移动,也可能是取消
+		auto lastP=movePath.data(movePath.size()-1);
+		if(lastP && *lastP==cursor){//在移动范围内,弹出菜单
+			showCorpMenu();
+		}else{//不在移动范围内,清除移动范围
+			cursorCancel();
 		}
 	}
 }
 void Campaign::cursorCancel(){
-	//清除移动范围
-	movablePoints.clear();
-	movePath.clear();
-	firablePoints.clear();
-	corpMenu.clear();
-	produceMenu.clear();
-	//刷新
-	selectUnit=nullptr;
-	setCursor(cursor.x,cursor.y);
+	if(selectUnit){
+		//清除移动范围
+		movablePoints.clear();
+		movePath.clear();
+		firablePoints.clear();
+		corpMenu.clear();
+		produceMenu.clear();
+		//重新刷新
+		selectUnit=nullptr;
+		setCursor(cursor.x,cursor.y);
+	}else{
+		selectCursorUnit();
+		if(selectUnit&&selectCorp){//显示攻击范围
+			if(selectCorp->isDirectAttack()){
+				caculateMovement(*selectUnit,*selectCorp);
+				caculateFlightshot_byMovement();
+				movablePoints.clear();
+			}
+			if(selectCorp->isIndirectAttack()){
+				caculateFlightshot_byCenter();
+			}
+		}
+	}
 }
 void Campaign::executeMenuSelect(int index){
 	if(corpMenu.size()){
@@ -432,7 +430,6 @@ void Campaign::executeProduceMenu(int index){
 	}
 	if(command<0)return;
 	//确定了兵种,我们可以进行生产
-	printf("生产单位%d,%d\n",cursor.x,cursor.y);
 	Unit unit;
 	unit.corpType=command;
 	unit.color=cursorTerrain.status;
@@ -459,6 +456,7 @@ void Campaign::showCorpMenu(){
 		corpMenu.push_back(Menu_Wait);
 	}
 }
+void Campaign::hideCorpMenu(){corpMenu.clear();}
 bool Campaign::showMenuItem_Join(){
 	if(cursorUnit){
 		if(selectCorp!=cursorCorp)return false;//兵种相同才能结合

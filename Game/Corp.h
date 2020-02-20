@@ -2,8 +2,6 @@
 #define CORP_H
 
 #include"DataList.h"
-#include<list>
-using namespace std;
 
 struct Weapon{
 	Weapon();
@@ -11,6 +9,9 @@ struct Weapon{
 	string name;//武器名
 	int minRange,maxRange;//射程
 	int ammunitionMax;//武器弹药数
+
+	bool isDirectAttack()const;
+	bool isIndirectAttack()const;
 };
 /*兵种数据*/
 struct Corp{
@@ -33,7 +34,10 @@ struct Corp{
 	bool buildable:1;//是否具有建造能力
 	bool flarable:1;//是否具有闪光能力
 	//武器相关
-	list<Weapon> weapons;
+	Array<Weapon> weapons;
+
+	bool isDirectAttack()const;//是否为直接攻击的兵种
+	bool isIndirectAttack()const;//是否为间接攻击的兵种
 };
 
 /*兵种数据列表,提供加载文件的功能*/
@@ -41,5 +45,4 @@ class CorpsList:public DataList<Corp>{
 public:
 	bool loadFile_lua(const string &filename,WhenErrorString whenError);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
 };
-
 #endif

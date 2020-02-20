@@ -1,7 +1,7 @@
 #ifndef SCENE_BATTLEFIELD_H
 #define SCENE_BATTLEFIELD_H
 
-#include"BattleField.h"
+#include"Campaign.h"
 
 #include"GameScene.h"
 #include"Texture.h"
@@ -15,6 +15,8 @@ public:
 
 	//地图数据
 	BattleField *battleField;//这是战场,主要存地形和单位
+	Campaign *campaign;
+	Campaign::CoordType cursorPoint;//光标所处的坐标
 
 	//输入事件
 	virtual bool keyboardKey(Keyboard::KeyboardKey key,bool pressed);//处理光标移动
@@ -23,11 +25,16 @@ public:
 	//渲染函数
 	virtual void renderX()const;//画战场
 	virtual Point2D<float> sizeF()const;//根据地图规格来判断尺寸
+	//更新函数
+	void updateMapRect();//更新地图矩形,影响渲染
+	void updateMenu();//获取菜单情况
 protected:
 	void renderTerrains()const;//渲染地形
 	void renderUnits()const;//渲染单位
+	void renderMovements()const;//渲染移动范围
+	void renderFireRange()const;//渲染火力范围
+	void renderMovePath()const;//渲染移动路径
 	void renderGrid()const;//渲染网格
-	//光标定位
-	void cursorSelect();//根据选择后的结果来刷新显存
+	void renderCursor()const;//渲染光标
 };
 #endif

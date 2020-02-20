@@ -21,7 +21,9 @@ public:
 	DATA_FILENAME_AND_IMAGEPATH(Troops)
 	DATA_FILENAME_AND_IMAGEPATH(Commanders)
 	DATA_FILENAME_AND_IMAGEPATH(TerrainCodes)
+	DATA_FILENAME_AND_IMAGEPATH(Weathers)
 #undef DATA_FILENAME_AND_IMAGEPATH
+	string ruleMove;//移动规则文件
 
 	//设定数据
 	bool battleAnimation;//战斗动画是否显示

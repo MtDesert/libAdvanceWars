@@ -1,24 +1,7 @@
 #include"Table_CorpsData.h"
 #include"GameString.h"
-#include"ShapeRenderer.h"
 
-#include"Charset.h"
-
-static ShapeRenderer sr;//绘制边框用
-static Rectangle2D<float> rect;//绘制矩形
-static GameString gameString;//绘制文字用
-
-/*static const char* headerName[]={
-	"兵种名","兵种类型","造价","视野","移动力","移动类型","燃料"
-};*/
-
-Table_CorpsData::Table_CorpsData():source(nullptr),troopID(0){
-	renderItemAmount=10;
-	maxPage=2;
-	/*for(int i=0;i<7;++i){
-		stringCode_Headers[i]=GameString::newString(headerName[i]);
-	}*/
-}
+Table_CorpsData::Table_CorpsData():source(nullptr),troopID(0){}
 Table_CorpsData::~Table_CorpsData(){}
 
 uint Table_CorpsData::columnAmount()const{return 4;}

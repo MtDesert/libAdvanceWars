@@ -7,11 +7,14 @@ Settings::~Settings(){}
 
 bool Settings::saveFile(const string &filename)const{return false;}
 void Settings::readCustom(LuaState &state){
-	//配置文件
+	//数据文件
 	READ_STR(dataTerrainCodes)
 	READ_STR(dataCorps)
 	READ_STR(dataCommanders)
 	READ_STR(dataTroops)
+	READ_STR(dataWeathers)
+	//规则文件
+	READ_STR(ruleMove)
 	//图像目录
 	READ_STR(imagesPathTerrainCodes)
 	READ_STR(imagesPathCorps)

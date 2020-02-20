@@ -5,9 +5,19 @@ Weapon::Weapon():minRange(1),maxRange(1),ammunitionMax(0){}
 Corp::Corp():price(0),vision(0),movement(0),gasMax(0),
 capturable(false),suppliable(false),hidable(false),repairable(false),explodable(false),buildable(false),flarable(false){}
 
-#define READ_BOOL(name) corp->name=state.getTableBoolean(#name);
-#define READ_INT(name) corp->name=state.getTableInteger(#name);
-#define READ_STR(name) state.getTableString(#name,corp->name);
+bool Weapon::isDirectAttack()const{return minRange==1 && maxRange==1;}
+bool Weapon::isIndirectAttack()const{return maxRange>=2;}
+
+bool Corp::isDirectAttack()const{
+	auto wpn=weapons.data(0);
+	return wpn ? wpn->isDirectAttack():false;
+}
+bool Corp::isIndirectAttack()const{
+	auto wpn=weapons.data(0);
+	return wpn ? wpn->isIndirectAttack():false;
+}
+
+#define READ(obj,member,type) state.getTable##type(#member,obj->member);
 
 bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 	bool ret=false;
@@ -16,18 +26,32 @@ bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 	if(state.doFile(filename)){
 		ret=state.getGlobalTable("Corps",[this,&state](){
 			setSize(state.getTableLength(),true);//设置表长
-			return state.getTableForEach([this,&state](int index){
+			return state.getTableForEach([&](int index){
 				auto corp=this->data(index);
 				if(!corp)return false;
 				//读取数据
-				READ_STR(name)
-				READ_STR(corpType)
-				READ_INT(price)
-				READ_INT(vision)
-				state.getTableTable("move",[&state,corp](){
-					READ_INT(movement)
-					READ_STR(moveType)
-					READ_INT(gasMax)
+				READ(corp,name,String)
+				READ(corp,corpType,String)
+				READ(corp,price,Integer)
+				READ(corp,vision,Integer)
+				state.getTableTable("move",[&](){//读取移动信息
+					READ(corp,movement,Integer)
+					READ(corp,moveType,String)
+					READ(corp,gasMax,Integer)
+					return true;
+				});
+				state.getTableTable("weapons",[&](){//读取武器列表
+					corp->weapons.setSize(state.getTableLength(),true);
+					state.getTableForEach([&](int idx){
+						auto wpn=corp->weapons.data(idx);
+						if(!wpn)return false;
+						//读取武器信息
+						READ(wpn,name,String)
+						READ(wpn,minRange,Integer)
+						READ(wpn,maxRange,Integer)
+						READ(wpn,ammunitionMax,Integer)
+						return true;
+					});
 					return true;
 				});
 				return true;

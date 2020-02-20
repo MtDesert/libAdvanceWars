@@ -1,10 +1,4 @@
 #include"Scene_CommanderInfo.h"
-#include"ShapeRenderer.h"
-#include"Game_AdvanceWars.h"
-
-static ShapeRenderer sr;//绘制边框用
-//static Rectangle<float> rect;//绘制矩形
-//static GameString gameString;//绘制文字用
 
 Scene_CommanderInfo::Scene_CommanderInfo():source(nullptr),coIndex(0){
 	/*int start0=144,start1=start0+32*3;

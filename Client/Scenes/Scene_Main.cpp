@@ -18,7 +18,6 @@ menu##menuName.addString(#name,true);
 //生成菜单并调整尺寸
 #define MAKE_MENU(MENU,name)\
 MENU(MENU##_ITEM)\
-menu##name.itemWidth=200;\
 menu##name.updateRenderParameters();\
 menu##name.onConfirm=::menuConfirm;\
 menu##name.onCancel=::menuCancel;
@@ -97,7 +96,8 @@ void Scene_Main::menuSingleModeConfirm(){
 				game->loadAllTextures();//加载纹理
 				game->battleField.loadMap_CSV(filename);//加载地图
 				//切换场景
-				game->gotoScene_BattleField();//跳转到战场
+				auto scene=game->gotoScene_BattleField();//跳转到战场
+				scene->updateMapRect();
 			};
 		}break;
 		case ScenarioMode:{

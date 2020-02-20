@@ -2,12 +2,9 @@
 #define GAME_ADVANCEWARS_H
 
 #include"Settings.h"
-#include"Corp.h"
 #include"Commander.h"
-#include"Troop.h"
-#include"Terrain.h"
 #include"Weather.h"
-#include"BattleField.h"
+#include"Campaign.h"
 #include"ScenarioScript.h"
 
 #include"Game.h"
@@ -52,6 +49,7 @@ public:
 
 	//游戏数据区
 	BattleField battleField;//地图数据,负责存放地形和单位
+	Campaign campaign;//比赛数据,关于比赛过程产生的数据均放于此
 
 	//纹理缓冲区
 	TextureCache commandersHeadTextures;//指挥官头像纹理

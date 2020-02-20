@@ -2,7 +2,7 @@
 #define CAMPAIGN_H
 
 #include"BattleField.h"
-#include"lua.hpp"
+#include"LuaState.h"
 
 //一场比赛中兵种可能用到的菜单项,可根据需求自行添加
 #define CAMPAIGN_CORPMENU(macro)\
@@ -59,7 +59,7 @@ public:
 
 	//战场数据
 	BattleField *battleField;//战场地图(包括地图所用的数据表)
-	List<CampaignTeam> allTeams;//所有参赛队伍
+	Array<CampaignTeam> allTeams;//所有参赛队伍
 	CampaignTeam* findTeam(int teamID)const;
 	CampaignTeam *currentTeam,*currentViewer;//当前行动队伍,当前观察者队伍
 
@@ -81,39 +81,43 @@ public:
 	struct MovePoint:public CoordType{//此结构体专门用于移动范围的计算
 		uint8 remainMovement,remainFuel;//剩余移动力,剩余燃料
 	};
-	list<MovePoint> movablePoints;//移动范围
-	list<MovePoint> movePath;//移动路径
-	list<CoordType> visiblePoints;//可视范围
-	list<CoordType> firablePoints;//可开火范围
+	Array<MovePoint> movablePoints;//移动范围
+	Array<MovePoint> movePath;//移动路径
+	Array<CoordType> visiblePoints;//可视范围
+	Array<CoordType> firablePoints;//可开火范围
 
 	list<Unit*> suppliableUnits;//可补给的单位
 	list<Unit*> dropableUnits;//可卸载的单位
 
 	//菜单相关
 	#define CAMPAIGN_ENUM(name) Menu_##name,
-	enum EnumMenu{//给每个兵种指令创建枚举
+	enum EnumCorpMenu{//给每个兵种指令创建枚举
 		CAMPAIGN_CORPMENU(CAMPAIGN_ENUM)
-		AmountOfEnumMenu
+		AmountOfCorpEnumMenu
 	};
 	#undef CAMPAIGN_ENUM
-	list<int> corpMenu;//兵种的指令菜单,参考EnumMenu
-	List<int> produceMenu;//单位生产菜单,表中存放兵种索引
+	Array<int> corpMenu;//兵种的指令菜单,参考EnumMenu
+	Array<int> produceMenu;//单位生产菜单,表中存放兵种索引
 
 	bool isEditMode;//是否编辑模式
 	//操作输入
-	void cursorSelect();//在光标处选择单位来操作
+	void cursorSelect();//在光标处执行选择操作
 	void cursorCancel();//在光标处进行取消操作
 	void executeMenuSelect(int index);//执行选择的菜单项
 	void executeCorpMenu(int index);//执行兵种菜单项
 	void executeProduceMenu(int index);//执行生产菜单项
-private:
+
 	//lua相关
-	lua_State *luaState;//lua状态机,执行特定的规则代码
-	int luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName)const;//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
-	int luaFunc_fuelCost(const string &weatherName)const;//查询燃料损耗(天气名),返回值小于0表示不存在
+	LuaState luaState;//lua状态机,执行特定的规则代码
+private:
+	//lua函数
+	int luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName);//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
+	int luaFunc_fuelCost(const string &weatherName);//查询燃料损耗(天气名),返回值小于0表示不存在
 	int luaFunc_loadableAmount(const string &loaderCorpName,const string &beLoaderCorpName)const;//查询部队可装载数量,小于等于0表示不可装载
+
+	void selectCursorUnit();//选择光标处的单位,并获取相关信息
 	//移动范围计算
-	void caculateMovement(const Unit &unit);//计算unit的移动范围
+	void caculateMovement(const Unit &unit,const Corp &corp);//计算unit的移动范围
 	void tryToMoveTo(const MovePoint &currentPos,const CoordType &offset);
 	//移动路径计算
 	bool selectPath(const CoordType &p);
@@ -124,17 +128,22 @@ private:
 
 	//火力范围计算
 	void caculateFlightshot_byMovement();//根据移动范围来计算射程
+	void caculateFlightshot_byCenter();//以间接攻击部队的中心来计算攻击距离
 	void caculateFlightshot_byCenter(const CoordType &center,int minDistance,int maxDistance);
 	void caculateFlightshot_byCenter(const CoordType &center,int distance);
 	void caculateFlightshot_removeNotInRange();
 
 	//菜单相关
 	void showCorpMenu();
+	void hideCorpMenu();
 	//给每个兵种指令设定对应的处理函数
 	#define CAMPAIGN_FUNC(name)\
 	bool showMenuItem_##name();\
 	bool execMenuItem_##name();
 	CAMPAIGN_CORPMENU(CAMPAIGN_FUNC)
 	#undef CAMPAIGN_FUNC
+
+	//报错函数
+	WhenErrorString whenError;
 };
 #endif
