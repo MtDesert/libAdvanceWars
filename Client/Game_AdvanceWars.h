@@ -57,13 +57,16 @@ public:
 	TextureCache troopsTextures;//部队标记纹理
 	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
 	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
+	TextureCache corpMenuTextures;//兵种菜单的纹理
+	Texture texMenuArrow;//菜单箭头
 	void clearAllTextureCache();
 
 	//纹理加载过程
-	void loadCorpsTextures(bool forceReload=false);//读取兵种纹理,主要用于生成资料表
-	void loadCorpsTextures(const TroopsList &troopsList,bool forceReload=false);//读取兵种纹理,战场地图用
-	void loadCommandersTextures(bool forceReload=false);
+	void loadCorpsTextures(bool forceReload=false);//读取兵种纹理
+	void loadCommandersTextures(bool forceReload=false);//读取指挥官
+	void loadTroopsTextures(bool forceReload=false);
 	void loadTerrainsTextures(bool forceReload=false);
+	void loadCorpMenuTextures();
 	//剧情脚本
 	GAME_USE_CONVERSATION(Layer_Conversation)
 	GAME_USE_SCRIPT(ScenarioScript)

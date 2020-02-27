@@ -20,6 +20,7 @@ void Settings::readCustom(LuaState &state){
 	READ_STR(imagesPathCorps)
 	READ_STR(imagesPathTroops)
 	READ_STR(imagesPathCommanders)
+	READ_STR(imagesPathCorpMenu)
 	//文件选择框路径
 	READ_STR(mapsPath)
 	READ_STR(scenarioScriptsPath)

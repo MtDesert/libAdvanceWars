@@ -18,6 +18,7 @@ struct Corp{
 	Corp();
 
 	string name;//兵种名字
+	string translate;//翻译
 	string corpType;//兵种类型
 	int price;//造价
 	int vision;//视野

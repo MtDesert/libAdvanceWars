@@ -1,5 +1,6 @@
 #include"Scene_Main.h"
 #include"Game_AdvanceWars.h"
+#include"Dialog_NewMap.h"
 
 //插入菜单项
 #define INSERT_ITEM(name,menuName)\
@@ -17,6 +18,7 @@ menu##menuName.addString(#name,true);
 
 //生成菜单并调整尺寸
 #define MAKE_MENU(MENU,name)\
+menu##name.setRenderItemAmount(4);\
 MENU(MENU##_ITEM)\
 menu##name.updateRenderParameters();\
 menu##name.onConfirm=::menuConfirm;\
@@ -45,7 +47,7 @@ static void menuCancel(GameMenu *menu){
 
 Scene_Main::Scene_Main(){
 	//生成菜单项
-	menuMain.renderItemAmount=7;
+	menuMain.setRenderItemAmount(7);
 	MAKE_MENU(MAIN_MENU,Main)
 	MAKE_MENU(SINGLE_MODE_MENU,SingleMode)
 	MAKE_MENU(ONLINE_MODE_MENU,OnlineMode)
@@ -70,7 +72,7 @@ void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
 }
 
 //单机-剧情模式选择剧本后
-static void whenSingleMode_Scenario(const string &filename){
+/*static void whenSingleMode_Scenario(const string &filename){
 	GET_GAME
 	auto script=game->useScenarioScript();
 	if(script->executeSenarioScript(filename)){//脚本加载没有问题后,再移除场景
@@ -79,37 +81,39 @@ static void whenSingleMode_Scenario(const string &filename){
 	}
 }
 //对战模式选择地图后
-static void whenSingleVersusSelectedFile(const string &filename){
-	//Game_AdvanceWars::currentGame()->gotoScene_BattleField(filename);
-}
+static void whenSingleVersusSelectedFile(const string &filename){}*/
 
 void Scene_Main::menuSingleModeConfirm(){
 	GET_GAME
-	auto scene=game->gotoScene_FileList();
 	switch(menuSingleMode.selectingItemIndex){
+		case NewMap:{
+			auto dialog=new Dialog_NewMap();
+			addSubObject(dialog);
+		}break;
 		case MapView:{
+			auto scene=game->gotoScene_FileList();
 			scene->textTitle.setString("MapSelect",true);
 			scene->changeDirectory(game->settings.mapsPath);
 			scene->whenConfirmFile=[game](const string &filename){
 				//加载资源
 				game->loadAllConfigData();//加载配置
 				game->loadAllTextures();//加载纹理
-				game->battleField.loadMap_CSV(filename);//加载地图
-				//切换场景
-				auto scene=game->gotoScene_BattleField();//跳转到战场
-				scene->updateMapRect();
+				if(game->battleField.loadMap_CSV(filename)){//加载地图
+					auto scene=game->gotoScene_BattleField();//跳转到战场
+					scene->updateMapRect();
+				}
 			};
 		}break;
 		case ScenarioMode:{
-			scene->textTitle.setString("SelectScript",true);
+			/*scene->textTitle.setString("SelectScript",true);
 			scene->changeDirectory(game->settings.scenarioScriptsPath);
-			scene->whenConfirmFile=whenSingleMode_Scenario;
+			scene->whenConfirmFile=whenSingleMode_Scenario;*/
 		}break;
 		case MissionMode:break;
 		case VersusMode:{//打开文件菜单
-			scene->textTitle.setString("SelectMap",true);
+			/*scene->textTitle.setString("SelectMap",true);
 			scene->changeDirectory(game->settings.mapsPath);
-			scene->whenConfirmFile=whenSingleVersusSelectedFile;
+			scene->whenConfirmFile=whenSingleVersusSelectedFile;*/
 		}break;
 		case SurvivalMode:break;
 		case CombatMode:break;

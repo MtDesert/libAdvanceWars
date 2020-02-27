@@ -1,0 +1,36 @@
+#ifndef LAYER_BATTLEFIELD_H
+#define LAYER_BATTLEFIELD_H
+
+#include"GameLayer.h"
+#include"Campaign.h"
+
+//高级战争的战场图层,战场可能很大,需要查看特定的区域时候需要移动本类对象
+class Layer_BattleField:public GameLayer{
+public:
+	//构造/析构函数
+	Layer_BattleField();
+	~Layer_BattleField();
+
+	//地图数据
+	BattleField *battleField;//这是战场,主要存地形和单位
+	Campaign *campaign;
+	Campaign::CoordType cursorPoint;//光标所处的坐标
+
+	//输入事件
+	virtual bool keyboardKey(Keyboard::KeyboardKey key,bool pressed);//处理光标移动
+	virtual bool mouseKey(MouseKey key,bool pressed);//处理触摸效果
+	virtual bool mouseMove(int x,int y);//处理光标跟随鼠标效果
+	//渲染函数
+	virtual void renderX()const;//画战场
+	//更新函数
+	void updateMapRect();//更新地图矩形,影响渲染
+protected:
+	void renderTerrains()const;//渲染地形
+	void renderUnits()const;//渲染单位
+	void renderMovements()const;//渲染移动范围
+	void renderFireRange()const;//渲染火力范围
+	void renderMovePath()const;//渲染移动路径
+	void renderGrid()const;//渲染网格
+	void renderCursor()const;//渲染光标
+};
+#endif

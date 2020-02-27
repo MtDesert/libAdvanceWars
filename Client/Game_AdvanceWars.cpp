@@ -74,12 +74,13 @@ bool Game_AdvanceWars::loadAllConfigData(){
 }
 bool Game_AdvanceWars::loadAllTextures(){
 	loadTerrainsTextures();
-	loadCorpsTextures(mTroopsList);
+	loadCorpsTextures();
+	loadTroopsTextures();
+	loadCorpMenuTextures();
+	texMenuArrow.deleteTexture();
+	texMenuArrow.texImage2D_FilePNG("images/Icons/MenuArrow.png");
 	return false;
 }
-
-#define CLEAR_TEX_CACHE_ARRAY(array)\
-for(auto &cache:array)cache.clearCache();
 
 void Game_AdvanceWars::clearAllTextureCache(){
 	commandersHeadTextures.clearCache();
@@ -87,12 +88,11 @@ void Game_AdvanceWars::clearAllTextureCache(){
 	terrainsTexturesArray.clearCache();
 	corpsTexturesArray.clearCache();
 	troopsTextures.clearCache();
+	corpMenuTextures.clearCache();
+	texMenuArrow.deleteTexture();
 }
 
 void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
-	if(forceReload){}
-}
-void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forceReload){
 	//强行重新加载一定要清除数据
 	if(forceReload){
 		corpsTexturesArray.clearCache();
@@ -114,8 +114,6 @@ void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forc
 			for(auto &troop:mTroopsList){//根据部队配色表来进行调色
 				for(int i=0;i<4;++i){
 					plte->setColor(6+i,troop.colors[i]);
-					ColorRGBA tmp;
-					tmp.fromBGRA(troop.colors[i]);
 				}
 				//完成配色,生成纹理
 				auto tex=texArr->data(i);
@@ -130,6 +128,21 @@ void Game_AdvanceWars::loadCorpsTextures(const TroopsList &mTroopsList,bool forc
 	}
 }
 void Game_AdvanceWars::loadCommandersTextures(bool forceReload){}
+void Game_AdvanceWars::loadTroopsTextures(bool forceReload){
+	if(forceReload)troopsTextures.clearCache();
+	if(troopsTextures.size())return;
+	//开始加载
+	troopsTextures.setSize(mTroopsList.size(),true);
+	auto troopIndex=0;
+	for(auto &troop:mTroopsList){
+		auto tex=troopsTextures.data(troopIndex);
+		if(tex){
+			tex->texImage2D_FilePNG(settings.imagesPathTroops+"/"+troop.name+".png",whenError);
+		}
+		//下一个
+		++troopIndex;
+	}
+}
 void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 	//强行重新加载一定要清除数据
 	if(forceReload){
@@ -183,4 +196,15 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 		//下一个
 		++trnIndex;
 	}
+}
+void Game_AdvanceWars::loadCorpMenuTextures(){
+	corpMenuTextures.setSize(Campaign::AmountOfCorpEnumMenu,true);
+	Texture *tex=nullptr;
+	//根据定义进行加载
+#define LOAD_CORP_COMMAND_ICON(name)\
+	tex=corpMenuTextures.data(Campaign::Menu_##name);\
+	if(tex){\
+		tex->texImage2D_FilePNG(settings.imagesPathCorpMenu+"/"+#name+".png",whenError);\
+	}
+	CAMPAIGN_CORPMENU(LOAD_CORP_COMMAND_ICON)
 }

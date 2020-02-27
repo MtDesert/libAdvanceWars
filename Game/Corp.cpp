@@ -18,6 +18,7 @@ bool Corp::isIndirectAttack()const{
 }
 
 #define READ(obj,member,type) state.getTable##type(#member,obj->member);
+#define READ_CORP_BOOL(member) corp->member=state.getTableBoolean(#member);
 
 bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 	bool ret=false;
@@ -31,6 +32,7 @@ bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 				if(!corp)return false;
 				//读取数据
 				READ(corp,name,String)
+				READ(corp,translate,String)
 				READ(corp,corpType,String)
 				READ(corp,price,Integer)
 				READ(corp,vision,Integer)
@@ -54,9 +56,18 @@ bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 					});
 					return true;
 				});
+				//读取兵种特性参数
+				READ_CORP_BOOL(capturable)
+				READ_CORP_BOOL(suppliable)
+				READ_CORP_BOOL(hidable)
+				READ_CORP_BOOL(repairable)
+				READ_CORP_BOOL(explodable)
+				READ_CORP_BOOL(buildable)
+				READ_CORP_BOOL(flarable)
 				return true;
 			});
 		});
 	}
+	printf("corp amount %lu\n",this->size());
 	return ret;
 }

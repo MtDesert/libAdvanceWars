@@ -24,6 +24,7 @@ public:
 	DATA_FILENAME_AND_IMAGEPATH(Weathers)
 #undef DATA_FILENAME_AND_IMAGEPATH
 	string ruleMove;//移动规则文件
+	string imagesPathCorpMenu;//兵种命令菜单图表路径
 
 	//设定数据
 	bool battleAnimation;//战斗动画是否显示
