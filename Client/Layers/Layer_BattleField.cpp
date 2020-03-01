@@ -25,14 +25,15 @@ static void updateRenderLattice(int x,int y){//更新需要渲染的网格数据
 	renderLattice.p1.setXY(renderLattice.p0.x +latticeSize-1,renderLattice.p0.y +latticeSize-1);
 }
 
-Layer_BattleField::Layer_BattleField():battleField(nullptr){
+Layer_BattleField::Layer_BattleField():battleField(nullptr),campaign(nullptr),
+isEditMode(false),isEditMode_Unit(false),terrainID(0),corpID(0),troopID(0){
 	game=Game_AdvanceWars::currentGame();
 	battleField=&game->battleField;//读取数据用
 	campaign=&game->campaign;
 	//精灵初始化
 	spriteUnit.anchorPoint.setXY(0,0);
 	spriteUnit.texArray=&game->corpsTexturesArray;//渲染单位用
-	texCursor.texImage2D_FilePNG("images/Icons/Cursor.png",Game::whenError);
+	texCursor.texImage2D_FilePNG(game->settings.imagesPathIcons+"/Cursor.png",Game::whenError);
 	//颜色设定
 	rgbMove.blue=255;rgbMove.alpha=128;
 	rgbFire.red=255;rgbFire.alpha=128;
@@ -41,22 +42,22 @@ Layer_BattleField::Layer_BattleField():battleField(nullptr){
 Layer_BattleField::~Layer_BattleField(){}
 
 bool Layer_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
-	bool ret=false;
 	if(!pressed){
-		ret=true;
 		int x=0,y=0;
 		switch(key){
 			case Keyboard::Key_Up:y=1;break;
 			case Keyboard::Key_Down:y=-1;break;
 			case Keyboard::Key_Left:x=-1;break;
 			case Keyboard::Key_Right:x=1;break;
-			case Keyboard::Key_Enter:break;
-			case Keyboard::Key_Esc:break;
-			default:ret=false;
+			case Keyboard::Key_Enter:whenPressConfirm();break;
+			case Keyboard::Key_Esc:whenPressCancel();break;
+			default:;
 		}
-		printf("%d,%d\n",x,y);
+		if(x || y){//方向键,进行移动
+			campaign->setCursor(campaign->cursor + Campaign::CoordType(x,y));
+		}
 	}
-	return ret;
+	return forceIntercept;
 }
 
 //拖动效果变量
@@ -65,7 +66,14 @@ static bool mouseKeyDown=false;//是否按下鼠标
 static bool isTouchMove=false;//是否拖动行为
 
 bool Layer_BattleField::mouseKey(MouseKey key,bool pressed){
-	return false;
+	if(!pressed){
+		switch(key){
+			case Mouse_LeftButton:whenPressConfirm();break;
+			case Mouse_RightButton:whenPressCancel();break;
+			default:;
+		}
+	}
+	return forceIntercept;
 }
 bool Layer_BattleField::mouseMove(int x,int y){
 	if(mouseKeyDown){//有可能是拖动
@@ -91,6 +99,26 @@ bool Layer_BattleField::mouseMove(int x,int y){
 	}
 	return false;
 }
+
+void Layer_BattleField::whenPressConfirm(){
+	auto scene=dynamic_cast<Scene_BattleField*>(parentObject);
+	if(!scene)return;
+	//确定操作
+	if(isEditMode){
+		auto p=campaign->cursor;
+		if(scene->menuMapEdit.selectingItemIndex==Scene_BattleField::MapEdit_Delete){//删除单位
+			battleField->removeUnit(p.x,p.y);
+		}else{//添加地形或单位
+			if(isEditMode_Unit){//添加单位
+				battleField->addUnit(p.x,p.y,scene->menuCorpSelect.selectingItemIndex,scene->menuTroopSelect.selectingItemIndex);
+			}else{
+				Terrain terrain(scene->menuTerrainSelect.selectingItemIndex,scene->menuTroopSelect.selectingItemIndex);
+				battleField->setTerrain(p.x,p.y,terrain);
+			}
+		}
+	}
+}
+void Layer_BattleField::whenPressCancel(){}
 
 void Layer_BattleField::renderX()const{
 	renderTerrains();//画地形图块
@@ -118,14 +146,9 @@ void Layer_BattleField::renderTerrains()const{
 		for(decltype(w) x=0;x<w;++x){
 			//取地形,并取纹理
 			battleField->getTerrain(x,y,terrain);
-			auto arr=game->terrainsTexturesArray.data(terrain.terrainType);
-			if(arr){
-				auto tex=arr->data(terrain.status);
-				if(tex){
-					updateRenderPos(x,y);
-					tex->draw(renderPos);
-				}
-			}
+			auto tex=game->terrainsTexturesArray.getTexture(terrain.terrainType,terrain.status);
+			updateRenderPos(x,y);
+			tex.draw(renderPos);
 		}
 	}
 }

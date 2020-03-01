@@ -65,6 +65,7 @@ public:
 
 	//选择操作
 	CoordType cursor;//光标
+	void setCursor(const CoordType &p);
 	void setCursor(int x,int y);//设置光标坐标,并获取相关信息
 	//推导数据
 	Terrain cursorTerrain;//光标指向的地形

@@ -10,6 +10,7 @@
 #include"Game.h"
 #include"Scene_Main.h"
 #include"Scene_BattleField.h"
+#include"Dialog_NewMap.h"
 #include"Layer_Conversation.h"
 
 /*高级战争的Game本体,负责管理场景的调度,即管理怎么从一个场景跳到另一个场景
@@ -30,6 +31,8 @@ public:
 	//场景跳转
 	Scene_Main* gotoScene_Main(bool reset=false);
 	Scene_BattleField* gotoScene_BattleField(bool reset=false);
+	//对话框显示
+	Dialog_NewMap* showDialog_NewMap();
 
 	//资料数据区
 	Settings settings;//设置数据,游戏应该先读入设置数据
@@ -57,6 +60,7 @@ public:
 	TextureCache troopsTextures;//部队标记纹理
 	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
 	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
+	TextureCache mapEditMenuTextures;//地图编辑菜单的纹理
 	TextureCache corpMenuTextures;//兵种菜单的纹理
 	Texture texMenuArrow;//菜单箭头
 	void clearAllTextureCache();
@@ -66,7 +70,8 @@ public:
 	void loadCommandersTextures(bool forceReload=false);//读取指挥官
 	void loadTroopsTextures(bool forceReload=false);
 	void loadTerrainsTextures(bool forceReload=false);
-	void loadCorpMenuTextures();
+	void loadMapEditMenuTextures(bool forceReload=false);
+	void loadCorpMenuTextures(bool forceReload=false);
 	//剧情脚本
 	GAME_USE_CONVERSATION(Layer_Conversation)
 	GAME_USE_SCRIPT(ScenarioScript)

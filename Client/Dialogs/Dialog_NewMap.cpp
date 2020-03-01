@@ -1,8 +1,7 @@
 #include "Dialog_NewMap.h"
 
-static const SizeType spacing=16;//间隔
 Dialog_NewMap::Dialog_NewMap(){
-	const SizeType itemWidth=400;
+	const SizeType itemWidth=400,spacing=16;
 	//初始化标题
 	stringMapInfo.setString("MapInfo",true);
 	addSubObject(&stringMapInfo);
@@ -23,10 +22,21 @@ Dialog_NewMap::Dialog_NewMap(){
 	allSubObjects_verticalLayout(spacing);
 	//设置取值范围
 
-	//debug
-	buttonsConfirmCancel.setConfirmCancelFunction([&](){
-		printf("Confirm %s %s %d %d\n",attrMapName.getValue().data(),attrAuthor.getValue().data(),attrWidth.getValue(),attrHeight.getValue());
-	},[](){
-		printf("Cancel\n");
-	});
+	//默认事件
+	buttonsConfirmCancel.buttonCancel.onClicked=[&](){removeFromParentObject();};
+}
+
+void Dialog_NewMap::setBattleField(const BattleField &battleField){
+	attrMapName.inputBox.setString(battleField.mapName);
+	attrAuthor.inputBox.setString(battleField.author);
+	attrWidth.inputBox.setInteger(battleField.getWidth());
+	attrHeight.inputBox.setInteger(battleField.getHeight());
+}
+void Dialog_NewMap::resetBattleField(BattleField &battleField)const{
+	battleField.mapName=attrMapName.getValue();
+	battleField.author=attrAuthor.getValue();
+	battleField.newData(attrWidth.getValue(),attrHeight.getValue());
+}
+void Dialog_NewMap::setConfirmCallback(GameButton::ClickCallback onConfirm){
+	buttonsConfirmCancel.buttonConfirm.onClicked=onConfirm;
 }

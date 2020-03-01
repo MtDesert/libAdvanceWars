@@ -6,11 +6,11 @@
 BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(nullptr),whenError(nullptr){}
 BattleField::~BattleField(){}
 
-bool BattleField::getTerrain(uint x,uint y,Terrain &terrain)const{return getValue(x,y,terrain);}
+bool BattleField::getTerrain(SizeType x,SizeType y,Terrain &terrain)const{return getValue(x,y,terrain);}
 bool BattleField::getTerrain(const Point2D<int> &p,Terrain &terrain)const{return getTerrain(p.x,p.y,terrain);}
-bool BattleField::setTerrain(uint x,uint y,const Terrain &terrain){return setValue(x,y,terrain);}
+bool BattleField::setTerrain(SizeType x,SizeType y,const Terrain &terrain){return setValue(x,y,terrain);}
 bool BattleField::setTerrain(const Point2D<int> &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
-bool BattleField::setTerrain(uint x,uint y,const string &terrainName,const string &status){
+bool BattleField::setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status){
 	Terrain terrain;
 	SizeType trnIndex=0,trpIndex=0;
 	if(terrainsList->dataName(terrainName,trnIndex)){
@@ -23,7 +23,7 @@ bool BattleField::setTerrain(uint x,uint y,const string &terrainName,const strin
 	}
 	return false;
 }
-bool BattleField::addUnit(uint x,uint y,const string &corpName,const string &troopName){
+bool BattleField::addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName){
 	Unit unit;
 	SizeType crpIndex=0,trpIndex=0;
 	auto corp=corpsList->dataName(corpName,crpIndex);
@@ -39,13 +39,32 @@ bool BattleField::addUnit(uint x,uint y,const string &corpName,const string &tro
 			break;
 		}
 		chessPieces.push_back(unit);
+		return true;
 	}
 	return false;
 }
+bool BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID){
+	Unit unit(corpID,troopID,decltype(unit.coordinate)(x,y));
+	auto corp=corpsList->data(corpID);
+	if(corp){
+		unit.fuel=corp->gasMax;
+		for(auto &wpn:corp->weapons){
+			unit.ammunition=wpn.ammunitionMax;
+			break;
+		}
+		chessPieces.push_back(unit);
+		return true;
+	}else return false;
+}
+bool BattleField::removeUnit(SizeType x,SizeType y){
+	auto oldVal=chessPieces.size();
+	chessPieces.remove_if([&](const Unit &unit){return unit.coordinate==decltype(unit.coordinate)(x,y);});
+	return chessPieces.size()<oldVal;
+}
 
 bool BattleField::fillTerrain(const Terrain &terrain){
-	for(unsigned x=0;x<width;++width){
-		for(unsigned y=0;y<height;++y){
+	for(SizeType x=0;x<width;++x){
+		for(SizeType y=0;y<height;++y){
 			setValue(x,y,terrain);
 		}
 	}
@@ -54,15 +73,15 @@ bool BattleField::fillTerrain(const Terrain &terrain){
 
 void BattleField::autoAdjustTerrainsTiles(){
 	if(!terrainsList)return;
-	for(uint x=0;x<width;++x){
-		for(uint y=0;y<height;++y){
+	for(SizeType x=0;x<width;++x){
+		for(SizeType y=0;y<height;++y){
 			autoAdjustTerrainTile(x,y);
 		}
 	}
 }
 
 static Point2D<int> direction4[4];//autoAdjustTerrainTile专用,用于计算周围的4个点
-void BattleField::autoAdjustTerrainTile(uint x,uint y){
+void BattleField::autoAdjustTerrainTile(SizeType x,SizeType y){
 	if(!terrainsList)return;
 	//获取当前地形
 	Terrain terrain;
@@ -235,7 +254,6 @@ void BattleField::saveMap_CSV(FILE *file)const{
 	}
 }
 
-//static bool func(const int &a,const int &b){return a<b;}
 void BattleField::analyse(){
 	//清除原来的分析结果
 	onlySea=true;

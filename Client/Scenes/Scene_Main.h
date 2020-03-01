@@ -66,6 +66,7 @@ public:
 	~Scene_Main();
 
 	//菜单项
+#undef ENUM
 #define ENUM(name) name,
 	enum Enum_MainMenu{
 		MAIN_MENU(ENUM)

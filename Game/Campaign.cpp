@@ -27,6 +27,7 @@ CampaignTeam* Campaign::findTeam(int teamID)const{
 	return nullptr;
 }
 
+void Campaign::setCursor(const CoordType &p){setCursor(p.x,p.y);}
 void Campaign::setCursor(int x,int y){
 	//获取地形
 	if(battleField->getTerrain(x,y,cursorTerrain)){

@@ -1,20 +1,18 @@
 #include"Game_AdvanceWars.h"
-
-#include"BattleField.h"
-#include"extern.h"
-
-#include"Scene_Main.h"
-#include"Scene_BattleField.h"
 #include"Layer_Conversation.h"
+#include"extern.h"
 
 //所有场景
 #define ALL_SCENES(MACRO)\
 MACRO(Main)\
-MACRO(BattleField)\
-//场景声明
-#define STATIC_SCENES(name) static Scene_##name *scene##name=nullptr;\
+MACRO(BattleField)
+//所有对话框
+#define ALL_DIALOGS(MACRO)\
+MACRO(NewMap)
 
-ALL_SCENES(STATIC_SCENES)
+//声明
+ALL_SCENES(GAME_SCENE_DECLARE)
+ALL_DIALOGS(GAME_DIALOG_DECLARE)
 
 Game_AdvanceWars::Game_AdvanceWars(){
 	gameSettings=&settings;
@@ -28,8 +26,8 @@ Game_AdvanceWars::Game_AdvanceWars(){
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
-	deleteSubObject(sceneMain);
-	deleteSubObject(sceneBattleField);
+	ALL_SCENES(GAME_DELETE_SCENE)
+	ALL_DIALOGS(GAME_DELETE_DIALOG);
 	//清除数据
 	mCorpsList.clear();
 	mCommandersList.clear();
@@ -61,8 +59,9 @@ void Game_AdvanceWars::reset(){
 	gotoScene_Main();
 }
 
-GAME_GOTOSCENE_DEFINE(AdvanceWars,Main)
-GAME_GOTOSCENE_DEFINE(AdvanceWars,BattleField)
+GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,Main)
+GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,BattleField)
+GAME_SHOWDIALOG_DEFINE(Game_AdvanceWars,NewMap)
 
 #define AW_LOAD_LUA(mList,dataName) if(mList.size()==0)mList.loadFile_lua(settings.dataName,whenError);
 bool Game_AdvanceWars::loadAllConfigData(){
@@ -76,10 +75,11 @@ bool Game_AdvanceWars::loadAllTextures(){
 	loadTerrainsTextures();
 	loadCorpsTextures();
 	loadTroopsTextures();
+	loadMapEditMenuTextures();
 	loadCorpMenuTextures();
 	texMenuArrow.deleteTexture();
-	texMenuArrow.texImage2D_FilePNG("images/Icons/MenuArrow.png");
-	return false;
+	texMenuArrow.texImage2D_FilePNG(settings.imagesPathIcons+"/MenuArrow.png",whenError);
+	return true;
 }
 
 void Game_AdvanceWars::clearAllTextureCache(){
@@ -92,12 +92,13 @@ void Game_AdvanceWars::clearAllTextureCache(){
 	texMenuArrow.deleteTexture();
 }
 
+#define FORCE_LOAD_CHECK(texArray) \
+if(forceReload)texArray.clearCache();\
+if(texArray.size())return;
+
 void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
 	//强行重新加载一定要清除数据
-	if(forceReload){
-		corpsTexturesArray.clearCache();
-	}
-	if(corpsTexturesArray.size())return;
+	FORCE_LOAD_CHECK(corpsTexturesArray)
 	//未加载,重新加载
 	corpsTexturesArray.setSize(mCorpsList.size(),true);
 	int corpIndex=0;
@@ -129,8 +130,7 @@ void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
 }
 void Game_AdvanceWars::loadCommandersTextures(bool forceReload){}
 void Game_AdvanceWars::loadTroopsTextures(bool forceReload){
-	if(forceReload)troopsTextures.clearCache();
-	if(troopsTextures.size())return;
+	FORCE_LOAD_CHECK(troopsTextures)
 	//开始加载
 	troopsTextures.setSize(mTroopsList.size(),true);
 	auto troopIndex=0;
@@ -144,11 +144,7 @@ void Game_AdvanceWars::loadTroopsTextures(bool forceReload){
 	}
 }
 void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
-	//强行重新加载一定要清除数据
-	if(forceReload){
-		terrainsTexturesArray.clearCache();
-	}
-	if(terrainsTexturesArray.size())return;
+	FORCE_LOAD_CHECK(terrainsTexturesArray)
 	//未加载,重新加载
 	terrainsTexturesArray.setSize(mTerrainCodesList.size(),true);
 	int trnIndex=0;
@@ -197,14 +193,27 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 		++trnIndex;
 	}
 }
-void Game_AdvanceWars::loadCorpMenuTextures(){
+void Game_AdvanceWars::loadMapEditMenuTextures(bool forceReload){
+	FORCE_LOAD_CHECK(mapEditMenuTextures)
+	mapEditMenuTextures.setSize(Scene_BattleField::AmountOfEnumMapEditCommand,true);
+	Texture *tex=nullptr;
+	//根据定义进行加载
+#define LOAD_MAP_EDIT_COMMAND_ICON(name)\
+	tex=mapEditMenuTextures.data(Scene_BattleField::MapEdit_##name);\
+	if(tex){\
+		tex->texImage2D_FilePNG(settings.imagesPathIcons+"/"+#name+".png",whenError);\
+	}
+	BATTLEFIELD_EDIT_MAP_MENU(LOAD_MAP_EDIT_COMMAND_ICON)
+}
+void Game_AdvanceWars::loadCorpMenuTextures(bool forceReload){
+	FORCE_LOAD_CHECK(corpMenuTextures)
 	corpMenuTextures.setSize(Campaign::AmountOfCorpEnumMenu,true);
 	Texture *tex=nullptr;
 	//根据定义进行加载
 #define LOAD_CORP_COMMAND_ICON(name)\
 	tex=corpMenuTextures.data(Campaign::Menu_##name);\
 	if(tex){\
-		tex->texImage2D_FilePNG(settings.imagesPathCorpMenu+"/"+#name+".png",whenError);\
+		tex->texImage2D_FilePNG(settings.imagesPathIcons+"/"+#name+".png",whenError);\
 	}
 	CAMPAIGN_CORPMENU(LOAD_CORP_COMMAND_ICON)
 }

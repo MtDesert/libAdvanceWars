@@ -36,17 +36,19 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	string mapName;//地图名
 	string author;//地图作者
 	//地形编辑
-	bool getTerrain(uint x,uint y,Terrain &terrain)const;
+	bool getTerrain(SizeType x,SizeType y,Terrain &terrain)const;
 	bool getTerrain(const Point2D<int> &p,Terrain &terrain)const;
-	bool setTerrain(uint x,uint y,const Terrain &terrain);
+	bool setTerrain(SizeType x,SizeType y,const Terrain &terrain);
 	bool setTerrain(const Point2D<int> &p,const Terrain &terrain);
-	bool setTerrain(uint x,uint y,const string &terrainName,const string &status="");
+	bool setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status="");
 	bool fillTerrain(const Terrain &terrain);//地形填充
 	//单位编辑
-	bool addUnit(uint x,uint y,const string &corpName,const string &troopName);
+	bool addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName);//x,y处添加兵种为corpName,部队为troopName的单位
+	bool addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID);//x,y处添加兵种ID为corpID,部队ID为troopID的单位
+	bool removeUnit(SizeType x,SizeType y);//移除x,y处的所有单位
 	//图块调整
 	void autoAdjustTerrainsTiles();//调整所有地图块的样式
-	void autoAdjustTerrainTile(uint x,uint y);//调整x,y部分的样式,使其与周边看上去相连
+	void autoAdjustTerrainTile(SizeType x,SizeType y);//调整x,y部分的样式,使其与周边看上去相连
 
 	WhenErrorString whenError;//报错函数
 	//地图分析,统计各个方面的数据

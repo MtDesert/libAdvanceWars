@@ -68,6 +68,5 @@ bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 			});
 		});
 	}
-	printf("corp amount %lu\n",this->size());
 	return ret;
 }

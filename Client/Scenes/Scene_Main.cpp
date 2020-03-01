@@ -47,7 +47,6 @@ static void menuCancel(GameMenu *menu){
 
 Scene_Main::Scene_Main(){
 	//生成菜单项
-	menuMain.setRenderItemAmount(7);
 	MAKE_MENU(MAIN_MENU,Main)
 	MAKE_MENU(SINGLE_MODE_MENU,SingleMode)
 	MAKE_MENU(ONLINE_MODE_MENU,OnlineMode)
@@ -87,20 +86,28 @@ void Scene_Main::menuSingleModeConfirm(){
 	GET_GAME
 	switch(menuSingleMode.selectingItemIndex){
 		case NewMap:{
-			auto dialog=new Dialog_NewMap();
-			addSubObject(dialog);
+			auto dialog=game->showDialog_NewMap();
+			dialog->setConfirmCallback([game,dialog](){
+				//根据对话框的数据创建地图
+				dialog->resetBattleField(game->battleField);
+				dialog->removeFromParentObject();
+				//场景跳转
+				game->loadAllConfigData();
+				auto scene=game->gotoScene_BattleField(true);
+				scene->gotoEditMode();//切换到编辑模式
+			});
 		}break;
 		case MapView:{
-			auto scene=game->gotoScene_FileList();
-			scene->textTitle.setString("MapSelect",true);
+			auto scene=game->gotoScene_FileList(true);
+			scene->lastScene=this;
+			scene->stringTitle.setString("MapSelect",true);
 			scene->changeDirectory(game->settings.mapsPath);
 			scene->whenConfirmFile=[game](const string &filename){
 				//加载资源
 				game->loadAllConfigData();//加载配置
-				game->loadAllTextures();//加载纹理
 				if(game->battleField.loadMap_CSV(filename)){//加载地图
-					auto scene=game->gotoScene_BattleField();//跳转到战场
-					scene->updateMapRect();
+					auto scene=game->gotoScene_BattleField(true);//跳转到战场
+					scene->gotoEditMode();//debug
 				}
 			};
 		}break;
@@ -121,14 +128,9 @@ void Scene_Main::menuSingleModeConfirm(){
 }
 
 void Scene_Main::menuOnlineModeConfirm(){
-	switch(menuOnlineMode.selectingItemIndex){
-		case Register:
-			showLoginDialog(true);
-		break;
-		case Login:
-			showLoginDialog();
-		break;
-	}
+	GET_GAME
+	auto dialog=game->showDialog_Login();
+	dialog->setIsRegister(menuOnlineMode.selectingItemIndex==Register);
 }
 void Scene_Main::menuMilitaryFilesConfirm(){}
 void Scene_Main::menuMilitaryDeployConfirm(){}

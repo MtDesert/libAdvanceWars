@@ -128,8 +128,8 @@ static void babyWars_WriteHeader_lua(const BattleField &bf,FILE *file){
 	fprintf(file,"\twarFieldName=\'%s\',\n",bf.mapName.data());
 	fprintf(file,"\tauthorName=\'%s\',\n",bf.author.data());
 	fprintf(file,"\tplayersCount=%lu,\n",bf.playerIndexList.size());
-	fprintf(file,"\twidth=%d,\n",bf.getWidth());
-	fprintf(file,"\theight=%d,\n",bf.getHeight());
+	fprintf(file,"\twidth=%lu,\n",bf.getWidth());
+	fprintf(file,"\theight=%lu,\n",bf.getHeight());
 	fprintf(file,"\tlayers={\n");
 }
 
