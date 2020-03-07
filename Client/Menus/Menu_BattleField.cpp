@@ -30,8 +30,15 @@ MenuItem_CorpSelect::MenuItem_CorpSelect(){
 MenuItem_TerrainSelect::MenuItem_TerrainSelect(){
 	size.setXY(ICON_SIZE*9,ICON_SIZE);
 	setCursorWidth(ICON_SIZE);
+	//个别地形比较高,要调整锚点
+	spriteIcon.anchorPoint.y=0;
+	spriteIcon.position.y=-ICON_SIZE/2;
 }
 MenuItem_TroopSelect::MenuItem_TroopSelect(){
+	size.setXY(ICON_SIZE*8,ICON_SIZE);
+	setCursorWidth(ICON_SIZE);
+}
+MenuItem_CommanderSelect::MenuItem_CommanderSelect(){
 	size.setXY(ICON_SIZE*8,ICON_SIZE);
 	setCursorWidth(ICON_SIZE);
 }
@@ -45,9 +52,10 @@ MenuItem_CorpCommand::MenuItem_CorpCommand(){
 }
 
 //Menu们的构造函数
-Menu_CorpSelect::Menu_CorpSelect():menuTroopSelect(nullptr){MENU_INIT}
-Menu_TerrainSelect::Menu_TerrainSelect():menuTroopSelect(nullptr){MENU_INIT}
+Menu_CorpSelect::Menu_CorpSelect():troopID(0){MENU_INIT}
+Menu_TerrainSelect::Menu_TerrainSelect():troopID(0){MENU_INIT}
 Menu_TroopSelect::Menu_TroopSelect(){MENU_INIT}
+Menu_CommanderSelect::Menu_CommanderSelect(){MENU_INIT}
 Menu_MapEdit::Menu_MapEdit():menuCorpSelect(nullptr),menuTerrainSelect(nullptr),menuTroopSelect(nullptr){MENU_INIT}
 Menu_CorpCommand::Menu_CorpCommand(){MENU_INIT}
 
@@ -59,7 +67,7 @@ void MenuItem_CorpSelect::updateData(SizeType pos){
 		stringPrice.setString(Number::toString(corp->price));
 		auto menu=dynamic_cast<Menu_CorpSelect*>(parentObject);
 		if(menu){
-			spriteIcon.setTexture(game->corpsTexturesArray.getTexture(pos,menu->menuTroopSelect->selectingItemIndex));
+			spriteIcon.setTexture(game->corpsTexturesArray.getTexture(pos,menu->troopID));
 		}
 	}else{
 		ITEM_ICON_NAME_NULL
@@ -71,9 +79,7 @@ void MenuItem_TerrainSelect::updateData(SizeType pos){
 		stringName.setString(terrainCode->translate);
 		auto menu=dynamic_cast<Menu_TerrainSelect*>(parentObject);
 		if(menu){
-			auto status = menu->menuTroopSelect->selectingItemIndex;
-			if(!terrainCode->capturable)status=0;//非据点,就用地形的默认图块
-			spriteIcon.setTexture(game->terrainsTexturesArray.getTexture(pos,status));
+			spriteIcon.setTexture(game->terrainsTexturesArray.getTexture(pos,terrainCode->capturable ? menu->troopID : 0));
 		}
 	}else{
 		ITEM_ICON_NAME_NULL
@@ -88,24 +94,27 @@ void MenuItem_TroopSelect::updateData(SizeType pos){
 		ITEM_ICON_NAME_NULL
 	}
 }
+void MenuItem_CommanderSelect::updateData(SizeType pos){
+	auto co=game->mCommandersList.data(pos);//取数据
+	if(co){
+		stringName.setString(co->name);
+		spriteIcon.setTexture(game->commandersHeadTextures.getTexture(pos));
+	}else{
+		ITEM_ICON_NAME_NULL
+	}
+}
 
 void MenuItem_MapEdit::updateData(SizeType pos){
 	auto menu=dynamic_cast<Menu_MapEdit*>(parentObject);
 	if(menu && pos< Scene_BattleField::AmountOfEnumMapEditCommand){
 		switch(pos){
 			case Scene_BattleField::MapEdit_CorpSelect:
-				spriteIcon.setTexture(game->corpsTexturesArray.getTexture(
-					menu->menuCorpSelect->selectingItemIndex,
-					menu->menuTroopSelect->selectingItemIndex));
+				spriteIcon.setTexture(game->corpsTexturesArray.getTexture(menu->menuCorpSelect->selectingItemIndex,menu->menuCorpSelect->troopID));
 			break;
 			case Scene_BattleField::MapEdit_TerrainSelect:{
 				auto terrainCode=game->mTerrainCodesList.data(menu->menuTerrainSelect->selectingItemIndex);
 				if(terrainCode){
-					auto status = menu->menuTroopSelect->selectingItemIndex;
-					if(!terrainCode->capturable)status=0;//非据点,就用地形的默认图块
-					spriteIcon.setTexture(game->terrainsTexturesArray.getTexture(
-						menu->menuTerrainSelect->selectingItemIndex,
-						status));
+					spriteIcon.setTexture(game->terrainsTexturesArray.getTexture(menu->menuTerrainSelect->selectingItemIndex,terrainCode->capturable ? menu->menuTerrainSelect->troopID : 0));
 				}
 			}break;
 			case Scene_BattleField::MapEdit_TroopSelect:{
@@ -135,8 +144,9 @@ void MenuItem_CorpCommand::updateData(SizeType pos){
 	}
 }
 
-SizeType Menu_CorpSelect::rowAmount()const{return game->mCorpsList.size();}
-SizeType Menu_TerrainSelect::rowAmount()const{return game->mTerrainCodesList.size();}
-SizeType Menu_TroopSelect::rowAmount()const{return game->mTroopsList.size();}
-SizeType Menu_MapEdit::rowAmount()const{return Scene_BattleField::AmountOfEnumMapEditCommand;}
-SizeType Menu_CorpCommand::rowAmount()const{return Campaign::AmountOfCorpEnumMenu;}
+SizeType Menu_CorpSelect::itemAmount()const{return game->mCorpsList.size();}
+SizeType Menu_TerrainSelect::itemAmount()const{return game->mTerrainCodesList.size();}
+SizeType Menu_TroopSelect::itemAmount()const{return game->mTroopsList.size();}
+SizeType Menu_CommanderSelect::itemAmount()const{return game->mCommandersList.size();}
+SizeType Menu_MapEdit::itemAmount()const{return Scene_BattleField::AmountOfEnumMapEditCommand;}
+SizeType Menu_CorpCommand::itemAmount()const{return Campaign::AmountOfCorpEnumMenu;}

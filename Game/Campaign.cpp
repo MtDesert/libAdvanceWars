@@ -1,7 +1,9 @@
 #include"Campaign.h"
-#include"Map.h"
 
-int tolua_AdvanceWars_open(lua_State* tolua_S);
+CampaignCO::CampaignCO():coID(0),energy(0),powerStatus(0){}
+CampaignTroop::CampaignTroop():troopID(0),isAI(false),teamID(0),funds(0){}
+CampaignRule::CampaignRule():mIsFogWar(false),mInitFunds(0),mBaseIncome(1000),
+mBasesToWin(0),mFundsToWin(0),mTurnsToWin(0),mUnitLevel(0),mCoPowerLevel(2){}
 
 Campaign::Campaign():
 	battleField(nullptr),
@@ -18,13 +20,42 @@ Campaign::Campaign():
 	whenError(nullptr){}
 Campaign::~Campaign(){}
 
-CampaignTeam* Campaign::findTeam(int teamID)const{
-	for(auto &team:allTeams){
-		if(team.teamID==teamID){
-			return &team;
+CampaignTroop* Campaign::findTeam(SizeType teamID)const{
+	return allTroops.data([&](const CampaignTroop &team){return team.troopID==teamID;});
+}
+
+void CampaignWeathers::setWeatherAmount(SizeType amount){
+	weatherData.setSize(amount,true);
+	weatherData.fill({0,0});
+}
+void CampaignWeathers::setWeatherFactor(SizeType index,SizeType value){
+	auto dt=weatherData.data(index);
+	if(!dt)return;
+	//设置数据,更新所有概率
+	dt->factor=value;
+	SizeType sum=0;
+	for(auto &data:weatherData)sum += data.factor;//累加
+	for(auto &data:weatherData){
+		data.rate = sum>=0 ? data.factor/(double)sum : 0;
+	}
+}
+
+void Campaign::makeAllTeams(){
+	//根据地图的统计信息来找出可参战队伍
+	BattleField_Feature feature;
+	battleField->analyseFeature(feature);
+	allTroops.clear();//清理参赛队伍,重新确定
+	for(SizeType i=0;i<battleField->troopsList->size();++i){
+		auto pBuildCount=feature.array_buildableTerrainAmount.data(i);
+		auto pUnitCount=feature.array_UnitAmount.data(i);
+		if(*pBuildCount + *pUnitCount > 0){//有厂或者有单位,就当作可以参战了
+			auto teamID=allTroops.size();
+			allTroops.push_back(CampaignTroop());
+			auto troop=allTroops.lastData();
+			troop->troopID=i;
+			troop->teamID=teamID;
 		}
 	}
-	return nullptr;
 }
 
 void Campaign::setCursor(const CoordType &p){setCursor(p.x,p.y);}
@@ -323,19 +354,6 @@ void Campaign::cursorSelect(){
 				}
 			}
 		}else if(cursorTerrainCode){//如果没有单位,则有可能是制造单位的工厂
-			if(cursorTerrainCode->buildable){//可建造部队,那么我们需要显示菜单
-				/*produceMenu.clear();
-				string corpType;//可生产的兵种类型
-				const string &name(cursorTerrainCode->name);
-				if(name=="Factory")corpType="LandForce";
-				else if(name=="AirFactory")corpType="AirForce";
-				else if(name=="ShipFactory")corpType="NavyForce";
-				for(auto &corp:*battleField->corpsList){
-					if(corpType==corp.corpType){
-						//produceMenu.push_back(corp.id);
-					}
-				}*/
-			}
 		}
 	}else{//选择单位并点击无单位的地方,可能是移动,也可能是取消
 		auto lastP=movePath.data(movePath.size()-1);
@@ -538,7 +556,7 @@ bool Campaign::showMenuItem_Supply(){
 	auto &unitList(battleField->chessPieces);
 	for(auto &unit:unitList){
 		if((cursor-unit.coordinate).manhattanLength()==1 && selectUnit!=&unit){//首先必须位置相邻,且不是自己
-			if(selectTeam->teamID==unit.color || selectTeam->friendsTeams.contain(unit.color)){//必须是自军或者友军
+			if(selectTeam->troopID==unit.color || selectTeam->friendsTeams.contain(unit.color)){//必须是自军或者友军
 				suppliableUnits.push_back(&unit);
 			}
 		}
@@ -584,7 +602,7 @@ bool Campaign::showMenuItem_Repair(){
 	auto &unitList(battleField->chessPieces);
 	for(auto &unit:unitList){
 		if((cursor-unit.coordinate).manhattanLength()==1 && selectUnit!=&unit){//首先必须位置相邻,且不是自己
-			if(selectTeam->teamID==unit.color || selectTeam->friendsTeams.contain(unit.color)){//必须是自军或者友军
+			if(selectTeam->troopID==unit.color || selectTeam->friendsTeams.contain(unit.color)){//必须是自军或者友军
 				suppliableUnits.push_back(&unit);
 			}
 		}

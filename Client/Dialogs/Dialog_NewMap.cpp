@@ -7,7 +7,7 @@ Dialog_NewMap::Dialog_NewMap(){
 	addSubObject(&stringMapInfo);
 
 #define LABEL_INIT(Name,Type) \
-	attr##Name.setLabel_Spacing_MaxWidth(#Name,true,spacing,itemWidth);\
+	attr##Name.setLabelName_ValueWidth_MaxWidth(#Name,true,280,itemWidth);\
 	addSubObject(&attr##Name);
 
 	LABEL_INIT(MapName,String)
@@ -27,15 +27,18 @@ Dialog_NewMap::Dialog_NewMap(){
 }
 
 void Dialog_NewMap::setBattleField(const BattleField &battleField){
-	attrMapName.inputBox.setString(battleField.mapName);
-	attrAuthor.inputBox.setString(battleField.author);
-	attrWidth.inputBox.setInteger(battleField.getWidth());
-	attrHeight.inputBox.setInteger(battleField.getHeight());
+	attrMapName.inputBox.setValue(battleField.mapName);
+	attrAuthor.inputBox.setValue(battleField.author);
+	attrWidth.inputBox.setValue(battleField.getWidth());
+	attrHeight.inputBox.setValue(battleField.getHeight());
 }
 void Dialog_NewMap::resetBattleField(BattleField &battleField)const{
 	battleField.mapName=attrMapName.getValue();
 	battleField.author=attrAuthor.getValue();
-	battleField.newData(attrWidth.getValue(),attrHeight.getValue());
+	auto w=attrWidth.getUnsignedValue(),h=attrHeight.getUnsignedValue();
+	if(w!=battleField.getWidth() || h!=battleField.getHeight()){//尺寸不一致,需要重新调整
+		battleField.newData(w,h);
+	}
 }
 void Dialog_NewMap::setConfirmCallback(GameButton::ClickCallback onConfirm){
 	buttonsConfirmCancel.buttonConfirm.onClicked=onConfirm;

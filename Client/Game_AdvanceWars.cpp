@@ -1,11 +1,11 @@
 #include"Game_AdvanceWars.h"
 #include"Layer_Conversation.h"
-#include"extern.h"
 
 //所有场景
 #define ALL_SCENES(MACRO)\
 MACRO(Main)\
-MACRO(BattleField)
+MACRO(BattleField)\
+MACRO(CampaignPrepare)
 //所有对话框
 #define ALL_DIALOGS(MACRO)\
 MACRO(NewMap)
@@ -61,6 +61,7 @@ void Game_AdvanceWars::reset(){
 
 GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,Main)
 GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,BattleField)
+GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,CampaignPrepare)
 GAME_SHOWDIALOG_DEFINE(Game_AdvanceWars,NewMap)
 
 #define AW_LOAD_LUA(mList,dataName) if(mList.size()==0)mList.loadFile_lua(settings.dataName,whenError);
@@ -68,6 +69,8 @@ bool Game_AdvanceWars::loadAllConfigData(){
 	AW_LOAD_LUA(mTerrainCodesList,dataTerrainCodes)//地形表
 	AW_LOAD_LUA(mCorpsList,dataCorps)//兵种表
 	AW_LOAD_LUA(mTroopsList,dataTroops)//势力表
+	AW_LOAD_LUA(mCommandersList,dataCommanders)//CO表
+	AW_LOAD_LUA(mWeathersList,dataWeathers)//天气表
 	campaign.luaState.doFile(settings.ruleMove);//移动规则
 	return true;
 }
@@ -75,6 +78,7 @@ bool Game_AdvanceWars::loadAllTextures(){
 	loadTerrainsTextures();
 	loadCorpsTextures();
 	loadTroopsTextures();
+	loadCommandersTextures();
 	loadMapEditMenuTextures();
 	loadCorpMenuTextures();
 	texMenuArrow.deleteTexture();
@@ -128,7 +132,20 @@ void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
 		++corpIndex;
 	}
 }
-void Game_AdvanceWars::loadCommandersTextures(bool forceReload){}
+void Game_AdvanceWars::loadCommandersTextures(bool forceReload){
+	FORCE_LOAD_CHECK(commandersHeadTextures)
+	//开始加载
+	commandersHeadTextures.setSize(mCommandersList.size(),true);
+	auto coID=0;
+	for(auto &commander:mCommandersList){
+		auto tex=commandersHeadTextures.data(coID);
+		if(tex){
+			tex->texImage2D_FilePNG(settings.headImagePath+"/"+commander.name+".png",whenError);
+		}
+		//下一个coID
+		++coID;
+	}
+}
 void Game_AdvanceWars::loadTroopsTextures(bool forceReload){
 	FORCE_LOAD_CHECK(troopsTextures)
 	//开始加载

@@ -13,6 +13,6 @@ struct Troop{
 
 class TroopsList:public DataList<Troop>{
 public:
-	bool loadFile_lua(const string &filename,WhenErrorString whenError);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
+	bool loadFile_lua(const string &filename,WhenErrorString whenError);//加载lua格式的数据文件,返回加载是否成功
 };
 #endif

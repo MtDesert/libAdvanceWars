@@ -15,7 +15,7 @@ public:\
 class Menu_##Name:public GameMenuTemplate<MenuItem_##Name>{\
 public:\
 	Menu_##Name();\
-	virtual SizeType rowAmount()const;\
+	virtual SizeType itemAmount()const;\
 	otherCodeOfMenu\
 };
 
@@ -24,13 +24,15 @@ CLASS_MENU_ITEM_DECLARE(TroopSelect,,)
 //兵种选择,可用于设计地图和生产
 CLASS_MENU_ITEM_DECLARE(CorpSelect,
 	GameString stringPrice;,//显示价格
-	Menu_TroopSelect *menuTroopSelect;
+	SizeType troopID;
 )
 //地形选择,主要用于设计地图
 CLASS_MENU_ITEM_DECLARE(TerrainSelect,
 	,
-	Menu_TroopSelect *menuTroopSelect;
+	SizeType troopID;
 )
+//CO选择
+CLASS_MENU_ITEM_DECLARE(CommanderSelect,,)
 
 //地图编辑菜单,用于操作
 CLASS_MENU_ITEM_DECLARE(MapEdit,

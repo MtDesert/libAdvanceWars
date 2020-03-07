@@ -1,15 +1,24 @@
 #include"BattleField.h"
 #include"define.h"
 
-#include<stdlib.h>
+void BattleField_Feature::print()const{
+	printf("build:\n");
+	for(SizeType i=0;i<array_buildableTerrainAmount.size();++i){
+		printf("%lu -> %lu\n",i,*array_buildableTerrainAmount.data(i));
+	}
+	printf("unit:\n");
+	for(SizeType i=0;i<array_UnitAmount.size();++i){
+		printf("%lu -> %lu\n",i,*array_UnitAmount.data(i));
+	}
+}
 
 BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(nullptr),whenError(nullptr){}
 BattleField::~BattleField(){}
 
 bool BattleField::getTerrain(SizeType x,SizeType y,Terrain &terrain)const{return getValue(x,y,terrain);}
-bool BattleField::getTerrain(const Point2D<int> &p,Terrain &terrain)const{return getTerrain(p.x,p.y,terrain);}
+bool BattleField::getTerrain(const CoordType &p,Terrain &terrain)const{return getTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(SizeType x,SizeType y,const Terrain &terrain){return setValue(x,y,terrain);}
-bool BattleField::setTerrain(const Point2D<int> &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
+bool BattleField::setTerrain(const CoordType &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status){
 	Terrain terrain;
 	SizeType trnIndex=0,trpIndex=0;
@@ -80,31 +89,40 @@ void BattleField::autoAdjustTerrainsTiles(){
 	}
 }
 
-static Point2D<int> direction4[4];//autoAdjustTerrainTile专用,用于计算周围的4个点
-void BattleField::autoAdjustTerrainTile(SizeType x,SizeType y){
+void BattleField::autoAdjustTerrainTile(SizeType x,SizeType y,bool adjustAround){
 	if(!terrainsList)return;
 	//获取当前地形
 	Terrain terrain;
 	if(!getTerrain(x,y,terrain))return;
-	if(!terrainsList->canAdjustTile(terrain.terrainType))return;
+	auto code=terrainsList->data(terrain.terrainType);
+	if(!code)return;
 	//生成四周的坐标
+	CoordType direction4[4];//autoAdjustTerrainTile专用,用于计算周围的4个点
 	direction4[0].setXY(x,y+1);
 	direction4[1].setXY(x,y-1);
 	direction4[2].setXY(x-1,y);
 	direction4[3].setXY(x+1,y);
-	Terrain terrainX;
 	//根据坐标判断连通性
-	terrain.status=0;
+	if(!code->capturable)terrain.status=0;//非据点,需要重新计算status
+	Terrain terrainX;
 	auto bit=1;
 	for(int i=0;i<4;++i){
-		if(getTerrain(direction4[i],terrainX)){
-			if(terrainsList->canAdjustTile(terrain.terrainType,terrainX.terrainType)){
+		//调整图块
+		auto p=direction4[i];
+		if(code->has4direction){
+			if(getTerrain(p,terrainX)){
+				if(terrainsList->canAdjustTile(terrain.terrainType,terrainX.terrainType)){
+					terrain.status|=bit;
+				}
+			}else{//边界,可判定为连通
 				terrain.status|=bit;
 			}
-		}else{//边界,可判定为连通
-			terrain.status|=bit;
+			bit<<=1;
 		}
-		bit<<=1;
+		//调整相邻图块
+		if(adjustAround){
+			autoAdjustTerrainTile(p.x,p.y);
+		}
 	}
 	setTerrain(x,y,terrain);
 }
@@ -214,7 +232,7 @@ void BattleField::saveMap_CSV(FILE *file)const{
 	fprintf(file,"%d,%d\n",w,h);
 	//打印地形信息
 	Terrain terrain;
-	for(decltype(h) y=0;y<h;++y){
+	for(int y=h-1;y>=0;--y){
 		for(decltype(w) x=0;x<w;++x){
 			if(getTerrain(x,y,terrain)){
 				auto code=terrainsList->data(terrain.terrainType);
@@ -232,7 +250,7 @@ void BattleField::saveMap_CSV(FILE *file)const{
 				//打印逗号或者换行
 				if(x+1<w){
 					fprintf(file,",");
-				}else if(y+1<h){
+				}else if(y>0){
 					fprintf(file,"\n");
 				}
 			}
@@ -254,14 +272,15 @@ void BattleField::saveMap_CSV(FILE *file)const{
 	}
 }
 
-void BattleField::analyse(){
-	//清除原来的分析结果
-	onlySea=true;
-	captureTerrainCount=0;
-	playerIndexList.clear();
-	//准备分析
-	int w=getWidth();
-	int h=getHeight();
+void BattleField::analyseFeature(BattleField_Feature &feature)const{
+	//初始化
+	feature.array_buildableTerrainAmount.setSize(troopsList->size(),true);
+	feature.array_buildableTerrainAmount.fill(0);
+	feature.array_UnitAmount.setSize(troopsList->size(),true);
+	feature.array_UnitAmount.fill(0);
+	//开始遍历各个地形
+	auto w=getWidth();
+	auto h=getHeight();
 	Terrain terrain;
 	for(decltype(h) y=0;y<h;++y){
 		for(decltype(w) x=0;x<w;++x){
@@ -269,25 +288,16 @@ void BattleField::analyse(){
 				//开始统计可能的玩家个数
 				auto code=terrainsList->data(terrain.terrainType);
 				if(!code)continue;
-				if(code->name!="Sea")onlySea=false;
-				if(code->capturable){
-					auto troop=troopsList->data(terrain.status);
-					if(troop && troop->name!="Neutral"){
-						playerIndexList.insert(terrain.status);
-					}
-					++captureTerrainCount;//累加据点数
+				//统计生产据点数
+				if(!code->buildType.empty()){
+					auto pNum=feature.array_buildableTerrainAmount.data(terrain.status);
+					if(pNum)++(*pNum);
 				}
 			}
 		}
 	}
 	for(auto &unit:chessPieces){
-		auto code=corpsList->data(unit.corpType);//查兵种表以确认兵种
-		if(!code)continue;
-		auto troop=troopsList->data(unit.color);//查部队表以确认据点所属
-		if(troop && troop->name!="Neutral"){
-			playerIndexList.insert(unit.color);
-		}
+		auto pNum=feature.array_UnitAmount.data(unit.color);
+		if(pNum)++(*pNum);
 	}
-	//然后我们需要将玩家序号排序
-	//playerIndexList.sort(func);
 }

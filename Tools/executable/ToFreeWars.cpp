@@ -56,7 +56,7 @@ int main(int argc,char* argv[]){
 		printf("%d\n",id);
 		sprintf(filename,"awbw/CategoriedMapsCsv/%d.csv",id);
 		battleField.loadMap_CSV(filename);
-		battleField.analyse();
+		battleField.analyseFeature();
 		sprintf(filename,"awbw/S_Rank/%d.tmx",id);
 		battleField.saveMap_TMX_BabyWars(filename);
 	}

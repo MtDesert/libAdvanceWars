@@ -55,8 +55,6 @@ public:
 
 	//输入事件
 	virtual void reset();
-	virtual bool keyboardKey(Keyboard::KeyboardKey key,bool pressed);//处理光标移动
-	virtual bool mouseKey(MouseKey key,bool pressed);//处理触摸效果
 
 	//菜单
 	void showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm);

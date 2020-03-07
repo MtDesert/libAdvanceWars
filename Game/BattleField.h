@@ -9,6 +9,14 @@
 #include"ChessBoard.h"
 #include"Set.h"
 
+//高级战争-战场特征数据,用于保存分析后的结构,根据需求自行添加需要的内容
+struct BattleField_Feature{
+	void print()const;
+
+	Array<SizeType> array_buildableTerrainAmount;//统计每个势力的可生产据点数(部队ID -> 据点数量)
+	Array<SizeType> array_UnitAmount;//统计每个势力的单位数量(部队ID -> 单位数量)
+};
+
 /*高级战争-战场
 战场其实就是个矩形棋盘,主要用来容纳Terrain对象和Unit对象
 除了游戏中起到了容器的作用外,还提供一些操作
@@ -16,6 +24,8 @@
 struct BattleField:public ChessBoard<Terrain,Unit>{
 	BattleField();
 	~BattleField();
+
+	typedef decltype(Unit::coordinate) CoordType;
 
 	//读取地图
 	int loadMap(const string &filename);
@@ -37,9 +47,9 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	string author;//地图作者
 	//地形编辑
 	bool getTerrain(SizeType x,SizeType y,Terrain &terrain)const;
-	bool getTerrain(const Point2D<int> &p,Terrain &terrain)const;
+	bool getTerrain(const CoordType &p,Terrain &terrain)const;
 	bool setTerrain(SizeType x,SizeType y,const Terrain &terrain);
-	bool setTerrain(const Point2D<int> &p,const Terrain &terrain);
+	bool setTerrain(const CoordType &p,const Terrain &terrain);
 	bool setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status="");
 	bool fillTerrain(const Terrain &terrain);//地形填充
 	//单位编辑
@@ -48,13 +58,10 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	bool removeUnit(SizeType x,SizeType y);//移除x,y处的所有单位
 	//图块调整
 	void autoAdjustTerrainsTiles();//调整所有地图块的样式
-	void autoAdjustTerrainTile(SizeType x,SizeType y);//调整x,y部分的样式,使其与周边看上去相连
+	void autoAdjustTerrainTile(SizeType x,SizeType y,bool adjustAround=false);//调整x,y部分的样式,使其与周边看上去相连,如果adjustAround为true,则周边的图块也会一起调整
 
 	WhenErrorString whenError;//报错函数
 	//地图分析,统计各个方面的数据
-	void analyse();
-	bool onlySea;//只有海
-	int captureTerrainCount;//据点数
-	Set<int> playerIndexList;//玩家索引表,依赖troopsList
+	void analyseFeature(BattleField_Feature &feature)const;
 };
 #endif

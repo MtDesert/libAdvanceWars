@@ -78,9 +78,7 @@ void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
 		game->clearAllScenes();//移除场景
 		game->addSubObject(game->useLayerConversation());//添加对话框
 	}
-}
-//对战模式选择地图后
-static void whenSingleVersusSelectedFile(const string &filename){}*/
+}*/
 
 void Scene_Main::menuSingleModeConfirm(){
 	GET_GAME
@@ -91,6 +89,7 @@ void Scene_Main::menuSingleModeConfirm(){
 				//根据对话框的数据创建地图
 				dialog->resetBattleField(game->battleField);
 				dialog->removeFromParentObject();
+				game->battleField.chessPieces.clear();
 				//场景跳转
 				game->loadAllConfigData();
 				auto scene=game->gotoScene_BattleField(true);
@@ -99,17 +98,13 @@ void Scene_Main::menuSingleModeConfirm(){
 		}break;
 		case MapView:{
 			auto scene=game->gotoScene_FileList(true);
-			scene->lastScene=this;
-			scene->stringTitle.setString("MapSelect",true);
-			scene->changeDirectory(game->settings.mapsPath);
-			scene->whenConfirmFile=[game](const string &filename){
-				//加载资源
+			scene->selectFile(false,"MapSelect",game->settings.mapsPath,[game](const string &filename){
 				game->loadAllConfigData();//加载配置
 				if(game->battleField.loadMap_CSV(filename)){//加载地图
 					auto scene=game->gotoScene_BattleField(true);//跳转到战场
-					scene->gotoEditMode();//debug
+					scene->gotoEditMode();
 				}
-			};
+			});
 		}break;
 		case ScenarioMode:{
 			/*scene->textTitle.setString("SelectScript",true);
@@ -118,9 +113,15 @@ void Scene_Main::menuSingleModeConfirm(){
 		}break;
 		case MissionMode:break;
 		case VersusMode:{//打开文件菜单
-			/*scene->textTitle.setString("SelectMap",true);
-			scene->changeDirectory(game->settings.mapsPath);
-			scene->whenConfirmFile=whenSingleVersusSelectedFile;*/
+			auto scene=game->gotoScene_FileList(true);
+			scene->selectFile(false,"MapSelect",game->settings.mapsPath,[game](const string &filename){
+				game->loadAllConfigData();//加载配置
+				if(game->battleField.loadMap_CSV(filename)){//加载地图
+					//这里应该跳转到设置区域
+					game->loadAllTextures();
+					game->gotoScene_CampaignPrepare(true);
+				}
+			});
 		}break;
 		case SurvivalMode:break;
 		case CombatMode:break;

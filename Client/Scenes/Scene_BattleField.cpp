@@ -2,13 +2,8 @@
 #include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
 
-#include"extern.h"
-
-//渲染变量
-static Game_AdvanceWars *game=nullptr;
-
 Scene_BattleField::Scene_BattleField():battleField(nullptr){
-	game=Game_AdvanceWars::currentGame();
+	GAME_AW
 	battleField=&game->battleField;
 	campaign=&game->campaign;
 	//战场图层
@@ -18,11 +13,10 @@ Scene_BattleField::Scene_BattleField():battleField(nullptr){
 Scene_BattleField::~Scene_BattleField(){}
 
 void Scene_BattleField::gotoEditMode(){
+	GAME_AW
 	layerBattleField.isEditMode=true;
 	layerBattleField.isEditMode_Unit=false;
 	//菜单关系关联
-	menuCorpSelect.menuTroopSelect=&menuTroopSelect;
-	menuTerrainSelect.menuTroopSelect=&menuTroopSelect;
 	menuMapEdit.menuCorpSelect=&menuCorpSelect;
 	menuMapEdit.menuTerrainSelect=&menuTerrainSelect;
 	menuMapEdit.menuTroopSelect=&menuTroopSelect;
@@ -32,12 +26,13 @@ void Scene_BattleField::gotoEditMode(){
 		if(menu==&menuTerrainSelect)layerBattleField.isEditMode_Unit=false;
 		if(menu==&menuCorpSelect)layerBattleField.isEditMode_Unit=true;
 		//更新菜单状态
+		menuCorpSelect.troopID = menuTerrainSelect.troopID = menuTroopSelect.selectingItemIndex;
 		menuCorpSelect.updateRenderParameters(true);
 		menuTerrainSelect.updateRenderParameters(true);
 		menuMapEdit.updateRenderParameters(true);
 	};
 	//填充功能
-	auto funcFill=[&](GameMenu *menu){
+	auto funcFill=[&,game](GameMenu *menu){
 		auto code=game->mTerrainCodesList.data(menu->selectingItemIndex);
 		if(code){
 			battleField->fillTerrain(Terrain(
@@ -47,34 +42,43 @@ void Scene_BattleField::gotoEditMode(){
 		battleField->autoAdjustTerrainsTiles();
 		menu->removeFromParentObject();
 	};
-	//
-	menuMapEdit.onConfirm=[&,funcUpdateAllEditMenu,funcFill](GameMenu *menu){
+	menuMapEdit.onConfirm=[&,game,funcUpdateAllEditMenu,funcFill](GameMenu *menu){
 		switch(menu->selectingItemIndex){
 			case MapEdit_Intel:{
 				auto dialog=game->showDialog_NewMap();
 				dialog->setBattleField(*battleField);
+				dialog->setConfirmCallback([game,dialog](){
+					dialog->resetBattleField(game->battleField);
+					dialog->removeFromParentObject();
+				});
 			}break;
 			case MapEdit_CorpSelect:showMenu(menuCorpSelect,funcUpdateAllEditMenu);break;
 			case MapEdit_TerrainSelect:showMenu(menuTerrainSelect,funcUpdateAllEditMenu);break;
 			case MapEdit_TroopSelect:showMenu(menuTroopSelect,funcUpdateAllEditMenu);break;
-			case MapEdit_Fill:
-				showMenu(menuTerrainSelect,funcFill);//选择地形来填充
+			case MapEdit_Fill:showMenu(menuTerrainSelect,funcFill);//选择地形来填充
 			break;
-			case MapEdit_LoadFile:break;
+			case MapEdit_LoadFile:{
+				auto scene=game->gotoScene_FileList(true);
+				scene->selectFile(false,"LoadMap",game->settings.mapsPath,[&,scene](const string &filename){
+					battleField->loadMap_CSV(filename);
+					scene->buttonCancel.onClicked();
+				});
+			}break;
 			case MapEdit_SaveFile:{
 				auto scene=game->gotoScene_FileList(true);
-				scene->setSaveMode(true);
-				scene->lastScene=this;
-				scene->stringTitle.setString("SaveMap",true);
-				scene->changeDirectory(game->settings.mapsPath);
-				scene->whenConfirmFile=[&,scene](const string &filename){
+				scene->selectFile(true,"SaveMap",game->settings.mapsPath,[&,scene](const string &filename){
 					battleField->saveMap_CSV(filename);
 					scene->buttonCancel.onClicked();
-				};
+				});
 			}break;
-			case MapEdit_ExitMap:
-				game->gotoScene_Main();
-			break;
+			case MapEdit_ExitMap:{
+				auto dialog=game->showDialog_Message();
+				dialog->setText("Exit?");
+				dialog->setConfirmCallback([&,dialog](){
+					dialog->removeFromParentObject();
+					game->gotoScene_Main();
+				});
+			}break;
 			default:;
 		}
 	};
@@ -89,12 +93,11 @@ void Scene_BattleField::gotoEditMode(){
 
 void Scene_BattleField::reset(){
 	//可以在这里加载资源
+	GAME_AW
 	game->loadAllTextures();
 	layerBattleField.updateMapRect();//调整尺寸
 	//菜单样式
 #define MENU_INIT(Name) \
-menu##Name.bgColor = &ColorRGBA::Black;\
-menu##Name.borderColor = &ColorRGBA::White;\
 menu##Name.pSpriteSelector->setTexture(game->texMenuArrow);
 
 	MENU_INIT(CorpSelect)
@@ -103,8 +106,6 @@ menu##Name.pSpriteSelector->setTexture(game->texMenuArrow);
 	MENU_INIT(MapEdit)
 	MENU_INIT(CorpCommand)
 }
-bool Scene_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){return false;}
-bool Scene_BattleField::mouseKey(MouseKey key,bool pressed){return false;}
 
 void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm){
 	menu.onConfirm=onConfirm;

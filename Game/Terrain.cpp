@@ -6,7 +6,7 @@ Terrain::Terrain(int type, int status){
 	this->status=status;
 }
 
-TerrainCode::TerrainCode():defendLV(0),capturable(false),hasIncome(false),buildable(false),hidable(false),has4direction(false){}
+TerrainCode::TerrainCode():defendLV(0),capturable(false),hasIncome(false),hidable(false),has4direction(false){}
 
 #define READ_BOOL(name) code->name=state.getTableBoolean(#name);
 #define READ_INT(name) code->name=state.getTableInteger(#name);
@@ -27,9 +27,9 @@ bool TerrainCodesList::loadFile_lua(const string &filename,WhenErrorString callb
 				READ_STR(name)
 				READ_STR(translate)
 				READ_INT(defendLV)
+				READ_STR(buildType)
 				READ_BOOL(capturable)
 				READ_BOOL(hasIncome)
-				READ_BOOL(buildable)
 				READ_BOOL(hidable)
 				READ_BOOL(has4direction)
 				READ_STR(tileType)
@@ -38,10 +38,6 @@ bool TerrainCodesList::loadFile_lua(const string &filename,WhenErrorString callb
 		});
 	}
 	return ret;
-}
-bool TerrainCodesList::canAdjustTile(int terrainType)const{
-	auto code=this->data(terrainType);
-	return code ? code->has4direction : false;
 }
 bool TerrainCodesList::canAdjustTile(int terrainTypeA,int terrainTypeB)const{
 	auto codeA=this->data(terrainTypeA);

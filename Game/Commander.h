@@ -5,7 +5,7 @@
 
 /*指挥官(CO=Commander)数据,仅仅用来查看*/
 struct Commander{
-	string coName,note,quote;//名字,指挥官的说明,口头禅
+	string name,note,quote;//名字,指挥官的说明,口头禅
 	string coHit,coMiss;//喜欢和头疼的事物(不知怎么翻译)
 	string d2d;//描述CO部队的日常能力
 	struct Power{//CO可发动的能力
@@ -19,7 +19,7 @@ struct Commander{
 
 class CommandersList:public DataList<Commander>{
 public:
-	string loadFile_lua(const string &filename);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
+	bool loadFile_lua(const string &filename,WhenErrorString whenError=nullptr);//加载lua格式的数据文件,返回错误信息(返回nullptr表示无错误)
 };
 
-#endif // COMMANDER_H
+#endif// COMMANDER_H

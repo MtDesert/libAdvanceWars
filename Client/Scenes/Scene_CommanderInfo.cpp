@@ -59,7 +59,7 @@ void Scene_CommanderInfo::setCoInfo(uint index){
 	for(auto co:*source){
 		if(idx==index){
 			coIndex=index;
-			strName.setString(co.coName);
+			strName.setString(co.name);
 			strQuote.setString(co.quote);
 			txtNote.setString(co.note);
 			txtD2D.setString(co.d2d);

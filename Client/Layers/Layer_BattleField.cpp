@@ -2,11 +2,8 @@
 #include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
 
-#include"extern.h"
-
 static int latticeSize=32;//格子大小
 //渲染变量
-static Game_AdvanceWars *game=nullptr;
 static Rectangle2D<int> mapRect;//地图矩形
 static Point2D<float> renderPos;//渲染位置
 static Rectangle2D<float> renderLattice;//渲染格子
@@ -27,7 +24,7 @@ static void updateRenderLattice(int x,int y){//更新需要渲染的网格数据
 
 Layer_BattleField::Layer_BattleField():battleField(nullptr),campaign(nullptr),
 isEditMode(false),isEditMode_Unit(false),terrainID(0),corpID(0),troopID(0){
-	game=Game_AdvanceWars::currentGame();
+	GAME_AW
 	battleField=&game->battleField;//读取数据用
 	campaign=&game->campaign;
 	//精灵初始化
@@ -90,6 +87,7 @@ bool Layer_BattleField::mouseMove(int x,int y){
 		touchMovePoint.y=y;
 	}else{//鼠标移动
 		//计算出鼠标对应的地图格子坐标
+		GAME_AW
 		auto pos=game->mousePos-(mapRect.p0 + position);
 		cursorPoint.setXY(pos.x/latticeSize,pos.y/latticeSize);
 		//判断是否需要更新
@@ -110,10 +108,11 @@ void Layer_BattleField::whenPressConfirm(){
 			battleField->removeUnit(p.x,p.y);
 		}else{//添加地形或单位
 			if(isEditMode_Unit){//添加单位
-				battleField->addUnit(p.x,p.y,scene->menuCorpSelect.selectingItemIndex,scene->menuTroopSelect.selectingItemIndex);
-			}else{
-				Terrain terrain(scene->menuTerrainSelect.selectingItemIndex,scene->menuTroopSelect.selectingItemIndex);
+				battleField->addUnit(p.x,p.y,scene->menuCorpSelect.selectingItemIndex,scene->menuCorpSelect.troopID);
+			}else{//设置地形
+				Terrain terrain(scene->menuTerrainSelect.selectingItemIndex,scene->menuTerrainSelect.troopID);
 				battleField->setTerrain(p.x,p.y,terrain);
+				battleField->autoAdjustTerrainTile(p.x,p.y,true);
 			}
 		}
 	}
@@ -140,6 +139,7 @@ void Layer_BattleField::updateMapRect(){
 }
 
 void Layer_BattleField::renderTerrains()const{
+	GAME_AW
 	int w=battleField->getWidth(),h=battleField->getHeight();
 	Terrain terrain;
 	for(decltype(h) y=h-1;y>=0;--y){//一定要自上而下渲染
@@ -164,19 +164,19 @@ void Layer_BattleField::renderUnits()const{
 void Layer_BattleField::renderMovements()const{
 	for(auto &p:campaign->movablePoints){
 		updateRenderLattice(p.x,p.y);
-		shapeRenderer.drawRectangle(renderLattice,nullptr,&rgbMove);
+		ShapeRenderer::drawRectangle(renderLattice,nullptr,&rgbMove);
 	}
 }
 void Layer_BattleField::renderFireRange()const{
 	for(auto &p:campaign->firablePoints){
 		updateRenderLattice(p.x,p.y);
-		shapeRenderer.drawRectangle(renderLattice,nullptr,&rgbFire);
+		ShapeRenderer::drawRectangle(renderLattice,nullptr,&rgbFire);
 	}
 }
 void Layer_BattleField::renderMovePath()const{
 	for(auto &p:campaign->movePath){
 		updateRenderLattice(p.x,p.y);
-		shapeRenderer.drawRectangle(renderLattice,nullptr,&rgbMovePath);
+		ShapeRenderer::drawRectangle(renderLattice,nullptr,&rgbMovePath);
 	}
 }
 void Layer_BattleField::renderGrid()const{
@@ -186,7 +186,7 @@ void Layer_BattleField::renderGrid()const{
 		for(decltype(w) x=0;x<w;++x){
 			//计算grid的参数,并渲染
 			updateRenderLattice(x,y);
-			shapeRenderer.drawRectangle(renderLattice,&ColorRGBA::White,nullptr);
+			ShapeRenderer::drawRectangle(renderLattice,&ColorRGBA::White,nullptr);
 		}
 	}
 }
