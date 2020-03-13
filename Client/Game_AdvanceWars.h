@@ -5,6 +5,7 @@
 #include"Commander.h"
 #include"Weather.h"
 #include"Campaign.h"
+#include"DamageCaculator.h"
 #include"ScenarioScript.h"
 
 #include"Game.h"
@@ -57,16 +58,18 @@ public:
 	//游戏数据区
 	BattleField battleField;//地图数据,负责存放地形和单位
 	Campaign campaign;//比赛数据,关于比赛过程产生的数据均放于此
+	DamageCaculator damageCaculator;//损伤计算器,负责计算损伤
 
 	//纹理缓冲区
-	TextureCache commandersHeadTextures;//指挥官头像纹理
-	TextureCache commandersBodyTextures;//指挥官全身纹理
-	TextureCache troopsTextures;//部队标记纹理
+	TextureCache commandersHeadTextures;//指挥官头像
+	TextureCache commandersBodyTextures;//指挥官全身像
+	TextureCache troopsTextures;//部队标记
 	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
 	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
-	TextureCache mapEditMenuTextures;//地图编辑菜单的纹理
-	TextureCache corpMenuTextures;//兵种菜单的纹理
-	Texture texMenuArrow;//菜单箭头
+	TextureCache mapEditMenuTextures;//地图编辑菜单
+	TextureCache corpMenuTextures;//兵种菜单
+	TextureCache numbersTextures;//数字,用于显示HP
+	Texture texMenuArrow,texStar;//菜单箭头,星星标识
 	void clearAllTextureCache();
 
 	//纹理加载过程

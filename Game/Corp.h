@@ -7,8 +7,8 @@ struct Weapon{
 	Weapon();
 
 	string name;//武器名
-	int minRange,maxRange;//射程
-	int ammunitionMax;//武器弹药数
+	uint8 minRange,maxRange;//射程
+	uint8 ammunitionMax;//武器弹药数
 
 	bool isDirectAttack()const;
 	bool isIndirectAttack()const;
@@ -20,12 +20,12 @@ struct Corp{
 	string name;//兵种名字
 	string translate;//翻译
 	string corpType;//兵种类型
-	int price;//造价
-	int vision;//视野
+	uint16 price;//造价
+	uint8 vision;//视野
 	//移动相关
-	int movement;//移动力
+	uint8 movement;//移动力
 	string moveType;//移动类型
-	int gasMax;//燃料,耗尽时候无法移动
+	uint8 gasMax;//燃料,耗尽时候无法移动
 	//特性相关
 	bool capturable:1;//是否具有占领能力
 	bool suppliable:1;//是否具有补给能力

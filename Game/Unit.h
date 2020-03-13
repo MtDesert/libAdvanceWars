@@ -2,9 +2,7 @@
 #define UNIT_H
 
 #include"ChessPiece.h"
-#include"Point.h"
-#include"List.h"
-#include"typedef.h"
+#include"Array.h"
 
 //<高级战争>战场上的一个单位
 struct Unit:public ChessPiece<uint8,uint8>{
@@ -31,12 +29,6 @@ struct Unit:public ChessPiece<uint8,uint8>{
 	bool isHide:1;//是否隐藏状态(特定兵种可用此状态)
 	uchar level:2;//单位等级(取值0~3)
 	//自己所搭载的单位
-	List<Unit> loadedUnits;
+	Array<Unit> loadedUnits;
 };
-
-class UnitList:public List<Unit>{
-public:
-	Unit* findUnit_byCoordinate(int x,int y);
-};
-
 #endif

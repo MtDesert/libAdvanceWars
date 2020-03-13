@@ -17,6 +17,9 @@ BattleField::~BattleField(){}
 
 bool BattleField::getTerrain(SizeType x,SizeType y,Terrain &terrain)const{return getValue(x,y,terrain);}
 bool BattleField::getTerrain(const CoordType &p,Terrain &terrain)const{return getTerrain(p.x,p.y,terrain);}
+Terrain* BattleField::getTerrain(SizeType x,SizeType y)const{return pointer(x,y);}
+Terrain* BattleField::getTerrain(const CoordType &p)const{return pointer(p.x,p.y);}
+
 bool BattleField::setTerrain(SizeType x,SizeType y,const Terrain &terrain){return setValue(x,y,terrain);}
 bool BattleField::setTerrain(const CoordType &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status){
@@ -63,12 +66,37 @@ bool BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID
 		}
 		chessPieces.push_back(unit);
 		return true;
-	}else return false;
+	}
+	return false;
 }
+bool BattleField::addUnit(const Unit &unit){
+	chessPieces.push_back(unit);
+	return true;
+}
+bool BattleField::removeUnit(const CoordType &p){return removeUnit(p.x,p.y);}
 bool BattleField::removeUnit(SizeType x,SizeType y){
 	auto oldVal=chessPieces.size();
 	chessPieces.remove_if([&](const Unit &unit){return unit.coordinate==decltype(unit.coordinate)(x,y);});
 	return chessPieces.size()<oldVal;
+}
+bool BattleField::removeUnit(const Unit &unit){
+	auto sz=chessPieces.size();
+	chessPieces.remove(&unit);
+	return sz!=chessPieces.size();
+}
+
+void BattleField::getUnits(const CoordType &p,Array<Unit*> &unitArray){
+	unitArray.clear();
+	for(auto &unit:chessPieces){
+		if(unit.coordinate==p)unitArray.push_back(&unit);
+	}
+}
+void BattleField::getUnits(const CoordType &p,decltype(CoordType::x) minDistance,decltype(CoordType::x) maxDistance,Array<Unit*> &unitArray){
+	unitArray.clear();
+	for(auto &unit:chessPieces){
+		auto len=(unit.coordinate-p).manhattanLength();
+		if(minDistance<=len && len<=maxDistance)unitArray.push_back(&unit);
+	}
 }
 
 bool BattleField::fillTerrain(const Terrain &terrain){

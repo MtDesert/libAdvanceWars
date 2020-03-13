@@ -23,13 +23,15 @@ static void updateRenderLattice(int x,int y){//更新需要渲染的网格数据
 }
 
 Layer_BattleField::Layer_BattleField():battleField(nullptr),campaign(nullptr),
-isEditMode(false),isEditMode_Unit(false),terrainID(0),corpID(0),troopID(0){
+isEditMode(false),isEditMode_Unit(false){
+	forceIntercept=true;
 	GAME_AW
 	battleField=&game->battleField;//读取数据用
 	campaign=&game->campaign;
 	//精灵初始化
 	spriteUnit.anchorPoint.setXY(0,0);
-	spriteUnit.texArray=&game->corpsTexturesArray;//渲染单位用
+	spriteUnit.unitTexArray=&game->corpsTexturesArray;//渲染单位用
+	spriteUnit.numTexArray=&game->numbersTextures;//渲染HP用
 	texCursor.texImage2D_FilePNG(game->settings.imagesPathIcons+"/Cursor.png",Game::whenError);
 	//颜色设定
 	rgbMove.blue=255;rgbMove.alpha=128;
@@ -39,28 +41,36 @@ isEditMode(false),isEditMode_Unit(false),terrainID(0),corpID(0),troopID(0){
 Layer_BattleField::~Layer_BattleField(){}
 
 bool Layer_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
+	bool ret=false;
 	if(!pressed){
-		int x=0,y=0;
-		switch(key){
-			case Keyboard::Key_Up:y=1;break;
-			case Keyboard::Key_Down:y=-1;break;
-			case Keyboard::Key_Left:x=-1;break;
-			case Keyboard::Key_Right:x=1;break;
-			case Keyboard::Key_Enter:whenPressConfirm();break;
-			case Keyboard::Key_Esc:whenPressCancel();break;
-			default:;
-		}
-		if(x || y){//方向键,进行移动
-			campaign->setCursor(campaign->cursor + Campaign::CoordType(x,y));
+		ret=true;
+		if(campaign->selectedTargetPoint){//从目标列表中选择
+			switch(key){
+				case Keyboard::Key_Up:case Keyboard::Key_Left:campaign->choosePrevTarget();break;
+				case Keyboard::Key_Down:case Keyboard::Key_Right:campaign->chooseNextTarget();break;
+				case Keyboard::Key_Enter:whenPressConfirm();break;
+				case Keyboard::Key_Esc:whenPressCancel();break;
+				default:ret=false;
+			}
+		}else{
+			int x=0,y=0;
+			switch(key){
+				case Keyboard::Key_Up:y=1;break;
+				case Keyboard::Key_Down:y=-1;break;
+				case Keyboard::Key_Left:x=-1;break;
+				case Keyboard::Key_Right:x=1;break;
+				case Keyboard::Key_Enter:whenPressConfirm();break;
+				case Keyboard::Key_Esc:whenPressCancel();break;
+				case Keyboard::Key_F1:campaign->endTurn();break;
+				default:ret=false;
+			}
+			if(x || y){//方向键,进行移动
+				setCursor(campaign->cursor + Campaign::CoordType(x,y));
+			}
 		}
 	}
-	return forceIntercept;
+	return ret;
 }
-
-//拖动效果变量
-static decltype(Game::mousePos) touchBeginPoint,touchMovePoint;//触摸起点,移动中的点
-static bool mouseKeyDown=false;//是否按下鼠标
-static bool isTouchMove=false;//是否拖动行为
 
 bool Layer_BattleField::mouseKey(MouseKey key,bool pressed){
 	if(!pressed){
@@ -73,35 +83,27 @@ bool Layer_BattleField::mouseKey(MouseKey key,bool pressed){
 	return forceIntercept;
 }
 bool Layer_BattleField::mouseMove(int x,int y){
-	if(mouseKeyDown){//有可能是拖动
-		if(isTouchMove){//移动地图
-			//改变位置
-			position.x+=(x-touchMovePoint.x);
-			position.y+=(y-touchMovePoint.y);
-		}else{//判断移动距离是不是很大,是的话切换到移动模式
-			if((touchBeginPoint-Game::mousePos).distance2()>=latticeSize*latticeSize){
-				isTouchMove=true;
-			}
-		}
-		touchMovePoint.x=x;
-		touchMovePoint.y=y;
-	}else{//鼠标移动
-		//计算出鼠标对应的地图格子坐标
-		GAME_AW
-		auto pos=game->mousePos-(mapRect.p0 + position);
-		cursorPoint.setXY(pos.x/latticeSize,pos.y/latticeSize);
-		//判断是否需要更新
-		if(cursorPoint!=campaign->cursor){
-			campaign->setCursor(cursorPoint.x,cursorPoint.y);
-		}
+	//计算出鼠标对应的地图格子坐标
+	GAME_AW
+	auto pos=game->mousePos-(mapRect.p0 + position);
+	cursorPoint.setXY(pos.x/latticeSize,pos.y/latticeSize);
+	//判断是否需要更新
+	if(cursorPoint != campaign->cursor){
+		setCursor(cursorPoint);
 	}
 	return false;
 }
 
+#define BATTLEFIELD_SCENE auto scene=dynamic_cast<Scene_BattleField*>(parentObject);
+
+void Layer_BattleField::setCursor(const Campaign::CoordType &p){
+	BATTLEFIELD_SCENE
+	campaign->setCursor(p);
+	scene->setCursor(p);
+}
 void Layer_BattleField::whenPressConfirm(){
-	auto scene=dynamic_cast<Scene_BattleField*>(parentObject);
-	if(!scene)return;
-	//确定操作
+	BATTLEFIELD_SCENE
+	//编辑模式
 	if(isEditMode){
 		auto p=campaign->cursor;
 		if(scene->menuMapEdit.selectingItemIndex==Scene_BattleField::MapEdit_Delete){//删除单位
@@ -115,9 +117,17 @@ void Layer_BattleField::whenPressConfirm(){
 				battleField->autoAdjustTerrainTile(p.x,p.y,true);
 			}
 		}
+	}else{//打仗模式
+		campaign->cursorConfirm();
+		scene->updateMenu();
 	}
 }
-void Layer_BattleField::whenPressCancel(){}
+void Layer_BattleField::whenPressCancel(){
+	BATTLEFIELD_SCENE
+	//取消选择
+	campaign->cursorCancel();
+	scene->updateMenu();
+}
 
 void Layer_BattleField::renderX()const{
 	renderTerrains();//画地形图块

@@ -15,12 +15,15 @@ void Settings::readCustom(LuaState &state){
 	READ_STR(dataWeathers)
 	//规则文件
 	READ_STR(ruleMove)
+	READ_STR(ruleDamage)
+	READ_STR(ruleLoadUnit)
 	//图像目录
 	READ_STR(imagesPathTerrainCodes)
 	READ_STR(imagesPathCorps)
 	READ_STR(imagesPathTroops)
 	READ_STR(imagesPathCommanders)
 	READ_STR(imagesPathIcons)
+	READ_STR(imagesPathNumbers)
 	//文件选择框路径
 	READ_STR(mapsPath)
 	READ_STR(scenarioScriptsPath)

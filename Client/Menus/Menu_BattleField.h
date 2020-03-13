@@ -3,6 +3,7 @@
 
 #include"GameMenu.h"
 #include"Terrain.h"
+#include"Campaign.h"
 
 //同时声明Name的菜单项class和菜单class,otherCodeOfItem和otherCodeOfMenu为其它成员的声明
 #define CLASS_MENU_ITEM_DECLARE(Name,otherCodeOfItem,otherCodeOfMenu) \
@@ -42,7 +43,15 @@ CLASS_MENU_ITEM_DECLARE(MapEdit,
 	Menu_TroopSelect *menuTroopSelect;
 )
 
+//单位选择
+CLASS_MENU_ITEM_DECLARE(UnitSelect,
+	,
+	Array<Unit*> *unitArray;
+)
 //兵种命令
-CLASS_MENU_ITEM_DECLARE(CorpCommand,,)
+CLASS_MENU_ITEM_DECLARE(CorpCommand,
+	,
+	Array<Campaign::EnumCorpMenu> *corpCommandArray;
+)
 
 #endif

@@ -1,50 +1,24 @@
 #ifndef DAMAGECACULATOR_H
 #define DAMAGECACULATOR_H
 
-/*#include"Terrain.h"
-#include"Unit.h"
+#include"Campaign.h"
+#include"LuaState.h"
 
-class DamageCaculator:public Unit
-{
+//前向声明
+class Campaign;
+class UnitData;
+//损伤计算器,本类主要负责计算,基本不负责存储
+class DamageCaculator{
+	int luaFunc_corpDamage(const string &attacker,const string &defender,int weaponIndex);//查询兵种间的基础损伤(攻击兵种名,防御兵种名,攻击武器索引)
 public:
 	DamageCaculator();
 
-	static void caculate_conflict(DamageCaculator &attacker,DamageCaculator &defender,bool caculateLuckDamage=true);
-	static bool isCounterAttackable(const DamageCaculator &attacker,const DamageCaculator &defender);
+	LuaState luaState;//执行代码规则文件
+	Campaign *campaign;//一场战役,计算损伤时候就靠它提供的各种数据
 
-	//Base data
-	_List_const_iterator<Commander> commander;
-	int co;
-	Commander::PowerStatus powerStatus;
-	bool statusAppend()const;
-	//Weather::WeatherType weatherType;
-	int terrainType;
-	int amount_InstructionTower;
+	int corpDamage(const Corp &atkCorp,const Corp &defCorp,int weaponIndex);//查询兵种伤害
+	void executeAttack();//开始执行攻击动作
+	void attack(UnitData &attacker,UnitData &defender);//atkUnit对defUnit发动攻击
+};
 
-	//Derived data
-	int corpDamage;
-	int coAttackPercent;
-	int coDefendPercent;
-	int coLuckyDamage_Min;
-	int coLuckyDamage;
-	int coLuckyDamage_Max;
-	int terrainDefendLevel;
-
-	void caculate_derivedData();
-	void caculate_derivedData(DamageCaculator &def,bool counterAttack);
-	void caculate_derivedData_coLuckDamage_random();
-	void caculate_derivedData_coLuckDamage_limit();
-
-	//Caculate result
-	int towerAttack;
-	int terrainDefend;
-	int attackPower;
-	int defendPower;
-	int finalDamage;
-	int finalHP;
-	int valueLost;
-
-	bool caculate_Attack(DamageCaculator &defender);
-};*/
-
-#endif // DAMAGECACULATOR_H
+#endif//DAMAGECACULATOR_H

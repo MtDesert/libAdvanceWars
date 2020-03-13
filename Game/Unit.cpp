@@ -29,12 +29,3 @@ uint8 Unit::presentHP(uint8 hp){
 	return hp%10>0?ret+1:ret;
 }
 uint8 Unit::presentHP()const{return presentHP(healthPower);}
-
-Unit* UnitList::findUnit_byCoordinate(int x,int y){
-	for(auto &unit:*this){
-		if(unit.coordinate.x==x && unit.coordinate.y==y){
-			return &unit;
-		}
-	}
-	return nullptr;
-}

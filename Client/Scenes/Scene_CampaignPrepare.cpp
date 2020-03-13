@@ -147,7 +147,8 @@ void Scene_CampaignPrepare::gotoSettingLayer(int delta){
 		//写入各种设定数据,然后跳转战场
 		auto layer=dynamic_cast<Layer_CampaignReady_Rule*>(layersArray[2]);
 		layer->writeRule();//把设定的规则写入
-		game->gotoScene_BattleField(true);
+		auto scene=game->gotoScene_BattleField(true);
+		scene->gotoBattleMode();
 	}else{
 		addSubObject(layersArray[currentLayerIndex]);
 	}

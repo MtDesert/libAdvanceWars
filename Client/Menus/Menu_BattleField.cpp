@@ -46,6 +46,10 @@ MenuItem_MapEdit::MenuItem_MapEdit(){
 	size.setXY(ICON_SIZE*6,ICON_SIZE);
 	setCursorWidth(ICON_SIZE);
 }
+MenuItem_UnitSelect::MenuItem_UnitSelect(){
+	size.setXY(ICON_SIZE*12,ICON_SIZE);
+	setCursorWidth(ICON_SIZE);
+}
 MenuItem_CorpCommand::MenuItem_CorpCommand(){
 	size.setXY(ICON_SIZE*4,ICON_SIZE);
 	setCursorWidth(ICON_SIZE);
@@ -57,7 +61,8 @@ Menu_TerrainSelect::Menu_TerrainSelect():troopID(0){MENU_INIT}
 Menu_TroopSelect::Menu_TroopSelect(){MENU_INIT}
 Menu_CommanderSelect::Menu_CommanderSelect(){MENU_INIT}
 Menu_MapEdit::Menu_MapEdit():menuCorpSelect(nullptr),menuTerrainSelect(nullptr),menuTroopSelect(nullptr){MENU_INIT}
-Menu_CorpCommand::Menu_CorpCommand(){MENU_INIT}
+Menu_UnitSelect::Menu_UnitSelect(){MENU_INIT}
+Menu_CorpCommand::Menu_CorpCommand():corpCommandArray(nullptr){MENU_INIT}
 
 //Item们的updateData函数
 void MenuItem_CorpSelect::updateData(SizeType pos){
@@ -129,16 +134,38 @@ void MenuItem_MapEdit::updateData(SizeType pos){
 		switch(pos){
 #define CASE(name) case Scene_BattleField::MapEdit_##name:stringName.setString(#name,true);break;
 			BATTLEFIELD_EDIT_MAP_MENU(CASE)
+#undef CASE
 		}
 	}else{
 		ITEM_ICON_NAME_NULL
 	}
 }
 
+void MenuItem_UnitSelect::updateData(SizeType pos){
+	auto menu=dynamic_cast<Menu_UnitSelect*>(parentObject);
+	if(!menu && !menu->unitArray)return;
+	auto pUnit = menu->unitArray->data(pos);
+	if(pUnit && *pUnit){
+		auto unit=*pUnit;
+		spriteIcon.setTexture(game->corpsTexturesArray.getTexture(unit->corpType,unit->color));
+	}else{
+		ITEM_ICON_NAME_NULL
+	}
+}
+
 void MenuItem_CorpCommand::updateData(SizeType pos){
-	if(pos<Campaign::AmountOfCorpEnumMenu){
-		auto tex=game->corpMenuTextures.data(pos);
-		spriteIcon.setTexture(tex ? *tex : Texture());
+	auto menu=dynamic_cast<Menu_CorpCommand*>(parentObject);
+	if(!menu && !menu->corpCommandArray)return;
+	auto command=menu->corpCommandArray->data(pos);
+	//显示指令
+	if(command){
+		spriteIcon.setTexture(game->corpMenuTextures.getTexture(*command));
+		switch(*command){
+#define CASE(name) case Campaign::Menu_##name:stringName.setString(#name,true);break;
+			CAMPAIGN_CORPMENU(CASE)
+#undef CASE
+			default:stringName.setString("???");
+		}
 	}else{
 		ITEM_ICON_NAME_NULL
 	}
@@ -149,4 +176,5 @@ SizeType Menu_TerrainSelect::itemAmount()const{return game->mTerrainCodesList.si
 SizeType Menu_TroopSelect::itemAmount()const{return game->mTroopsList.size();}
 SizeType Menu_CommanderSelect::itemAmount()const{return game->mCommandersList.size();}
 SizeType Menu_MapEdit::itemAmount()const{return Scene_BattleField::AmountOfEnumMapEditCommand;}
-SizeType Menu_CorpCommand::itemAmount()const{return Campaign::AmountOfCorpEnumMenu;}
+SizeType Menu_UnitSelect::itemAmount()const{return unitArray ? unitArray->size() : 0;}
+SizeType Menu_CorpCommand::itemAmount()const{return corpCommandArray ? corpCommandArray->size() : 0;}

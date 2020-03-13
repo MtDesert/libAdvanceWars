@@ -22,7 +22,8 @@ Game_AdvanceWars::Game_AdvanceWars(){
 	battleField.terrainsList=&mTerrainCodesList;
 	battleField.whenError=whenError;
 	campaign.battleField=&battleField;
-	campaign.luaState.whenError=whenError;
+	campaign.weathesList=&mWeathersList;
+	campaign.luaState.whenError = damageCaculator.luaState.whenError = whenError;
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
@@ -71,7 +72,13 @@ bool Game_AdvanceWars::loadAllConfigData(){
 	AW_LOAD_LUA(mTroopsList,dataTroops)//势力表
 	AW_LOAD_LUA(mCommandersList,dataCommanders)//CO表
 	AW_LOAD_LUA(mWeathersList,dataWeathers)//天气表
+	//规则数据
 	campaign.luaState.doFile(settings.ruleMove);//移动规则
+	campaign.luaState.doFile(settings.ruleLoadUnit);
+	damageCaculator.luaState.doFile(settings.ruleDamage);//损伤规则
+	//引用传递
+	damageCaculator.campaign=&campaign;
+	campaign.damageCaculator=&damageCaculator;
 	return true;
 }
 bool Game_AdvanceWars::loadAllTextures(){
@@ -81,8 +88,20 @@ bool Game_AdvanceWars::loadAllTextures(){
 	loadCommandersTextures();
 	loadMapEditMenuTextures();
 	loadCorpMenuTextures();
+	//数字
+	numbersTextures.setSize(10,true);
+	for(SizeType i=0;i<numbersTextures.size();++i){
+		char ch[2];
+		sprintf(ch,"%lu",i);
+		auto tex=numbersTextures.data(i);
+		tex->deleteTexture();
+		tex->texImage2D_FilePNG(settings.imagesPathNumbers+"/"+ch+".png",whenError);
+	}
+	//菜单箭头和星星
 	texMenuArrow.deleteTexture();
 	texMenuArrow.texImage2D_FilePNG(settings.imagesPathIcons+"/MenuArrow.png",whenError);
+	texStar.deleteTexture();
+	texStar.texImage2D_FilePNG(settings.imagesPathIcons+"/Star.png",whenError);
 	return true;
 }
 
@@ -94,6 +113,7 @@ void Game_AdvanceWars::clearAllTextureCache(){
 	troopsTextures.clearCache();
 	corpMenuTextures.clearCache();
 	texMenuArrow.deleteTexture();
+	texStar.deleteTexture();
 }
 
 #define FORCE_LOAD_CHECK(texArray) \

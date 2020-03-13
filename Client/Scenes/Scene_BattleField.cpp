@@ -9,6 +9,7 @@ Scene_BattleField::Scene_BattleField():battleField(nullptr){
 	//战场图层
 	layerBattleField.battleField=battleField;
 	addSubObject(&layerBattleField);
+	//addSubObject(&spriteTerrainInfo);
 }
 Scene_BattleField::~Scene_BattleField(){}
 
@@ -90,6 +91,10 @@ void Scene_BattleField::gotoEditMode(){
 		showMenu(menuMapEdit,menuMapEdit.onConfirm);
 	};
 }
+void Scene_BattleField::gotoBattleMode(){
+	layerBattleField.isEditMode = layerBattleField.isEditMode_Unit = false;
+	menuCorpCommand.corpCommandArray = &campaign->corpMenu;
+}
 
 void Scene_BattleField::reset(){
 	//可以在这里加载资源
@@ -104,19 +109,47 @@ menu##Name.pSpriteSelector->setTexture(game->texMenuArrow);
 	MENU_INIT(TerrainSelect)
 	MENU_INIT(TroopSelect)
 	MENU_INIT(MapEdit)
+	MENU_INIT(UnitSelect)
 	MENU_INIT(CorpCommand)
 }
+void Scene_BattleField::setCursor(const Campaign::CoordType p){
+	//spriteTerrainInfo.setTerrain(*campaign->cursorTerrainCode,campaign->cursorTerrain);
+}
 
-void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm){
+void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm,decltype(GameMenu::onCancel) onCancel){
 	menu.onConfirm=onConfirm;
+	if(onCancel){//不指定取消函数的情况下,就不要动原来的函数
+		menu.onCancel=onCancel;
+	}
 	addSubObject(&menu);
 	menu.updateRenderParameters(true);
 }
 void Scene_BattleField::updateMenu(){
-	if(!menuCorpCommand.parentObject && campaign->corpMenu.size()){
-		showMenu(menuCorpCommand,nullptr);
+	//兵种命令菜单
+	if(!menuCorpCommand.parentObject && campaign->corpMenu.size()){//显示
+		showMenu(menuCorpCommand,[&](GameMenu*){
+			campaign->executeCorpMenu(menuCorpCommand.selectingItemIndex);
+			updateMenu();//菜单消失
+		});
 	}
-	if(menuCorpCommand.parentObject && campaign->corpMenu.size()==0){
+	if(menuCorpCommand.parentObject && campaign->corpMenu.size()==0){//消失
 		removeSubObject(&menuCorpCommand);
+	}
+	//单位选择菜单
+	if(!menuUnitSelect.parentObject && campaign->unitsArray.size()){
+		menuUnitSelect.unitArray = &campaign->unitsArray;
+		if(campaign->corpMenuCommand==Campaign::Menu_Drop){//卸载命令
+			showMenu(menuUnitSelect,[&](GameMenu*){//选择卸载单位后,选择卸载位置
+				auto pUnit = *campaign->unitsArray.data(menuUnitSelect.selectingItemIndex);
+				campaign->selectDropPoint(*pUnit);
+				updateMenu();//菜单们消失
+			},[&](GameMenu*){//取消的话,则要清除数据
+				campaign->unitsArray.clear();
+				menuUnitSelect.removeFromParentObject();
+			});
+		}
+	}
+	if(menuUnitSelect.parentObject && campaign->unitsArray.size()==0){
+		removeSubObject(&menuUnitSelect);
 	}
 }
