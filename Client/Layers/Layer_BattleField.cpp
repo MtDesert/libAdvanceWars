@@ -1,4 +1,5 @@
 #include"Layer_BattleField.h"
+#include"Sprite_Terrain.h"
 #include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
 
@@ -8,10 +9,10 @@ static Rectangle2D<int> mapRect;//地图矩形
 static Point2D<float> renderPos;//渲染位置
 static Rectangle2D<float> renderLattice;//渲染格子
 
+static Sprite_Terrain spriteTerrain;//地形精灵,用于绘制地形
 static Sprite_Unit spriteUnit;//单位精灵,用于渲染单位
-static Texture texCursor;//光标纹理,用于渲染光标
-
-static ColorRGBA rgbMove,rgbFire,rgbMovePath;//移动区域的颜色,可攻击区域的颜色,移动路径颜色
+static GameSprite spriteCursor;//光标,用于指示操作位置
+static GameSprite latticeMove,latticeFire,latticeMovePath;
 
 static void updateRenderPos(int x,int y){//更新渲染位置,根据x,y来更新renderPos
 	renderPos.setXY(mapRect.p0.x + x*latticeSize,mapRect.p0.y + y*latticeSize);
@@ -29,16 +30,38 @@ isEditMode(false),isEditMode_Unit(false){
 	battleField=&game->battleField;//读取数据用
 	campaign=&game->campaign;
 	//精灵初始化
+	spriteTerrain.anchorPoint.setXY(0,0);
 	spriteUnit.anchorPoint.setXY(0,0);
+	spriteCursor.anchorPoint.setXY(0,0);
 	spriteUnit.unitTexArray=&game->corpsTexturesArray;//渲染单位用
 	spriteUnit.numTexArray=&game->numbersTextures;//渲染HP用
+	Texture texCursor;
 	texCursor.texImage2D_FilePNG(game->settings.imagesPathIcons+"/Cursor.png",Game::whenError);
-	//颜色设定
-	rgbMove.blue=255;rgbMove.alpha=128;
-	rgbFire.red=255;rgbFire.alpha=128;
-	rgbMovePath.green=255;rgbMovePath.alpha=128;
+	spriteCursor.setTexture(texCursor);
+	//范围设定,这里要区分一下GDI和OpenGL的格式
+#ifdef __MINGW32__
+#define TO_FORMAT toBGRA
+#define LATTICE_W_H latticeSize
+#else
+#define TO_FORMAT toRGBA
+#define LATTICE_W_H 1
+#endif
+
+#define MAKE_LATTICE_TEXTURE(lattice,color) \
+	lattice.setTexture(Texture::makeSolidTexture(LATTICE_W_H,LATTICE_W_H,ColorRGBA::color.TO_FORMAT()));\
+	lattice.setColor(ColorRGBA(0x80FFFFFF));\
+	lattice.size.setXY(latticeSize,latticeSize);\
+	lattice.anchorPoint.setXY(0,0);
+
+	MAKE_LATTICE_TEXTURE(latticeMove,Blue)
+	MAKE_LATTICE_TEXTURE(latticeFire,Red)
+	MAKE_LATTICE_TEXTURE(latticeMovePath,Green)
 }
-Layer_BattleField::~Layer_BattleField(){}
+Layer_BattleField::~Layer_BattleField(){
+	latticeMove.texture.deleteTexture();
+	latticeFire.texture.deleteTexture();
+	latticeMovePath.texture.deleteTexture();
+}
 
 bool Layer_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
 	bool ret=false;
@@ -157,8 +180,10 @@ void Layer_BattleField::renderTerrains()const{
 			//取地形,并取纹理
 			battleField->getTerrain(x,y,terrain);
 			auto tex=game->terrainsTexturesArray.getTexture(terrain.terrainType,terrain.status);
+			spriteTerrain.setTexture(tex);
 			updateRenderPos(x,y);
-			tex.draw(renderPos);
+			spriteTerrain.position.setXY(renderPos.x,renderPos.y);
+			spriteTerrain.render();
 		}
 	}
 }
@@ -171,22 +196,25 @@ void Layer_BattleField::renderUnits()const{
 		spriteUnit.render();
 	}
 }
+
+#define RENDER_LATTICE(lattice) \
+updateRenderLattice(p.x,p.y);\
+lattice.position.setXY(renderPos.x,renderPos.y);\
+lattice.render();
+
 void Layer_BattleField::renderMovements()const{
 	for(auto &p:campaign->movablePoints){
-		updateRenderLattice(p.x,p.y);
-		ShapeRenderer::drawRectangle(renderLattice,nullptr,&rgbMove);
+		RENDER_LATTICE(latticeMove)
 	}
 }
 void Layer_BattleField::renderFireRange()const{
 	for(auto &p:campaign->firablePoints){
-		updateRenderLattice(p.x,p.y);
-		ShapeRenderer::drawRectangle(renderLattice,nullptr,&rgbFire);
+		RENDER_LATTICE(latticeFire)
 	}
 }
 void Layer_BattleField::renderMovePath()const{
 	for(auto &p:campaign->movePath){
-		updateRenderLattice(p.x,p.y);
-		ShapeRenderer::drawRectangle(renderLattice,nullptr,&rgbMovePath);
+		RENDER_LATTICE(latticeMovePath)
 	}
 }
 void Layer_BattleField::renderGrid()const{
@@ -202,6 +230,7 @@ void Layer_BattleField::renderGrid()const{
 }
 void Layer_BattleField::renderCursor()const{
 	auto &cursor=campaign->cursor;
-	updateRenderLattice(cursor.x,cursor.y);
-	texCursor.draw(renderPos);
+	updateRenderPos(cursor.x,cursor.y);
+	spriteCursor.position.setXY(renderPos.x,renderPos.y);
+	spriteCursor.render();
 }

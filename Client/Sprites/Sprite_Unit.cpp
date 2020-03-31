@@ -7,8 +7,8 @@ Sprite_Unit::Sprite_Unit():unitTexArray(nullptr),numTexArray(nullptr){
 }
 
 void Sprite_Unit::setUnit(const Unit &unit){
-	color = unit.isWait ? ColorRGBA::Gray : ColorRGBA::White;
 	setTexture(unitTexArray->getTexture(unit.corpType,unit.color));
+	setColor(unit.isWait ? ColorRGBA::Gray : ColorRGBA::White);
 	//决定是否显示hp
 	spriteHP.setTexture(numTexArray->getTexture(unit.presentHP()));
 }
