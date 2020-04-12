@@ -23,35 +23,26 @@ Terrain* BattleField::getTerrain(const CoordType &p)const{return pointer(p.x,p.y
 bool BattleField::setTerrain(SizeType x,SizeType y,const Terrain &terrain){return setValue(x,y,terrain);}
 bool BattleField::setTerrain(const CoordType &p,const Terrain &terrain){return setTerrain(p.x,p.y,terrain);}
 bool BattleField::setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status){
-	Terrain terrain;
-	SizeType trnIndex=0,trpIndex=0;
+	auto trn=getTerrain(x,y);
+	if(!trn)return false;
+	SizeType trnIndex=trn->terrainType,trpIndex=trn->status;
 	if(terrainsList->dataName(terrainName,trnIndex)){
-		terrain.terrainType=trnIndex;
+		trn->terrainType=trnIndex;
 		if(!status.empty()){
 			troopsList->dataName(status,trpIndex);
 		}
-		terrain.status=trpIndex;
-		return setTerrain(x,y,terrain);
+		trn->status=trpIndex;
+		return true;
 	}
 	return false;
 }
 bool BattleField::addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName){
-	Unit unit;
 	SizeType crpIndex=0,trpIndex=0;
 	auto corp=corpsList->dataName(corpName,crpIndex);
 	if(corp){
-		unit.corpType=crpIndex;//兵种
 		if(!troopName.empty() && troopsList->dataName(troopName,trpIndex)){
-			unit.color=trpIndex;//势力
+			return addUnit(x,y,crpIndex,trpIndex);
 		}
-		unit.coordinate=decltype(unit.coordinate)(x,y);//坐标
-		unit.fuel=corp->gasMax;//燃料
-		for(auto &wpn:corp->weapons){
-			unit.ammunition=wpn.ammunitionMax;
-			break;
-		}
-		chessPieces.push_back(unit);
-		return true;
 	}
 	return false;
 }
@@ -59,45 +50,50 @@ bool BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID
 	Unit unit(corpID,troopID,decltype(unit.coordinate)(x,y));
 	auto corp=corpsList->data(corpID);
 	if(corp){
-		unit.fuel=corp->gasMax;
-		for(auto &wpn:corp->weapons){
-			unit.ammunition=wpn.ammunitionMax;
-			break;
-		}
-		chessPieces.push_back(unit);
-		return true;
+		unit.fuel=corp->gasMax;//燃料
+		auto wpn=corp->weapons.data(0);//武器
+		unit.ammunition = wpn ? wpn->ammunitionMax : 0;//弹药
+		//添加
+		return addUnit(unit);
 	}
 	return false;
 }
 bool BattleField::addUnit(const Unit &unit){
-	chessPieces.push_back(unit);
-	return true;
+	auto trn=getTerrain(unit.coordinate);
+	if(trn){
+		chessPieces.push_back(unit);
+		trn->unitIndex=chessPieces.size()-1;
+		return true;
+	}
+	return false;
 }
-bool BattleField::removeUnit(const CoordType &p){return removeUnit(p.x,p.y);}
-bool BattleField::removeUnit(SizeType x,SizeType y){
-	auto oldVal=chessPieces.size();
-	chessPieces.remove_if([&](const Unit &unit){return unit.coordinate==decltype(unit.coordinate)(x,y);});
-	return chessPieces.size()<oldVal;
+
+bool BattleField::removeUnit(const CoordType &p){
+	for(auto &unit:chessPieces){
+		if(unit.coordinate==p)return removeUnit(unit);
+	}
+	return false;
 }
+bool BattleField::removeUnit(SizeType x,SizeType y){return removeUnit(CoordType(x,y));}
 bool BattleField::removeUnit(const Unit &unit){
+	//地形关系中移除
+	auto trn=getTerrain(unit.coordinate);
+	if(trn)trn->unitIndex=TERRAIN_NO_UNIT;
+	//队列中移除
 	auto sz=chessPieces.size();
-	chessPieces.remove(&unit);
+	chessPieces.remove(&unit);//队列中移除
 	return sz!=chessPieces.size();
 }
 
-void BattleField::getUnits(const CoordType &p,Array<Unit*> &unitArray){
-	unitArray.clear();
-	for(auto &unit:chessPieces){
-		if(unit.coordinate==p)unitArray.push_back(&unit);
-	}
+Unit* BattleField::getUnit(SizeType x,SizeType y)const{
+	auto trn=getTerrain(x,y);
+	return trn ? getUnit(*trn) : nullptr;
 }
-void BattleField::getUnits(const CoordType &p,decltype(CoordType::x) minDistance,decltype(CoordType::x) maxDistance,Array<Unit*> &unitArray){
-	unitArray.clear();
-	for(auto &unit:chessPieces){
-		auto len=(unit.coordinate-p).manhattanLength();
-		if(minDistance<=len && len<=maxDistance)unitArray.push_back(&unit);
-	}
+Unit* BattleField::getUnit(const CoordType &p)const{
+	auto trn=getTerrain(p);
+	return trn ? getUnit(*trn) : nullptr;
 }
+Unit* BattleField::getUnit(const Terrain &terrain)const{return chessPieces.data(terrain.unitIndex);}
 
 bool BattleField::fillTerrain(const Terrain &terrain){
 	for(SizeType x=0;x<width;++x){

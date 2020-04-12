@@ -4,13 +4,15 @@
 #include"ChessPiece.h"
 #include"Array.h"
 
+#define UNIT_MAX_HP 100
+
 //<高级战争>战场上的一个单位
 struct Unit:public ChessPiece<uint8,uint8>{
 	//构造函数
 	Unit(uint8 corpType=0,
 		 uint8 troopType=0,
 		 const decltype(coordinate) &p=decltype(coordinate)(0,0),
-		 uint8 healthPower=100,
+		 uint8 healthPower=UNIT_MAX_HP,
 		 uint8 fuel=99,
 		 uint8 ammunition=0);
 	//判断本单位和Unit是否一致

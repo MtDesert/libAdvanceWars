@@ -1,9 +1,10 @@
 #include"Terrain.h"
 #include"LuaState.h"
 
-Terrain::Terrain(int type, int status){
+Terrain::Terrain(int type,int status):unitIndex(TERRAIN_NO_UNIT){
 	this->terrainType=type;
 	this->status=status;
+	isVisible=true;
 }
 
 TerrainCode::TerrainCode():defendLV(0),capturable(false),hasIncome(false),hidable(false),has4direction(false){}
@@ -28,6 +29,7 @@ bool TerrainCodesList::loadFile_lua(const string &filename,WhenErrorString callb
 				READ_STR(translate)
 				READ_INT(defendLV)
 				READ_STR(buildType)
+				READ_STR(terrainAfterLanuch)
 				READ_BOOL(capturable)
 				READ_BOOL(hasIncome)
 				READ_BOOL(hidable)

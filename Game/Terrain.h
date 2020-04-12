@@ -2,6 +2,9 @@
 #define TERRAIN_H
 
 #include"DataList.h"
+#include"Unit.h"
+
+#define TERRAIN_NO_UNIT 0xFFFFFFFF
 
 /*高级战争-地形
 在高级战争的地图中,若一张图宽高为W,H,则这张图有W*H个地形,一张地图可以有若干重复的地形
@@ -17,6 +20,9 @@ public:
 	比如据点,我们可以用来表示据点所属的势力
 	*/
 	uint8 status;
+	bool isVisible:1;//是否可见,用于雾战状态
+
+	SizeType unitIndex;//指示该地形上留有哪个单位的索引
 };
 
 /*高级战争-地形代码
@@ -30,6 +36,7 @@ struct TerrainCode{
 	string translate;//翻译名称
 	uint8 defendLV;//地形防御等级
 	string buildType;//建造类型,用于生产部队,比如"LandForce","AirForce","Navy"
+	string terrainAfterLanuch;//发射后的地形变化
 	bool capturable:1;//能否被占领,具有占领功能的兵种可以进行占领
 	bool hasIncome:1;//是否具有收入,可占领的据点不一定会有收入
 	bool hidable:1;//是否可隐藏地形,隐藏地形只有靠近的时候才能发现内部情况

@@ -12,7 +12,7 @@ static Rectangle2D<float> renderLattice;//渲染格子
 static Sprite_Terrain spriteTerrain;//地形精灵,用于绘制地形
 static Sprite_Unit spriteUnit;//单位精灵,用于渲染单位
 static GameSprite spriteCursor;//光标,用于指示操作位置
-static GameSprite latticeMove,latticeFire,latticeMovePath;
+static GameSprite latticeMove,latticeFire,latticeMovePath,latticeFog,latticeImpactRange;//移动范围,开火范围,移动路径范围,雾范围(影响视野范围),波及范围
 
 static void updateRenderPos(int x,int y){//更新渲染位置,根据x,y来更新renderPos
 	renderPos.setXY(mapRect.p0.x + x*latticeSize,mapRect.p0.y + y*latticeSize);
@@ -33,11 +33,10 @@ isEditMode(false),isEditMode_Unit(false){
 	spriteTerrain.anchorPoint.setXY(0,0);
 	spriteUnit.anchorPoint.setXY(0,0);
 	spriteCursor.anchorPoint.setXY(0,0);
+	spriteTerrain.terrainsTexArray=&game->terrainsTexturesArray;//地形渲染
 	spriteUnit.unitTexArray=&game->corpsTexturesArray;//渲染单位用
 	spriteUnit.numTexArray=&game->numbersTextures;//渲染HP用
-	Texture texCursor;
-	texCursor.texImage2D_FilePNG(game->settings.imagesPathIcons+"/Cursor.png",Game::whenError);
-	spriteCursor.setTexture(texCursor);
+	spriteCursor.setTexture(game->allIconsTextures.getTexture("Cursor"));
 	//范围设定,这里要区分一下GDI和OpenGL的格式
 #ifdef __MINGW32__
 #define TO_FORMAT toBGRA
@@ -56,6 +55,8 @@ isEditMode(false),isEditMode_Unit(false){
 	MAKE_LATTICE_TEXTURE(latticeMove,Blue)
 	MAKE_LATTICE_TEXTURE(latticeFire,Red)
 	MAKE_LATTICE_TEXTURE(latticeMovePath,Green)
+	MAKE_LATTICE_TEXTURE(latticeFog,Black)
+	MAKE_LATTICE_TEXTURE(latticeImpactRange,Yellow)
 }
 Layer_BattleField::~Layer_BattleField(){
 	latticeMove.texture.deleteTexture();
@@ -67,7 +68,7 @@ bool Layer_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
 	bool ret=false;
 	if(!pressed){
 		ret=true;
-		if(campaign->selectedTargetPoint){//从目标列表中选择
+		if(campaign->selectedTargetPoint && !campaign->selectedTargetPointFreely){//从目标列表中选择
 			switch(key){
 				case Keyboard::Key_Up:case Keyboard::Key_Left:campaign->choosePrevTarget();break;
 				case Keyboard::Key_Down:case Keyboard::Key_Right:campaign->chooseNextTarget();break;
@@ -154,6 +155,7 @@ void Layer_BattleField::whenPressCancel(){
 
 void Layer_BattleField::renderX()const{
 	renderTerrains();//画地形图块
+	renderFog();//渲染雾
 	renderMovements();//渲染移动范围
 	renderFireRange();//渲染火力范围
 	renderMovePath();//渲染路径
@@ -171,30 +173,52 @@ void Layer_BattleField::updateMapRect(){
 	mapRect.p1.setXY(rct.p1.x,rct.p1.y);
 }
 
+//自上而下渲染
+#define RENDER_UP_TO_DOWN(code) \
+int w=battleField->getWidth(),h=battleField->getHeight();\
+for(decltype(h) y=h-1;y>=0;--y){\
+	for(decltype(w) x=0;x<w;++x){\
+		code\
+	}\
+}
+
+
 void Layer_BattleField::renderTerrains()const{
-	GAME_AW
-	int w=battleField->getWidth(),h=battleField->getHeight();
 	Terrain terrain;
-	for(decltype(h) y=h-1;y>=0;--y){//一定要自上而下渲染
-		for(decltype(w) x=0;x<w;++x){
-			//取地形,并取纹理
-			battleField->getTerrain(x,y,terrain);
-			auto tex=game->terrainsTexturesArray.getTexture(terrain.terrainType,terrain.status);
-			spriteTerrain.setTexture(tex);
-			updateRenderPos(x,y);
-			spriteTerrain.position.setXY(renderPos.x,renderPos.y);
-			spriteTerrain.render();
+	RENDER_UP_TO_DOWN(
+		//取地形,并取纹理
+		battleField->getTerrain(x,y,terrain);
+		spriteTerrain.setTerrain(terrain);
+		updateRenderPos(x,y);
+		spriteTerrain.position.setXY(renderPos.x,renderPos.y);
+		spriteTerrain.render();
+	)
+}
+
+void Layer_BattleField::renderFog()const{
+	Terrain terrain;
+	RENDER_UP_TO_DOWN(
+		//取地形,并取纹理
+		battleField->getTerrain(x,y,terrain);
+		if(!terrain.isVisible){//看不见的地形要隐藏
+			updateRenderLattice(x,y);
+			latticeFog.position.setXY(renderPos.x,renderPos.y);
+			latticeFog.render();
 		}
-	}
+	)
 }
 
 void Layer_BattleField::renderUnits()const{
-	for(auto &cp:battleField->chessPieces){
-		spriteUnit.setUnit(cp);
-		updateRenderPos(cp.coordinate.x,cp.coordinate.y);
-		spriteUnit.position.setXY(renderPos.x,renderPos.y);
-		spriteUnit.render();
-	}
+	Unit *unit=nullptr;
+	RENDER_UP_TO_DOWN(
+		unit=battleField->getUnit(x,y);
+		if(unit && unit->isVisible){
+			spriteUnit.setUnit(*unit);
+			updateRenderPos(unit->coordinate.x,unit->coordinate.y);
+			spriteUnit.position.setXY(renderPos.x,renderPos.y);
+			spriteUnit.render();
+		}
+	)
 }
 
 #define RENDER_LATTICE(lattice) \

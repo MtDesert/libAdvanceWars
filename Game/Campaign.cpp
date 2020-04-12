@@ -1,5 +1,6 @@
 #include"Campaign.h"
 #include"DamageCaculator.h"
+#include"Number.h"
 
 CampaignCO::CampaignCO():coID(0),energy(0),powerStatus(0){}
 CampaignTroop::CampaignTroop():troopID(0),isAI(false),teamID(0),funds(0),isLose(false){}
@@ -7,17 +8,26 @@ CampaignRule::CampaignRule():mIsFogWar(false),mInitFunds(0),mBaseIncome(1000),
 mBasesToWin(0),mFundsToWin(0),mTurnsToWin(0),mUnitLevel(0),mCoPowerLevel(2){}
 UnitData::UnitData(Campaign *cmpgn):campaign(cmpgn){clear();}
 
-void UnitData::getUnitData(const decltype(Unit::coordinate) &p){
+void UnitData::getUnitData(const decltype(Unit::coordinate) &p,bool clearCache){
 	if(!campaign)return;
+	if(clearCache)clear();
 	//获取地形信息
 	auto field = campaign->battleField;
 	terrain = field->getTerrain(p.x,p.y);
 	terrainCode = terrain ? field->terrainsList->data(terrain->terrainType) : nullptr;
 	//获取单位信息
-	unit = campaign->battleField->chessPieces.data([&](const Unit &unit){return unit.coordinate==p;});
+	if(!unit){
+		unit = field->getUnit(p);
+	}
 	corp = unit ? field->corpsList->data(unit->corpType) : nullptr;
 	//获取所属部队信息
 	campaignTroop = unit ? campaign->allTroops.data([&](const CampaignTroop &troop){return troop.troopID==unit->color;}) : nullptr;
+	troop = unit ? campaign->battleField->troopsList->data(unit->color) : nullptr;
+}
+void UnitData::getUnitData(const Unit &unit){
+	clear();
+	this->unit=(Unit*)&unit;
+	getUnitData(unit.coordinate,false);
 }
 void UnitData::clear(){
 	unit=nullptr;
@@ -25,10 +35,12 @@ void UnitData::clear(){
 	terrain=nullptr;
 	terrainCode=nullptr;
 	campaignTroop=nullptr;
+	troop=nullptr;
 }
 
 Campaign::Campaign():battleField(nullptr),damageCaculator(nullptr),
-currentTroopIndex(0),currentWeatherIndex(0),selectedTargetPoint(nullptr),corpMenuCommand(AmountOfCorpEnumMenu),
+currentTroopIndex(0),currentWeatherIndex(0),selectedTargetPoint(nullptr),selectedTargetPointFreely(false),
+corpMenuCommand(AmountOfCorpEnumMenu),
 currentWeather(nullptr),unitToDrop(nullptr),whenError(nullptr){
 	cursorUnitData.campaign=this;
 	selectedUnitData.campaign=this;
@@ -81,6 +93,18 @@ void Campaign::makeAllTeams(){
 		}
 	}
 }
+void Campaign::beginTurn(){
+	//清除掉自军的闪光弹的区域
+	auto troop=allTroops.data(currentTroopIndex);
+	if(troop){
+		flarePoints.remove_if([&](const FlarePoint &fp){
+			return fp.troopID==troop->troopID;
+		});
+	}
+	//计算收入
+	//计算修理
+	caculateVision();
+}
 void Campaign::endTurn(){
 	//清除待机状态(只清除当前部队的)
 	auto troop=allTroops.data(currentTroopIndex);
@@ -93,6 +117,7 @@ void Campaign::endTurn(){
 	}
 	//下一个队伍行动
 	nextCampaignTroopTurn();
+	beginTurn();
 	printf("troop[%lu] turn\n",currentTroopIndex);
 }
 void Campaign::nextCampaignTroopTurn(){
@@ -110,7 +135,7 @@ void Campaign::nextCampaignTroopTurn(){
 
 void Campaign::setCursor(const CoordType &p){
 	if(!battleField->isInRange(p.x,p.y))return;//过滤
-	if(selectedTargetPoint){//需要选择目标,这里要判断
+	if(selectedTargetPoint && !selectedTargetPointFreely){//需要选择目标,这里要判断
 		auto tp=targetPoints.data([&](const CoordType &tp){return tp==p;});
 		if(tp){
 			cursor=p;
@@ -119,13 +144,12 @@ void Campaign::setCursor(const CoordType &p){
 	}else{
 		cursor=p;
 		cursorUnitData.getUnitData(p);
-		if(movablePoints.size()){
+		if(movablePoints.size() && corpMenuCommand>=AmountOfCorpEnumMenu){
 			selectPath(p);
 		}
 	}
 }
 
-static const Campaign::CoordType pUp(0,1),pDown(0,-1),pLeft(-1,0),pRight(1,0);
 static const Campaign::CoordType directionP[]={{0,1},{0,-1},{-1,0},{1,0}};
 //LUA交互
 int Campaign::luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName){
@@ -164,6 +188,16 @@ int Campaign::luaFunc_unitWeight(const string &loaderName,const string &beLoader
 		luaState.push(loaderName).push(beLoaderName).push(beLoaderCorpType);
 		if(luaState.protectCall()){
 			luaState.getTopInteger(ret);
+		}
+	}
+	return ret;
+}
+string Campaign::luaFunc_buildTerrain(const string &terrain){
+	string ret;
+	if(luaState.getGlobalFunction("getBuildTerrain")){
+		luaState.push(terrain);
+		if(luaState.protectCall()){
+			ret=luaState.getTopString();
 		}
 	}
 	return ret;
@@ -214,12 +248,9 @@ void Campaign::tryToMoveTo(const MovePoint &currentPos,const CoordType &offset){
 		}
 	}
 	//碰撞检测，检测是否发生碰撞
-	for(auto &unit:battleField->chessPieces){
-		if(unit.coordinate==targetPos && unit.color != selectedUnitData.unit->color && unit.isVisible){
-			auto troop=findCampaignTroop(unit);//判断是敌人还是朋友,不是朋友的一般都会采取拦截措施
-			if(!troop)return;
-			if(troop->teamID != selectedUnitData.campaignTroop->teamID)return;
-		}
+	auto unit=battleField->getUnit(*terrain);
+	if(unit && unit->isVisible){
+		if(!isFriendUnit(*selectedUnitData.campaignTroop,*unit))return;//判断是敌人还是朋友,不是朋友的一般都会采取拦截
 	}
 	//检查剩余的移动力和燃料
 	//if moveCost1 then moveCost=1 end某些指挥官貌似走可走的地形都是1
@@ -350,80 +381,181 @@ bool Campaign::canDropFrom(const Unit &unit, const CoordType &p,bool needSave){
 	return false;
 }
 
+static string strCommand;//命令
 bool Campaign::moveWithPath(){
 	bool ret=true;
+	strCommand.clear();
+	strCommand+=selectedUnitData.troop->name+"-"+selectedUnitData.corp->name;
+	auto srcTerrain=battleField->getTerrain(selectedUnitData.unit->coordinate);
 	for(auto &path:movePath){
 		//碰撞检测，检测是否发生碰撞
-		for(auto &unit:battleField->chessPieces){
-			if(unit.coordinate==path && unit.color != selectedUnitData.unit->color){
-				//判断是敌人还是朋友,不是朋友的一般都会采取拦截措施
-				auto troop=findCampaignTroop(unit);
-				if(!troop)ret=false;
-				if(troop->teamID != selectedUnitData.campaignTroop->teamID)ret=false;
-				if(!ret)break;
-			}
+		auto unit=battleField->getUnit(path);
+		if(unit && !isFriendUnit(*selectedUnitData.campaignTroop,*unit)){
+			ret=false;
 		}
 		if(!ret)break;
 		//无碰撞,执行移动过程
 		selectedUnitData.unit->coordinate=path;
 		selectedUnitData.unit->fuel=path.remainFuel;
+		//生成信息
+		strCommand += "("+Number::toString(path.x)+","+Number::toString(path.y)+")";
 	}
 	selectedUnitData.unit->isWait=true;//不管有没有碰撞,都变成待机状态
+	//改变坐标
+	auto dstTerrain=battleField->getTerrain(selectedUnitData.unit->coordinate);
+	if(srcTerrain)srcTerrain->unitIndex=TERRAIN_NO_UNIT;
+	if(dstTerrain)dstTerrain->unitIndex=battleField->chessPieces.indexOf(*selectedUnitData.unit);
 	return ret;
+}
+
+//计算范围
+void Campaign::caculateRange(const CoordType &center,int distance,function<void(const CoordType &)> callback){
+	int d=distance;
+	for(int i=0;i<d;++i){
+		callback(CoordType(center.x+i,center.y+(i-d)));
+		callback(CoordType(center.x+(d-i),center.y+i));
+		callback(CoordType(center.x-i,center.y+(d-i)));
+		callback(CoordType(center.x+(i-d),center.y-i));
+	}
+}
+void Campaign::caculateRange(const CoordType &center,int minDistance,int maxDistance,function<void (const CoordType &)> callback){
+	for(int i=minDistance;i<=maxDistance;++i){//计算范围
+		if(i>0){
+			caculateRange(center,i,callback);
+		}else{
+			callback(center);
+		}
+	}
+}
+//计算视野
+void Campaign::caculateVision(){
+	if(!campaignRule.mIsFogWar){//雾战要重新计算视野
+		return;
+	}
+	//先隐藏掉所有地形和单位
+	battleField->forEachLattice([&](uint x,uint y,Terrain &terrain){
+		terrain.isVisible=false;
+		auto unit=battleField->getUnit(terrain);
+		if(unit)unit->isVisible=false;
+	});
+	//寻找出观察者
+	auto currentTroop=allTroops.data(currentTroopIndex);
+	if(currentTroop){
+		battleField->chessPieces.forEach([&](Unit &unit){
+			if(isFriendUnit(*currentTroop,unit)){//计算自军和友军的视野
+				unit.isVisible=true;
+				caculateVision(unit);
+			}
+		});
+	}
+	//这里还要计算闪光弹照明的视野
+	flarePoints.forEach([&](FlarePoint &center){
+		caculateRange(center,0,center.flareRange,[&](const CoordType &p){
+			auto trn=battleField->getTerrain(p);
+			if(trn)trn->isVisible=true;
+		});
+	});
+}
+void Campaign::caculateVision(const Unit &unit){
+	auto see=[&](Terrain *terrain){
+		if(terrain){
+			terrain->isVisible=true;
+			auto u=battleField->getUnit(*terrain);
+			if(u)u->isVisible=true;
+		}
+	};
+	caculateRange(unit.coordinate,0,1,[&](const CoordType &p){//看见unit自己和周围1格的地形
+		see(battleField->getTerrain(p));
+	});
+	auto corp=battleField->corpsList->data(unit.corpType);
+	if(corp){
+		caculateRange(unit.coordinate,2,corp->vision,[&](const CoordType &p){
+			auto trn=battleField->getTerrain(p);
+			if(trn){//只能看透非掩体地形
+				auto code=battleField->terrainsList->data(trn->terrainType);
+				if(code && !code->hidable){
+					see(trn);
+				}
+			}
+		});
+	}
 }
 
 void Campaign::caculateFlightshot_byMovement(){//根据移动范围来计算射程
 	firablePoints.push_back(selectedUnitData.unit->coordinate);
 	for(SizeType i=0;i<movablePoints.size();++i){
 		auto p=*movablePoints.data(i);
-		for(auto &dir:directionP)firablePoints.push_back(p+dir);
+		for(auto &dir:directionP){
+			auto pp=p+dir;
+			if(battleField->isInRange(pp.x,pp.y) && !firablePoints.contain(pp)){
+				firablePoints.push_back(pp);
+			}
+		}
 	}
-	firablePoints.unique();//去掉重复
-	caculateFlightshot_removeNotInRange();//移除超出地图的点
 }
 void Campaign::caculateFlightshot_byCenter(){
 	firablePoints.clear();
 	if(selectedUnitData.unit && selectedUnitData.corp){
-		auto wpn=selectedUnitData.corp->weapons.data(0);//取首个武器判断
+		auto wpn=selectedUnitData.corp->firstAttackableWeapon();//取首个武器判断
 		if(wpn && wpn->isIndirectAttack()){
 			caculateFlightshot_byCenter(selectedUnitData.unit->coordinate,wpn->minRange,wpn->maxRange);
 		}
 	}
 }
 void Campaign::caculateFlightshot_byCenter(const CoordType &center,int minDistance,int maxDistance){
-	for(int i=minDistance;i<=maxDistance;++i){//计算射程
-		caculateFlightshot_byCenter(center,i);
-	}
-	caculateFlightshot_removeNotInRange();
-}
-void Campaign::caculateFlightshot_byCenter(const CoordType &center,int distance){
-	int d=distance;
-	for(int i=1;i<=d;++i){
-		firablePoints.push_back(CoordType(center.x+i,center.y+(i-d)));
-		firablePoints.push_back(CoordType(center.x+(d-i),center.y+i));
-		firablePoints.push_back(CoordType(center.x-i,center.y+(d-i)));
-		firablePoints.push_back(CoordType(center.x+(i-d),center.y-i));
-	}
-}
-void Campaign::caculateFlightshot_removeNotInRange(){
-	firablePoints.remove_if([this](const CoordType &p){
-		return !battleField->isInRange(p.x,p.y);
+	caculateRange(center,minDistance,maxDistance,[&](const CoordType &p){
+		if(battleField->isInRange(p.x,p.y))firablePoints.push_back(p);
 	});
+}
+
+void Campaign::caculateSuppliableUnits(){
+	suppliableUnits.clear();
+	auto func=[&](const CoordType &p){
+		auto unit=battleField->getUnit(p);
+		if(unit && isFriendUnit(*selectedUnitData.campaignTroop,*unit)){//必须是自军或者友军
+			suppliableUnits.push_back(unit);
+		}
+	};
+	caculateRange(cursor,1,func);
+}
+void Campaign::supplyUnit(Unit &unit){
+	auto corp=battleField->corpsList->data(unit.corpType);
+	if(corp){
+		unit.fuel=corp->gasMax;//补充燃料
+		auto wpn=corp->firstAttackableWeapon();
+		unit.ammunition = wpn ? wpn->ammunitionMax : 0;//补充弹药
+	}
+}
+void Campaign::repairUnit(Unit &unit,int repairHP,int repairPayPercent){
+	//找兵种,取其价格
+	auto corp=battleField->corpsList->data(unit.corpType);
+	if(!corp)return;
+	//找部队,取其资金
+	auto campaignTroop=findCampaignTroop(unit);
+	if(!campaignTroop)return;
+	//计算可修复量
+	int maxRepairHP=INT_MAX;
+	if(corp->price && repairPayPercent){//防止除数为0
+		/*最大可修复量
+		 *=金钱/((造价/最大HP) * (折扣百分数/100))
+		 *=金钱/((造价*折扣百分数) / (最大HP*100))
+		 *=(金钱*最大HP*100) / (造价*折扣百分数)
+		*/
+		maxRepairHP = (campaignTroop->funds*UNIT_MAX_HP*100) / (corp->price*repairPayPercent);
+	}
+	repairHP=min(repairHP,maxRepairHP);//根据金钱确定修复量
+	repairHP=min(repairHP,UNIT_MAX_HP-unit.healthPower);//根据损伤程度确定修复量
+	int repairCost = repairHP * corp->price / UNIT_MAX_HP;//修理费用=修复量*造价/最大HP
+	campaignTroop->funds-=repairCost;//支付费用
+}
+void Campaign::reduceUnitHP(Unit &unit,int reduceHP){
+	unit.healthPower = unit.healthPower>reduceHP ? unit.healthPower-reduceHP : 1;
 }
 
 void Campaign::cursorConfirm(){
 	if(selectedUnitData.unit){
 		if(selectedTargetPoint){//选定了目标,再次执行指令
-			bool executeFinish=false;
-			switch(corpMenuCommand){
-#define CASE(name) case Menu_##name:executeFinish=execMenuItem_##name();break;
-				CASE(Fire)
-				CASE(Drop)
-#undef CASE
-				default:printf("execute %d ???\n",corpMenuCommand);
-			}
-			//清除操作结果
-			if(executeFinish)clearAllOperation();
+			executeCorpMenu(corpMenuCommand);
 		}else{//没有选定目标,尝试生成兵种命令菜单
 			auto lastP=movePath.lastData();
 			if(lastP && *lastP==cursor){//在移动范围内
@@ -480,25 +612,25 @@ void Campaign::clearAllOperation(){
 	movePath.clear();
 	firablePoints.clear();
 	//清除菜单
-	corpMenu.clear();
+	corpMenuCommand=AmountOfCorpEnumMenu;
+	hideCorpMenu();
 	produceMenu.clear();
 	//清除刚操作的单位信息
 	selectedUnitData.clear();
 	cursorUnitData.getUnitData(cursor);
 	//清除各种缓冲
 	selectedTargetPoint=nullptr;
+	selectedTargetPointFreely=false;
 	unitsArray.clear();
 	unitToDrop=nullptr;
 }
 
-void Campaign::executeCorpMenu(int index){
-	//根据idx确定要执行的command
-	auto command=corpMenu.data(index);
-	corpMenuCommand = command ? *command : AmountOfCorpEnumMenu;
-	if(!command)return;
+void Campaign::executeCorpMenu(int command){
+	corpMenuCommand = (EnumCorpMenu)command;
+	if(command>=AmountOfCorpEnumMenu)return;
 	//执行
 	bool executeFinish=false;
-	switch(*command){
+	switch(command){
 #define CASE(name) case Menu_##name:executeFinish=execMenuItem_##name();break;
 		CAMPAIGN_CORPMENU(CASE)
 #undef CASE
@@ -506,7 +638,13 @@ void Campaign::executeCorpMenu(int index){
 	}
 	//执行完毕就清除相关操作
 	if(executeFinish){
+		printf("command: %s\n",strCommand.data());
 		clearAllOperation();
+		caculateVision();
+		if(command==Menu_Drop){//卸载指令的情况下,可以继续执行卸载
+			selectedUnitData=cursorUnitData;
+			execMenuItem_Drop();
+		}
 	}
 }
 void Campaign::executeProduceMenu(int index){
@@ -526,6 +664,10 @@ void Campaign::chooseTarget(int delta){
 	//更新指针
 	selectedTargetPoint=targetPoints.data(idx);
 	setCursor(*selectedTargetPoint);
+	//开火指令,需要显示预测威力
+	if(corpMenuCommand==Menu_Fire){
+		printf("预计损伤%d\n",damageCaculator->predictDamage(selectedUnitData,cursorUnitData,0));
+	}
 }
 void Campaign::chooseNextTarget(){chooseTarget(1);}
 
@@ -536,16 +678,25 @@ bool Campaign::selectDropPoint(Unit &unit){
 	if(targetPoints.size()>0){
 		unitToDrop=&unit;
 		selectedTargetPoint=targetPoints.firstData();
+		selectedTargetPointFreely=false;
 		chooseTarget(0);
-		corpMenu.clear();//兵种命令菜单消失
+		hideCorpMenu();
 		unitsArray.clear();//单位菜单消失
 		return true;
 	}
 	return false;
 }
+bool Campaign::isFriendUnit(const CampaignTroop &campTroop,const Unit &unit)const{
+	auto troop=findCampaignTroop(unit);
+	return troop ? campTroop.teamID==troop->teamID : false;
+}
+bool Campaign::isFriendTerrain(const CampaignTroop &campTroop, const Terrain &terrain)const{
+	auto troop=findCampaignTroop(terrain);
+	return troop ? campTroop.teamID==troop->teamID : false;
+}
 
 void Campaign::showCorpMenu(){
-	corpMenu.clear();
+	hideCorpMenu();
 	//添加各个菜单项
 	if(!showMenuItem_Join() && !showMenuItem_Load() && showMenuItem_Wait()){//要么Join要么Load,否则执行其它指令
 		showMenuItem_Drop();
@@ -612,36 +763,27 @@ bool Campaign::showMenuItem_Drop(){
 }
 
 bool Campaign::showMenuItem_Fire(){
-	auto destP=movePath.lastData();
-	if(!destP)return false;
-	//近程攻击,需要判断目标点附近有没有敌人
+	auto wpn=selectedUnitData.corp->firstAttackableWeapon();//开火条件:具有可攻击性武器
+	if(!wpn)return false;
+	//寻找目标
 	Array<Unit*> targetUnits;
-	auto selectCorp=selectedUnitData.corp;
-	if(selectCorp->isDirectAttack()){
-		battleField->getUnits(*destP,1,1,targetUnits);
-	}
-	//远程攻击,需要判断射程
-	if(selectCorp->isIndirectAttack()){
-		auto wpn=selectCorp->weapons.data(0);//首个武器
-		battleField->getUnits(*destP,wpn->minRange,wpn->maxRange,targetUnits);
-	}
-	//过滤掉自军和友军单位
-	targetUnits.remove_if([&](Unit* const &unit){
-		auto troop=findCampaignTroop(*unit);
-		if(!troop)return false;
-		return troop->troopID==selectedUnitData.campaignTroop->troopID;
-	});
-	//检查自身的武器能否攻击对方
-	targetUnits.remove_if([&](Unit* const &unit){
-		auto corp=battleField->corpsList->data(unit->corpType);
-		if(!corp)return false;
-		int dmg=-1;
-		for(int i=0;i<2;++i){//扫描主副武器
-			dmg = damageCaculator->corpDamage(*selectCorp,*corp,i);
-			if(dmg>=0)break;
+	UnitData ud(this);
+	auto tryAttack=[&](const CoordType &p){
+		auto unit=battleField->getUnit(p);
+		if(!unit || !unit->isVisible)return;//过滤不可见单位
+		if(isFriendUnit(*selectedUnitData.campaignTroop,*unit))return;//过滤掉自军和友军单位
+		//判断攻击类型
+		ud.getUnitData(*unit);
+		if(damageCaculator->canAttack(selectedUnitData,ud,cursor)){
+			targetUnits.push_back(unit);
 		}
-		return dmg<0;
-	});
+	};
+	if(wpn->isDirectAttack()){//近程攻击,只判断周围
+		caculateRange(selectedUnitData.unit->coordinate,1,tryAttack);
+	}
+	if(wpn->isIndirectAttack()){//远程攻击,判断射程范围内
+		caculateRange(selectedUnitData.unit->coordinate,wpn->minRange,wpn->maxRange,tryAttack);
+	}
 	//更新目标点
 	targetPoints.clear();
 	for(auto &pUnit:targetUnits){
@@ -657,61 +799,84 @@ bool Campaign::showMenuItem_Fire(){
 bool Campaign::showMenuItem_Capture(){
 	if(!selectedUnitData.corp->capturable)return false;//兵种要具有占领能力
 	if(!cursorUnitData.terrainCode->capturable)return false;//目标地形必须是可占领的据点
-	if(selectedUnitData.unit->color == cursorUnitData.terrain->status)return false;//自己不能占领自己
-	//自己不能占领友军的据点
-	auto troop=findCampaignTroop(*cursorUnitData.terrain);
-	if(troop && troop->teamID==selectedUnitData.campaignTroop->teamID)return false;
+	if(isFriendTerrain(*selectedUnitData.campaignTroop,*cursorUnitData.terrain))return false;//自己不能占领友军的据点
 	//可占领
 	corpMenu.push_back(Menu_Capture);
 	return true;
 }
 bool Campaign::showMenuItem_Supply(){
-	suppliableUnits.clear();
-	//首先必须位置相邻,且不是自己
-	//必须是自军或者友军
+	if(!selectedUnitData.corp->suppliable)return false;//兵种必须有补给能力
+	caculateSuppliableUnits();
 	if(suppliableUnits.size()){//有可补给的单位就显示此指令
 		corpMenu.push_back(Menu_Supply);
 	}
 	return suppliableUnits.size();
 }
 bool Campaign::showMenuItem_Build(){
+	if(selectedUnitData.corp->buildable){
+		auto toBuild=luaFunc_buildTerrain(cursorUnitData.terrainCode->name);
+		if(!toBuild.empty()){
+			corpMenu.push_back(Menu_Build);
+			return true;
+		}
+	}
 	return false;
 }
 bool Campaign::showMenuItem_Flare(){
-	return true;
+	auto wpn=selectedUnitData.corp->firstFlarableWeapon();
+	if(wpn && selectedUnitData.unit->ammunition){//带有闪光功能,且有弹药
+		if(selectedUnitData.unit->coordinate==cursor){//没有移动
+			corpMenu.push_back(Menu_Flare);
+			return true;
+		}
+	}
+	return false;
 }
 bool Campaign::showMenuItem_Hide(){
-	return true;
+	if(selectedUnitData.corp->hidable && !selectedUnitData.unit->isHide){
+		corpMenu.push_back(Menu_Hide);
+		return true;
+	}
+	return false;
 }
 bool Campaign::showMenuItem_Appear(){
-	return true;
+	if(selectedUnitData.corp->hidable && selectedUnitData.unit->isHide){
+		corpMenu.push_back(Menu_Appear);
+		return true;
+	}
+	return false;
 }
 bool Campaign::showMenuItem_Launch(){
-	//主要是占领系的兵种可以发射火箭
+	if(selectedUnitData.corp->capturable && !cursorUnitData.terrainCode->terrainAfterLanuch.empty()){//可执行发射指令
+		corpMenu.push_back(Menu_Launch);
+		return true;
+	}
 	return false;
 }
 bool Campaign::showMenuItem_Repair(){
-	suppliableUnits.clear();
-	//首先必须位置相邻,且不是自己
-	//必须是自军或者友军
+	if(!selectedUnitData.corp->repairable)return false;
+	caculateSuppliableUnits();
 	if(suppliableUnits.size()){//有可补给的单位就显示此指令
 		corpMenu.push_back(Menu_Repair);
 	}
 	return suppliableUnits.size();
 }
 bool Campaign::showMenuItem_Explode(){
-	return true;
-}
-bool Campaign::showMenuItem_Wait(){
-	auto destP=movePath.lastData();
-	Array<Unit*> unitArr;
-	battleField->getUnits(*destP,unitArr);
-	//移动到无单位的位置,或者原地待机时候可显示
-	if(unitArr.size()<=0 || *unitArr.firstData()==selectedUnitData.unit){
-		corpMenu.push_back(Menu_Wait);
+	if(selectedUnitData.corp->explodable){
+		corpMenu.push_back(Menu_Explode);
 		return true;
 	}
 	return false;
+}
+bool Campaign::showMenuItem_Wait(){
+	auto trn=battleField->getTerrain(*movePath.lastData());
+	if(trn){
+		auto unit=battleField->getUnit(*trn);
+		if(!unit || unit==selectedUnitData.unit){//移动到无单位的位置,或者原地待机时候可显示
+			corpMenu.push_back(Menu_Wait);
+		}
+	}
+	return corpMenu.contain(Menu_Wait);
 }
 
 //执行命令
@@ -724,7 +889,7 @@ bool Campaign::execMenuItem_Join(){
 	unitB->fuel += unitA->fuel;//累加燃料
 	unitB->fuel = min(unitB->fuel,corp->gasMax);//燃料不超过上限
 	unitB->ammunition += unitA->ammunition;//累加弹药
-	auto weapon=corp->weapons.firstData();
+	auto weapon = corp->firstAttackableWeapon();
 	if(weapon){
 		unitB->ammunition = min(unitB->ammunition,weapon->ammunitionMax);//弹药不能超过上限
 	}
@@ -757,7 +922,7 @@ bool Campaign::execMenuItem_Drop(){
 		UnitData userData(this);
 		userData.getUnitData(*selectedTargetPoint);
 		if(userData.unit){//有障碍!
-			printf("!!!!\n");
+			corpMenuCommand = AmountOfCorpEnumMenu;//命令停止执行
 		}else{
 			//改变自身状态,然后从载体上下来
 			unitToDrop->coordinate.setP(*selectedTargetPoint);//下载体后的坐标
@@ -766,11 +931,6 @@ bool Campaign::execMenuItem_Drop(){
 			selectedUnitData.unit->loadedUnits.remove(unitToDrop);//从搭载列表中移除
 			//继续执行卸载命令
 			cursor = selectedUnitData.unit->coordinate;//备份一下坐标
-			clearAllOperation();
-			selectedUnitData.getUnitData(cursor);//这时候载体已经开过去了
-			execMenuItem_Drop();
-			//检查看看还有没有能卸载的部队
-			if(unitsArray.size()>0)return false;
 		}
 		return true;
 	}else{//要显示菜单
@@ -787,11 +947,18 @@ bool Campaign::execMenuItem_Drop(){
 bool Campaign::execMenuItem_Fire(){
 	if(selectedTargetPoint){//如果选择了目标,则开火
 		MOVE_WITH_PATH//先移动
+		strCommand += "Fire!";
 		damageCaculator->executeAttack();//后开火
+		UnitData* ud[]={&selectedUnitData,&cursorUnitData};
+		for(UnitData* &u:ud){//移除掉被干掉的部队
+			if(u->unit->healthPower<=0)battleField->removeUnit(*u->unit);
+		}
 		return true;
 	}else{//进入选择目标的状态
+		hideCorpMenu();//菜单消失
 		selectedTargetPoint=targetPoints.firstData();
-		setCursor(*selectedTargetPoint);
+		selectedTargetPointFreely=false;
+		chooseTarget(0);
 	}
 	return false;
 }
@@ -803,20 +970,148 @@ bool Campaign::execMenuItem_Capture(){
 		unit->progressValue=0;
 		cursorUnitData.terrain->status = unit->color;
 	}
-	unit->isWait=true;
 	return true;
 }
-bool Campaign::execMenuItem_Supply(){return false;}
-bool Campaign::execMenuItem_Build(){return false;}
-bool Campaign::execMenuItem_Flare(){return false;}
-bool Campaign::execMenuItem_Hide(){return false;}
-bool Campaign::execMenuItem_Appear(){return false;}
-bool Campaign::execMenuItem_Launch(){return false;}
-bool Campaign::execMenuItem_Repair(){return false;}
-bool Campaign::execMenuItem_Explode(){return false;}
-bool Campaign::execMenuItem_Wait(){
-	if(moveWithPath()){
-		selectedUnitData.unit->isWait=true;
+bool Campaign::execMenuItem_Supply(){
+	for(auto &pUnit:suppliableUnits){
+		supplyUnit(*pUnit);
 	}
+	return true;
+}
+bool Campaign::execMenuItem_Build(){
+	MOVE_WITH_PATH
+	auto unit=selectedUnitData.unit;
+	unit->progressValue += unit->presentHP();//自己增长自己的进度值(占领值)
+	if(unit->progressValue>=20){//占领完成的时候就改变状态
+		unit->progressValue=0;
+		auto toBuild=luaFunc_buildTerrain(selectedUnitData.terrainCode->name);
+		if(!toBuild.empty()){
+			SizeType pos;
+			auto code=battleField->terrainsList->dataName(toBuild,pos);
+			if(pos>=0 && code->capturable){//建造成功
+				cursorUnitData.terrain->terrainType = pos;
+				cursorUnitData.terrain->status = unit->color;
+			}
+		}
+	}
+	return true;
+}
+bool Campaign::execMenuItem_Flare(){
+	if(selectedTargetPoint){
+		if(!targetPoints.contain(cursor)){//取消操作
+			firablePoints.clear();
+			targetPoints.clear();
+			showCorpMenu();
+		}
+		//发射闪光弹
+		--selectedUnitData.unit->ammunition;//弹药减少
+		auto wpn=selectedUnitData.corp->firstFlarableWeapon();
+		//生成闪光点
+		FlarePoint fp;
+		fp.setP(selectedTargetPointFreely ? cursor : *selectedTargetPoint);//自由选择时候以光标为准
+		if(wpn)fp.flareRange=wpn->flareRange;
+		fp.troopID=selectedUnitData.campaignTroop->troopID;
+		flarePoints.push_back(fp);
+		return true;
+	}else{//选择发射闪光弹的位置
+		hideCorpMenu();
+		movablePoints.clear();
+		firablePoints.clear();
+		targetPoints.clear();
+		auto wpn=selectedUnitData.corp->firstFlarableWeapon();//获取武器数据,取其射程
+		if(wpn){
+			caculateRange(selectedUnitData.unit->coordinate,wpn->minRange,wpn->maxRange,[&](const CoordType &p){
+				if(battleField->isInRange(p.x,p.y)){
+					firablePoints.push_back(p);
+					targetPoints.push_back(p);
+				}
+			});
+		}
+		//自由选择目标
+		selectedTargetPoint=targetPoints.data(0);
+		selectedTargetPointFreely=true;
+	}
+	return false;
+}
+bool Campaign::execMenuItem_Hide(){
+	MOVE_WITH_PATH
+	selectedUnitData.unit->isHide=true;
+	return true;
+}
+bool Campaign::execMenuItem_Appear(){
+	MOVE_WITH_PATH
+	selectedUnitData.unit->isHide=false;
+	return true;
+}
+bool Campaign::execMenuItem_Launch(){
+	if(selectedTargetPoint){//发射火箭
+		MOVE_WITH_PATH
+		caculateRange(*selectedTargetPoint,0,2,[&](const CoordType &p){//范围内的单位都受伤
+			auto unit=battleField->getUnit(p);
+			if(unit){
+				unit->healthPower = unit->healthPower>30 ? unit->healthPower-30 : 1;//削弱30%的HP
+			}
+		});
+		//地形改变
+		auto &p=selectedUnitData.unit->coordinate;
+		auto terrain=battleField->getTerrain(p);
+		if(terrain){
+			auto trnCode=battleField->terrainsList->data(terrain->terrainType);
+			if(trnCode){
+				battleField->setTerrain(p.x,p.y,trnCode->terrainAfterLanuch);
+			}
+		}
+		return true;
+	}else{//选择发射地点
+		hideCorpMenu();
+		selectedTargetPoint=&cursor;
+		selectedTargetPointFreely=true;
+	}
+	return false;
+}
+bool Campaign::execMenuItem_Repair(){
+	if(selectedTargetPoint){//执行修复
+		MOVE_WITH_PATH
+		supplyUnit(*cursorUnitData.unit);//补给
+		repairUnit(*cursorUnitData.unit,10);
+		return true;
+	}else{//选择修复目标
+		hideCorpMenu();
+		for(auto &pUnit:suppliableUnits){
+			targetPoints.push_back(pUnit->coordinate);
+		}
+		selectedTargetPoint=targetPoints.firstData();
+		chooseTarget(0);
+	}
+	return false;
+}
+bool Campaign::execMenuItem_Explode(){
+	firablePoints.clear();
+	if(selectedTargetPoint){//开始爆炸
+		if(!targetPoints.contain(cursor)){//取消爆炸
+			showCorpMenu();
+			return false;
+		}
+		MOVE_WITH_PATH
+		//爆炸,波及范围内所有单位会受伤
+		caculateRange(*movePath.lastData(),0,2,[&](const CoordType &p){
+			auto unit=battleField->getUnit(p);
+			if(unit)reduceUnitHP(*unit,50);
+		});
+	}else{//显示波及范围
+		hideCorpMenu();
+		caculateRange(cursor,0,2,[&](const CoordType &p){
+			firablePoints.push_back(p);
+		});
+		//固定目标点
+		targetPoints.clear();
+		targetPoints.push_back(cursor);
+		selectedTargetPoint=targetPoints.firstData();
+		chooseTarget(0);
+	}
+	return false;
+}
+bool Campaign::execMenuItem_Wait(){
+	MOVE_WITH_PATH
 	return true;
 }

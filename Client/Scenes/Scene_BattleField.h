@@ -43,8 +43,8 @@ public:
 
 	//控件
 	Layer_BattleField layerBattleField;//战场图层
-	Sprite_TerrainInfo spriteTerrainInfo;
-	Sprite_UnitInfo spriteUnitInfo;
+	Sprite_TerrainInfo spriteTerrainInfo;//地形信息框
+	Sprite_UnitInfo spriteUnitInfo;//单位信息框
 	GameButton_String buttonEdit;//编辑按钮,用来打开编辑菜单
 
 	//编辑模式菜单

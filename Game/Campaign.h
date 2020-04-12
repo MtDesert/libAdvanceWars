@@ -36,8 +36,6 @@ struct CampaignTroop{//参赛队伍
 	SizeType troopID;//部队id,具体对应什么部队请参考battleField->troopsList
 	bool isAI;//指明队伍的是人脑还是电脑控制的
 	SizeType teamID;//分组情况
-	Array<SizeType> friendsTeams;//保存队伍的id,即把哪些参赛队伍当队友(注意:对应的参赛队伍未必会把你当队友),把对方视为队友时,自己的部队不会阻挡对方部队的移动
-	Array<SizeType> enemiesTeams;//保存敌对方的id,即把哪些参赛队伍当敌人,只有把对方当敌人的情况下才能攻击对方
 
 	//指挥官相关
 	Array<CampaignCO> allCOs;//队伍中的所有CO
@@ -77,11 +75,16 @@ struct UnitData{
 	Terrain *terrain;//unit对应的地形
 	const TerrainCode *terrainCode;//terrain对应的地形码
 	CampaignTroop *campaignTroop;//unit所属的战役部队
+	const Troop *troop;//所属的部队数据
 	//数据源,依靠数据源的线索来查询数据
 	Campaign *campaign;
 
-	void getUnitData(const decltype(Unit::coordinate) &p);//获取p处相关信息
+	void getUnitData(const decltype(Unit::coordinate) &p,bool clearCache=true);//获取p处相关信息
+	void getUnitData(const Unit &unit);//获取单位unit的相关信息
 	void clear();
+
+	//字符串
+	string strUnit()const;//单位信息
 };
 
 class DamageCaculator;
@@ -112,6 +115,7 @@ public:
 
 	//战前准备
 	void makeAllTeams();//根据battleField自动生成所有队伍
+	void beginTurn();
 	void endTurn();//结束当前回合
 	void nextCampaignTroopTurn();//下一个部队开始行动
 
@@ -121,17 +125,23 @@ public:
 	void cursorConfirm();//在光标处执行确认操作
 	void cursorCancel();//在光标处进行取消操作
 	void clearAllOperation();//清除所有操作
+	UnitData cursorUnitData;//光标的实时数据
 
 	//范围表示
 	struct MovePoint:public CoordType{//此结构体专门用于移动范围的计算
 		uint8 remainMovement,remainFuel;//剩余移动力,剩余燃料
 	};
+	struct FlarePoint:public CoordType{
+		uint8 troopID,flareRange;//发射闪光弹的部队,闪光范围
+	};
 	Array<MovePoint> movablePoints;//移动范围
 	Array<MovePoint> movePath;//移动路径
-	Array<CoordType> visiblePoints;//可视范围
 	Array<CoordType> firablePoints;//可开火范围
+	Array<FlarePoint> flarePoints;//闪光点,即闪光弹所在的点
+	Array<CoordType> impactScope;//波及范围
 
 	CoordType *selectedTargetPoint;//需要选择的目标点
+	bool selectedTargetPointFreely;//自由选择目标点,直接移动光标选择,而不是从候选列表中自动选择
 
 	//菜单相关
 	#define CAMPAIGN_ENUM(name) Menu_##name,
@@ -147,7 +157,7 @@ public:
 	Array<int> produceMenu;//单位生产菜单,表中存放兵种索引
 
 	//菜单命令执行
-	void executeCorpMenu(int index);//执行兵种菜单项
+	void executeCorpMenu(int command);//执行兵种菜单项
 	void executeProduceMenu(int index);//执行生产菜单项
 	//目标选择
 	void choosePrevTarget();//选择上一个目标
@@ -156,11 +166,14 @@ public:
 	//卸载单位
 	bool selectDropPoint(Unit &unit);//选择unit的卸载点,返回能否选择
 
+	//关系判定
+	bool isFriendUnit(const CampaignTroop &campTroop,const Unit &unit)const;//判断unit是不是campTroop的友军
+	bool isFriendTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的友军地形
+
 	//lua相关
 	LuaState luaState;//lua状态机,执行特定的规则代码
 private:
 	//单位数据操作
-	UnitData cursorUnitData;//光标的实时数据
 	UnitData selectedUnitData;//选择的状态数据
 	//目标状态数据
 	Array<CoordType> targetPoints;//扫描出来的目标点
@@ -170,6 +183,7 @@ private:
 	int luaFunc_fuelCost(const string &weatherName);//查询燃料损耗(天气名),返回值小于0表示不存在
 	int luaFunc_volumnOfLoader(const string &loaderName);
 	int luaFunc_unitWeight(const string &loaderName,const string &beLoaderName,const string &beLoaderCorpType);//查询部队可装载数量,小于等于0表示不可装载
+	string luaFunc_buildTerrain(const string &terrain);
 
 	//移动范围计算
 	Array<int> movementCostCache;//缓冲(地形编号=>移动损耗)
@@ -187,12 +201,22 @@ private:
 	//移动执行
 	bool moveWithPath();
 
+	//范围计算
+	void caculateRange(const CoordType &center,int distance,function<void (const CoordType &)> callback);
+	void caculateRange(const CoordType &center,int minDistance,int maxDistance,function<void(const CoordType &p)> callback);
+	//视野计算
+	void caculateVision();
+	void caculateVision(const Unit &unit);
 	//火力范围计算
 	void caculateFlightshot_byMovement();//根据移动范围来计算射程
 	void caculateFlightshot_byCenter();//以间接攻击部队的中心来计算攻击距离
 	void caculateFlightshot_byCenter(const CoordType &center,int minDistance,int maxDistance);
-	void caculateFlightshot_byCenter(const CoordType &center,int distance);
-	void caculateFlightshot_removeNotInRange();
+
+	//补给修复计算
+	void caculateSuppliableUnits();//寻找出可补给的单位
+	void supplyUnit(Unit &unit);//对unit进行补给
+	void repairUnit(Unit &unit,int repairHP,int repairPayPercent=100);//对unit进行修复,hp回复量为repairHP,修理费百分比为repairPayPercent
+	void reduceUnitHP(Unit &unit,int reduceHP);//减少unit的HP,但最低保持1
 
 	//菜单相关
 	void showCorpMenu();

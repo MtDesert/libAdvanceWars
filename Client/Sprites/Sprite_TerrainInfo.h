@@ -2,13 +2,13 @@
 #define SPRITE_TERRAININFO_H
 
 #include"GameString.h"
-#include"Terrain.h"
+#include"Campaign.h"
 
 class Sprite_TerrainInfo:public GameSprite{
 public:
 	Sprite_TerrainInfo();
-	//数据相关
-	void setTerrain(const TerrainCode &terrainCode,const Terrain &terrain);
+
+	void setUnitData(const UnitData &unitData);//设置显示数据
 
 	//控件相关
 	ColorRGBA bgColor;//背景色

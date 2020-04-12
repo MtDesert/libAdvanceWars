@@ -70,16 +70,6 @@ void Scene_Main::menuMainConfirm(){//主菜单确认后,显示各个子菜单
 	}
 }
 
-//单机-剧情模式选择剧本后
-/*static void whenSingleMode_Scenario(const string &filename){
-	GET_GAME
-	auto script=game->useScenarioScript();
-	if(script->executeSenarioScript(filename)){//脚本加载没有问题后,再移除场景
-		game->clearAllScenes();//移除场景
-		game->addSubObject(game->useLayerConversation());//添加对话框
-	}
-}*/
-
 void Scene_Main::menuSingleModeConfirm(){
 	GET_GAME
 	switch(menuSingleMode.selectingItemIndex){
@@ -107,9 +97,16 @@ void Scene_Main::menuSingleModeConfirm(){
 			});
 		}break;
 		case ScenarioMode:{
-			/*scene->textTitle.setString("SelectScript",true);
-			scene->changeDirectory(game->settings.scenarioScriptsPath);
-			scene->whenConfirmFile=whenSingleMode_Scenario;*/
+			auto scene=game->gotoScene_FileList(true);
+			scene->selectFile(false,"SelectScript",game->settings.scenarioScriptsPath,[&,game](const string &filename){
+				auto script=game->useScenarioScript();
+				if(script->executeSenarioScript(filename)){//脚本加载没有问题后,再移除场景
+					game->clearAllScenes();//移除场景
+					game->loadAllConfigData();
+					game->loadAllTextures();
+					game->addSubObject(game->useLayerConversation());//添加对话框
+				}
+			});
 		}break;
 		case MissionMode:break;
 		case VersusMode:{//打开文件菜单
@@ -117,9 +114,8 @@ void Scene_Main::menuSingleModeConfirm(){
 			scene->selectFile(false,"MapSelect",game->settings.mapsPath,[game](const string &filename){
 				game->loadAllConfigData();//加载配置
 				if(game->battleField.loadMap_CSV(filename)){//加载地图
-					//这里应该跳转到设置区域
-					game->loadAllTextures();
-					game->gotoScene_CampaignPrepare(true);
+					game->loadAllTextures();//加载纹理
+					game->gotoScene_CampaignPrepare(true);//进入设置界面
 				}
 			});
 		}break;

@@ -33,6 +33,7 @@ public:
 	void updateMapRect();//更新地图矩形,影响渲染
 protected:
 	void renderTerrains()const;//渲染地形
+	void renderFog()const;//渲染雾效果
 	void renderUnits()const;//渲染单位
 	void renderMovements()const;//渲染移动范围
 	void renderFireRange()const;//渲染火力范围

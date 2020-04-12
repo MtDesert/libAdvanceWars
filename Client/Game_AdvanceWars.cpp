@@ -74,7 +74,8 @@ bool Game_AdvanceWars::loadAllConfigData(){
 	AW_LOAD_LUA(mWeathersList,dataWeathers)//天气表
 	//规则数据
 	campaign.luaState.doFile(settings.ruleMove);//移动规则
-	campaign.luaState.doFile(settings.ruleLoadUnit);
+	campaign.luaState.doFile(settings.ruleLoadUnit);//装载单位规则
+	campaign.luaState.doFile(settings.ruleBuild);//装载建造规则
 	damageCaculator.luaState.doFile(settings.ruleDamage);//损伤规则
 	//引用传递
 	damageCaculator.campaign=&campaign;
@@ -86,6 +87,7 @@ bool Game_AdvanceWars::loadAllTextures(){
 	loadCorpsTextures();
 	loadTroopsTextures();
 	loadCommandersTextures();
+	loadAllIconsTextures();
 	loadMapEditMenuTextures();
 	loadCorpMenuTextures();
 	//数字
@@ -97,11 +99,6 @@ bool Game_AdvanceWars::loadAllTextures(){
 		tex->deleteTexture();
 		tex->texImage2D_FilePNG(settings.imagesPathNumbers+"/"+ch+".png",whenError);
 	}
-	//菜单箭头和星星
-	texMenuArrow.deleteTexture();
-	texMenuArrow.texImage2D_FilePNG(settings.imagesPathIcons+"/MenuArrow.png",whenError);
-	texStar.deleteTexture();
-	texStar.texImage2D_FilePNG(settings.imagesPathIcons+"/Star.png",whenError);
 	return true;
 }
 
@@ -111,9 +108,9 @@ void Game_AdvanceWars::clearAllTextureCache(){
 	terrainsTexturesArray.clearCache();
 	corpsTexturesArray.clearCache();
 	troopsTextures.clearCache();
-	corpMenuTextures.clearCache();
-	texMenuArrow.deleteTexture();
-	texStar.deleteTexture();
+	allIconsTextures.clearCache();
+	numbersTextures.clearCache();
+	//corpMenuTextures.clearCache();
 }
 
 #define FORCE_LOAD_CHECK(texArray) \
@@ -233,24 +230,40 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 void Game_AdvanceWars::loadMapEditMenuTextures(bool forceReload){
 	FORCE_LOAD_CHECK(mapEditMenuTextures)
 	mapEditMenuTextures.setSize(Scene_BattleField::AmountOfEnumMapEditCommand,true);
-	Texture *tex=nullptr;
+	Texture *texA=nullptr,*texB=nullptr;
 	//根据定义进行加载
 #define LOAD_MAP_EDIT_COMMAND_ICON(name)\
-	tex=mapEditMenuTextures.data(Scene_BattleField::MapEdit_##name);\
-	if(tex){\
-		tex->texImage2D_FilePNG(settings.imagesPathIcons+"/"+#name+".png",whenError);\
+	texA=mapEditMenuTextures.data(Scene_BattleField::MapEdit_##name);\
+	texB=allIconsTextures.value(#name);\
+	if(texA && texB){\
+		*texA=*texB;\
 	}
 	BATTLEFIELD_EDIT_MAP_MENU(LOAD_MAP_EDIT_COMMAND_ICON)
 }
 void Game_AdvanceWars::loadCorpMenuTextures(bool forceReload){
 	FORCE_LOAD_CHECK(corpMenuTextures)
 	corpMenuTextures.setSize(Campaign::AmountOfCorpEnumMenu,true);
-	Texture *tex=nullptr;
+	Texture *texA=nullptr,*texB=nullptr;
 	//根据定义进行加载
 #define LOAD_CORP_COMMAND_ICON(name)\
-	tex=corpMenuTextures.data(Campaign::Menu_##name);\
-	if(tex){\
-		tex->texImage2D_FilePNG(settings.imagesPathIcons+"/"+#name+".png",whenError);\
+	texA=corpMenuTextures.data(Campaign::Menu_##name);\
+	texB=allIconsTextures.value(#name);\
+	if(texA && texB){\
+		*texA=*texB;\
 	}
 	CAMPAIGN_CORPMENU(LOAD_CORP_COMMAND_ICON)
+}
+void Game_AdvanceWars::loadAllIconsTextures(bool forceReload){
+	FORCE_LOAD_CHECK(allIconsTextures)
+	Directory dir;
+	if(dir.changeDir(settings.imagesPathIcons,whenError)){
+		for(auto &entry:dir.direntList){//依次加载图片
+			if(!entry.isRegularFile())continue;//只加载正常文件
+			Texture tex;
+			tex.texImage2D_FilePNG(settings.imagesPathIcons+"/"+entry.name(),whenError);
+			auto name=entry.name();
+			auto nm=name.substr(0,name.find_last_of("."));//去掉扩展名
+			allIconsTextures.insert(nm,tex);
+		}
+	}
 }

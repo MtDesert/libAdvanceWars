@@ -10,6 +10,7 @@ Scene_BattleField::Scene_BattleField():battleField(nullptr){
 	layerBattleField.battleField=battleField;
 	addSubObject(&layerBattleField);
 	//addSubObject(&spriteTerrainInfo);
+	//addSubObject(&spriteUnitInfo);
 }
 Scene_BattleField::~Scene_BattleField(){}
 
@@ -94,6 +95,7 @@ void Scene_BattleField::gotoEditMode(){
 void Scene_BattleField::gotoBattleMode(){
 	layerBattleField.isEditMode = layerBattleField.isEditMode_Unit = false;
 	menuCorpCommand.corpCommandArray = &campaign->corpMenu;
+	campaign->beginTurn();//回合开始
 }
 
 void Scene_BattleField::reset(){
@@ -102,18 +104,27 @@ void Scene_BattleField::reset(){
 	game->loadAllTextures();
 	layerBattleField.updateMapRect();//调整尺寸
 	//菜单样式
-#define MENU_INIT(Name) \
-menu##Name.pSpriteSelector->setTexture(game->texMenuArrow);
-
+	auto &iconsTexs=game->allIconsTextures;
+	auto tex=iconsTexs.getTexture("MenuArrow");
+#define MENU_INIT(Name) menu##Name.pSpriteSelector->setTexture(tex);
 	MENU_INIT(CorpSelect)
 	MENU_INIT(TerrainSelect)
 	MENU_INIT(TroopSelect)
 	MENU_INIT(MapEdit)
 	MENU_INIT(UnitSelect)
 	MENU_INIT(CorpCommand)
+	//设置信息显示框的内容
+	spriteTerrainInfo.starIcon.setTexture(iconsTexs.getTexture("Star"));
+	spriteUnitInfo.iconHP.setTexture(iconsTexs.getTexture("Heart"));
+	spriteUnitInfo.iconGas.setTexture(iconsTexs.getTexture("Supply"));
+	spriteUnitInfo.iconAmmo.setTexture(iconsTexs.getTexture("Ammo"));
+	spriteUnitInfo.verticalLayout(spriteUnitInfo.size.y/2,0);
 }
 void Scene_BattleField::setCursor(const Campaign::CoordType p){
-	//spriteTerrainInfo.setTerrain(*campaign->cursorTerrainCode,campaign->cursorTerrain);
+	spriteTerrainInfo.setUnitData(campaign->cursorUnitData);//实时显示地形信息
+	spriteUnitInfo.setUnitData(campaign->cursorUnitData);//实时显示单位信息
+	//调整信息框位置
+
 }
 
 void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm,decltype(GameMenu::onCancel) onCancel){
@@ -127,9 +138,13 @@ void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) on
 void Scene_BattleField::updateMenu(){
 	//兵种命令菜单
 	if(!menuCorpCommand.parentObject && campaign->corpMenu.size()){//显示
+		menuCorpCommand.selectingItemIndex=0;
 		showMenu(menuCorpCommand,[&](GameMenu*){
-			campaign->executeCorpMenu(menuCorpCommand.selectingItemIndex);
-			updateMenu();//菜单消失
+			auto cmd=campaign->corpMenu.data(menuCorpCommand.selectingItemIndex);
+			if(cmd){
+				campaign->executeCorpMenu(*cmd);
+				updateMenu();//菜单消失
+			}
 		});
 	}
 	if(menuCorpCommand.parentObject && campaign->corpMenu.size()==0){//消失

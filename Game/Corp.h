@@ -10,6 +10,8 @@ struct Weapon{
 	uint8 minRange,maxRange;//射程
 	uint8 ammunitionMax;//武器弹药数
 
+	uint8 flareRange;//闪光弹闪光范围
+
 	bool isDirectAttack()const;
 	bool isIndirectAttack()const;
 };
@@ -33,9 +35,10 @@ struct Corp{
 	bool repairable:1;//是否具有修复能力
 	bool explodable:1;//是否具有爆炸能力
 	bool buildable:1;//是否具有建造能力
-	bool flarable:1;//是否具有闪光能力
 	//武器相关
 	Array<Weapon> weapons;
+	Weapon* firstAttackableWeapon()const;//首个可攻击武器
+	Weapon* firstFlarableWeapon()const;//首个可闪光武器
 
 	bool isDirectAttack()const;//是否为直接攻击的兵种
 	bool isIndirectAttack()const;//是否为间接攻击的兵种

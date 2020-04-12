@@ -1,19 +1,22 @@
 #include"Corp.h"
 #include"LuaState.h"
 
-Weapon::Weapon():minRange(1),maxRange(1),ammunitionMax(0){}
+Weapon::Weapon():minRange(1),maxRange(1),ammunitionMax(0),flareRange(0){}
 Corp::Corp():price(0),vision(1),movement(0),gasMax(0),
-capturable(false),suppliable(false),hidable(false),repairable(false),explodable(false),buildable(false),flarable(false){}
+capturable(false),suppliable(false),hidable(false),repairable(false),explodable(false),buildable(false){}
 
 bool Weapon::isDirectAttack()const{return minRange==1 && maxRange==1;}
 bool Weapon::isIndirectAttack()const{return maxRange>=2;}
 
+Weapon* Corp::firstAttackableWeapon()const{return weapons.data([](const Weapon &wpn){return !wpn.flareRange;});}
+Weapon* Corp::firstFlarableWeapon()const{return weapons.data([](const Weapon &wpn){return wpn.flareRange;});}
+
 bool Corp::isDirectAttack()const{
-	auto wpn=weapons.data(0);
+	auto wpn=firstAttackableWeapon();
 	return wpn ? wpn->isDirectAttack():false;
 }
 bool Corp::isIndirectAttack()const{
-	auto wpn=weapons.data(0);
+	auto wpn=firstAttackableWeapon();
 	return wpn ? wpn->isIndirectAttack():false;
 }
 
@@ -53,6 +56,7 @@ bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 						READ_INT(wpn,minRange)
 						READ_INT(wpn,maxRange)
 						READ_INT(wpn,ammunitionMax)
+						READ_INT(wpn,flareRange)
 						//修正射程
 						if(wpn->minRange<=0)wpn->minRange=1;
 						if(wpn->maxRange<=0)wpn->maxRange=1;
@@ -67,7 +71,6 @@ bool CorpsList::loadFile_lua(const string &filename,WhenErrorString whenError){
 				READ_CORP_BOOL(repairable)
 				READ_CORP_BOOL(explodable)
 				READ_CORP_BOOL(buildable)
-				READ_CORP_BOOL(flarable)
 				return true;
 			});
 		});

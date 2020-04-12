@@ -66,10 +66,10 @@ public:
 	TextureCache troopsTextures;//部队标记
 	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
 	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
+	TextureCache_String allIconsTextures;//所有的菜单图标
 	TextureCache mapEditMenuTextures;//地图编辑菜单
 	TextureCache corpMenuTextures;//兵种菜单
 	TextureCache numbersTextures;//数字,用于显示HP
-	Texture texMenuArrow,texStar;//菜单箭头,星星标识
 	void clearAllTextureCache();
 
 	//纹理加载过程
@@ -79,6 +79,7 @@ public:
 	void loadTerrainsTextures(bool forceReload=false);
 	void loadMapEditMenuTextures(bool forceReload=false);
 	void loadCorpMenuTextures(bool forceReload=false);
+	void loadAllIconsTextures(bool forceReload=false);
 	//剧情脚本
 	GAME_USE_CONVERSATION(Layer_Conversation)
 	GAME_USE_SCRIPT(ScenarioScript)
