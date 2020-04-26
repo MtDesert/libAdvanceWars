@@ -35,7 +35,8 @@ struct TerrainCode{
 	string name;//地形名称
 	string translate;//翻译名称
 	uint8 defendLV;//地形防御等级
-	string buildType;//建造类型,用于生产部队,比如"LandForce","AirForce","Navy"
+	string repairType;//修复类型,用于修复部队
+	string produceType;//建造类型,用于生产部队,比如"LandForce","AirForce","Navy"
 	string terrainAfterLanuch;//发射后的地形变化
 	bool capturable:1;//能否被占领,具有占领功能的兵种可以进行占领
 	bool hasIncome:1;//是否具有收入,可占领的据点不一定会有收入

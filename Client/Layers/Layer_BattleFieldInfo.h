@@ -3,9 +3,6 @@
 
 #include"GameLayer.h"
 
-class Layer_BattleFieldInfo:public GameLayer{
-public:
-	virtual void render()const;
-};
+class Layer_BattleFieldInfo:public GameLayer{};
 
 #endif

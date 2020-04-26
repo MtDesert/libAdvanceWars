@@ -18,12 +18,13 @@ void Layer_CampaignReady_Troop::reset(){
 	if(Table_CampaignTroop::translateOf_Team.empty()){
 		Table_CampaignTroop::translateOf_Team=game->translate("Team");
 	}
-	tableCampaignTeam.pSpriteSelector->setTexture(game->allIconsTextures.getTexture("Arrow"));
+	tableCampaignTeam.pSpriteSelector->setTexture(game->allIconsTextures.getTexture("MenuArrow"));
 	tableCampaignTeam.allTroops = &game->campaign.allTroops;
 	tableCampaignTeam.troopsTextures = &game->troopsTextures;
 	tableCampaignTeam.commandersTextures = &game->commandersHeadTextures;
 	tableCampaignTeam.updateRenderParameters(true);
 	menuCommander.pSpriteSelector->setTexture(tableCampaignTeam.pSpriteSelector->texture);
+	printf("item amount %lu\n",menuCommander.itemAmount());
 	//生成选择队伍的菜单
 	menuTeamSelect.gameStringList.clear();
 	menuTeamSelect.setRenderItemAmount(8);

@@ -56,9 +56,9 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	bool setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status="");//根据名字和状态设置地形
 	bool fillTerrain(const Terrain &terrain);//地形填充
 	//单位编辑
-	bool addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName);//x,y处添加兵种为corpName,部队为troopName的单位
-	bool addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID);//x,y处添加兵种ID为corpID,部队ID为troopID的单位
-	bool addUnit(const Unit &unit);//添加具体单位
+	Unit* addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName);//x,y处添加兵种为corpName,部队为troopName的单位
+	Unit* addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID);//x,y处添加兵种ID为corpID,部队ID为troopID的单位
+	Unit* addUnit(const Unit &unit);//添加具体单位
 
 	bool removeUnit(const CoordType &p);//移除p处的所有单位
 	bool removeUnit(SizeType x,SizeType y);//移除x,y处的所有单位

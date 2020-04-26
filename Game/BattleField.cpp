@@ -36,7 +36,7 @@ bool BattleField::setTerrain(SizeType x,SizeType y,const string &terrainName,con
 	}
 	return false;
 }
-bool BattleField::addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName){
+Unit* BattleField::addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName){
 	SizeType crpIndex=0,trpIndex=0;
 	auto corp=corpsList->dataName(corpName,crpIndex);
 	if(corp){
@@ -44,9 +44,9 @@ bool BattleField::addUnit(SizeType x,SizeType y,const string &corpName,const str
 			return addUnit(x,y,crpIndex,trpIndex);
 		}
 	}
-	return false;
+	return nullptr;
 }
-bool BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID){
+Unit* BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID){
 	Unit unit(corpID,troopID,decltype(unit.coordinate)(x,y));
 	auto corp=corpsList->data(corpID);
 	if(corp){
@@ -56,16 +56,16 @@ bool BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID
 		//添加
 		return addUnit(unit);
 	}
-	return false;
+	return nullptr;
 }
-bool BattleField::addUnit(const Unit &unit){
+Unit* BattleField::addUnit(const Unit &unit){
 	auto trn=getTerrain(unit.coordinate);
 	if(trn){
 		chessPieces.push_back(unit);
 		trn->unitIndex=chessPieces.size()-1;
-		return true;
+		return chessPieces.lastData();
 	}
-	return false;
+	return nullptr;
 }
 
 bool BattleField::removeUnit(const CoordType &p){
@@ -313,7 +313,7 @@ void BattleField::analyseFeature(BattleField_Feature &feature)const{
 				auto code=terrainsList->data(terrain.terrainType);
 				if(!code)continue;
 				//统计生产据点数
-				if(!code->buildType.empty()){
+				if(!code->produceType.empty()){
 					auto pNum=feature.array_buildableTerrainAmount.data(terrain.status);
 					if(pNum)++(*pNum);
 				}

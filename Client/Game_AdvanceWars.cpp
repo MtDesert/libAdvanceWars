@@ -51,13 +51,16 @@ string Game_AdvanceWars::gameName()const{return"AdvanceWars";}
 void Game_AdvanceWars::reset(){
 	Game::reset();
 	settings.loadFile("settings.lua");//读取配置
+	resolution.setP(settings.resolution);//设定分辨率
 	loadTranslationFile(settings.language+".csv");//读取翻译文件
+}
+void Game_AdvanceWars::restart(){
 	//进入场景
-	/*auto scene=gotoScene_Logo();
+	auto scene=gotoScene_Logo();
 	scene->reset();
 	scene->logoText.setString("AdvanceWars_LifeTime",true);
-	scene->whenLogoOver=[&](){gotoScene_Main();};*/
-	gotoScene_Main();
+	scene->whenLogoOver=[&](){gotoScene_Main();};
+	//gotoScene_Main();
 }
 
 GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,Main)
@@ -88,7 +91,9 @@ bool Game_AdvanceWars::loadAllTextures(){
 	loadTroopsTextures();
 	loadCommandersTextures();
 	loadAllIconsTextures();
+	//关联小图标
 	loadMapEditMenuTextures();
+	laodCampaignMenuTextures();
 	loadCorpMenuTextures();
 	//数字
 	numbersTextures.setSize(10,true);
@@ -227,31 +232,38 @@ void Game_AdvanceWars::loadTerrainsTextures(bool forceReload){
 		++trnIndex;
 	}
 }
+
+#define COPY_ICONS_TEX(menu,prefix,name) \
+texA=menu.data(prefix##name);\
+texB=allIconsTextures.value(#name);\
+if(texA && texB){*texA=*texB;}
+
 void Game_AdvanceWars::loadMapEditMenuTextures(bool forceReload){
 	FORCE_LOAD_CHECK(mapEditMenuTextures)
 	mapEditMenuTextures.setSize(Scene_BattleField::AmountOfEnumMapEditCommand,true);
 	Texture *texA=nullptr,*texB=nullptr;
 	//根据定义进行加载
-#define LOAD_MAP_EDIT_COMMAND_ICON(name)\
-	texA=mapEditMenuTextures.data(Scene_BattleField::MapEdit_##name);\
-	texB=allIconsTextures.value(#name);\
-	if(texA && texB){\
-		*texA=*texB;\
-	}
-	BATTLEFIELD_EDIT_MAP_MENU(LOAD_MAP_EDIT_COMMAND_ICON)
+#define MAKE_ICON(name) COPY_ICONS_TEX(mapEditMenuTextures,Scene_BattleField::MapEdit_,name)
+	BATTLEFIELD_EDIT_MAP_MENU(MAKE_ICON)
+#undef MAKE_ICON
+}
+void Game_AdvanceWars::laodCampaignMenuTextures(bool forceReload){
+	FORCE_LOAD_CHECK(campaignMenuTextures)
+	campaignMenuTextures.setSize(Scene_BattleField::AmountOfEnumCampaignCommand,true);
+	Texture *texA=nullptr,*texB=nullptr;
+	//根据定义进行加载
+#define MAKE_ICON(name) COPY_ICONS_TEX(campaignMenuTextures,Scene_BattleField::Campaign_,name)
+	BATTLEFIELD_CAMPAIGN_MENU(MAKE_ICON)
+#undef MAKE_ICON
 }
 void Game_AdvanceWars::loadCorpMenuTextures(bool forceReload){
 	FORCE_LOAD_CHECK(corpMenuTextures)
 	corpMenuTextures.setSize(Campaign::AmountOfCorpEnumMenu,true);
 	Texture *texA=nullptr,*texB=nullptr;
 	//根据定义进行加载
-#define LOAD_CORP_COMMAND_ICON(name)\
-	texA=corpMenuTextures.data(Campaign::Menu_##name);\
-	texB=allIconsTextures.value(#name);\
-	if(texA && texB){\
-		*texA=*texB;\
-	}
-	CAMPAIGN_CORPMENU(LOAD_CORP_COMMAND_ICON)
+#define MAKE_ICON(name) COPY_ICONS_TEX(corpMenuTextures,Campaign::Menu_,name)
+	CAMPAIGN_CORPMENU(MAKE_ICON)
+#undef MAKE_ICON
 }
 void Game_AdvanceWars::loadAllIconsTextures(bool forceReload){
 	FORCE_LOAD_CHECK(allIconsTextures)

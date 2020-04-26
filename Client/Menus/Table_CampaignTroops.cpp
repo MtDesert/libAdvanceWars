@@ -53,6 +53,7 @@ void TableItem_CampaignTroop::updateData(SizeType pos){
 			addSubObject(&btn);
 			//读取CO数据
 			btn.setTexture(menu->commandersTextures->getTexture(co->coID));
+			btn.size.setXY(ICON_SIZE,ICON_SIZE);
 			btn.onClicked=[menu,co](){
 				if(menu->onItemCObuttonClicked)menu->onItemCObuttonClicked(*co);
 			};

@@ -5,7 +5,11 @@
 CampaignCO::CampaignCO():coID(0),energy(0),powerStatus(0){}
 CampaignTroop::CampaignTroop():troopID(0),isAI(false),teamID(0),funds(0),isLose(false){}
 CampaignRule::CampaignRule():mIsFogWar(false),mInitFunds(0),mBaseIncome(1000),
-mBasesToWin(0),mFundsToWin(0),mTurnsToWin(0),mUnitLevel(0),mCoPowerLevel(2){}
+mBasesToWin(0),mFundsToWin(0),mTurnsToWin(0),mUnitLevel(0),mCoPowerLevel(2),
+//核心规则
+baseRepairHP(20),captureProgressMax(20),buildProgressMax(20),unitRepairHP(10),launchImpactRange(2),launchImpactDamage(30),unitExplodeRange(3),unitExplodeDamage(50),
+//特殊规则
+allowLoadCOonUnit(false),allowBaseRepairFriendUnit(false),allowLoadUnitOnFriendUnit(false),allowSupplyFriendUnit(false),allowUnitRepairFriendUnit(false){}
 UnitData::UnitData(Campaign *cmpgn):campaign(cmpgn){clear();}
 
 void UnitData::getUnitData(const decltype(Unit::coordinate) &p,bool clearCache){
@@ -39,7 +43,8 @@ void UnitData::clear(){
 }
 
 Campaign::Campaign():battleField(nullptr),damageCaculator(nullptr),
-currentTroopIndex(0),currentWeatherIndex(0),selectedTargetPoint(nullptr),selectedTargetPointFreely(false),
+currentDay(0),currentTroopIndex(0),currentWeatherIndex(0),
+selectedTargetPoint(nullptr),selectedTargetPointFreely(false),
 corpMenuCommand(AmountOfCorpEnumMenu),
 currentWeather(nullptr),unitToDrop(nullptr),whenError(nullptr){
 	cursorUnitData.campaign=this;
@@ -47,6 +52,7 @@ currentWeather(nullptr),unitToDrop(nullptr),whenError(nullptr){
 }
 Campaign::~Campaign(){}
 
+CampaignTroop* Campaign::currentTroop()const{return allTroops.data(currentTroopIndex);}
 CampaignTroop* Campaign::findCampaignTroop(const Unit &unit)const{
 	return allTroops.data([&](const CampaignTroop &troop){
 		return unit.color==troop.troopID;
@@ -95,19 +101,47 @@ void Campaign::makeAllTeams(){
 }
 void Campaign::beginTurn(){
 	//清除掉自军的闪光弹的区域
-	auto troop=allTroops.data(currentTroopIndex);
+	auto troop=currentTroop();
 	if(troop){
 		flarePoints.remove_if([&](const FlarePoint &fp){
 			return fp.troopID==troop->troopID;
 		});
 	}
-	//计算收入
-	//计算修理
+	//重新计算视野
 	caculateVision();
+}
+void Campaign::currentTroop_GetIncome(){
+	auto troop=currentTroop();
+	if(troop){
+		battleField->forEachLattice([&](uint x,uint y,Terrain &terrain){
+			auto code=battleField->terrainsList->data(terrain.terrainType);
+			if(code && code->hasIncome && terrain.status==troop->troopID){//自己占领的有收入的据点,可以获得收入
+				troop->funds += campaignRule.mBaseIncome;
+			}
+		});
+	}
+}
+void Campaign::currentTroop_AllBaseRepairAllUnit(){
+	auto troop=currentTroop();
+	if(troop){
+		UnitData ud(this);
+		bool canFix=false;
+		battleField->chessPieces.forEach([&](Unit &unit){
+			if(unit.color==troop->troopID){//只修复自军的单位
+				ud.getUnitData(unit);
+				canFix = campaignRule.allowBaseRepairFriendUnit ?
+					isFriendTerrain(*troop,*ud.terrain):
+					isSelfTerrain(*troop,*ud.terrain);
+				if(canFix && (ud.corp->corpType==ud.terrainCode->repairType||ud.corp->corpType==ud.terrainCode->produceType)){//修复类型必须和兵种类型一致
+					repairUnit(unit,campaignRule.baseRepairHP);//按规定的修复量去修复单位
+				}
+			}
+		});
+	}
 }
 void Campaign::endTurn(){
 	//清除待机状态(只清除当前部队的)
-	auto troop=allTroops.data(currentTroopIndex);
+	auto troop=currentTroop();
 	if(troop){
 		for(auto &unit:battleField->chessPieces){
 			if(unit.color==troop->troopID){
@@ -253,7 +287,6 @@ void Campaign::tryToMoveTo(const MovePoint &currentPos,const CoordType &offset){
 		if(!isFriendUnit(*selectedUnitData.campaignTroop,*unit))return;//判断是敌人还是朋友,不是朋友的一般都会采取拦截
 	}
 	//检查剩余的移动力和燃料
-	//if moveCost1 then moveCost=1 end某些指挥官貌似走可走的地形都是1
 	if(currentPos.remainMovement < moveCost)return;
 	//传递给lua来判断损耗
 	int fuelCost=luaFunc_fuelCost(currentWeather->name);
@@ -439,10 +472,10 @@ void Campaign::caculateVision(){
 		if(unit)unit->isVisible=false;
 	});
 	//寻找出观察者
-	auto currentTroop=allTroops.data(currentTroopIndex);
-	if(currentTroop){
+	auto viewer=currentTroop();
+	if(viewer){
 		battleField->chessPieces.forEach([&](Unit &unit){
-			if(isFriendUnit(*currentTroop,unit)){//计算自军和友军的视野
+			if(isFriendUnit(*viewer,unit)){//计算自军和友军的视野
 				unit.isVisible=true;
 				caculateVision(unit);
 			}
@@ -508,12 +541,17 @@ void Campaign::caculateFlightshot_byCenter(const CoordType &center,int minDistan
 	});
 }
 
-void Campaign::caculateSuppliableUnits(){
+void Campaign::caculateSuppliableUnits(bool isRepair){
 	suppliableUnits.clear();
+	bool allowFriend = isRepair ? campaignRule.allowUnitRepairFriendUnit : campaignRule.allowSupplyFriendUnit;
+	bool ok=false;
 	auto func=[&](const CoordType &p){
 		auto unit=battleField->getUnit(p);
-		if(unit && isFriendUnit(*selectedUnitData.campaignTroop,*unit)){//必须是自军或者友军
-			suppliableUnits.push_back(unit);
+		if(unit){//必须是自军或者友军
+			ok = allowFriend?
+				isFriendUnit(*selectedUnitData.campaignTroop,*unit):
+				isSelfUnit(*selectedUnitData.campaignTroop,*unit);
+			if(ok)suppliableUnits.push_back(unit);
 		}
 	};
 	caculateRange(cursor,1,func);
@@ -559,7 +597,7 @@ void Campaign::cursorConfirm(){
 		}else{//没有选定目标,尝试生成兵种命令菜单
 			auto lastP=movePath.lastData();
 			if(lastP && *lastP==cursor){//在移动范围内
-				auto troop=allTroops.data(currentTroopIndex);
+				auto troop=currentTroop();
 				if(troop && troop->troopID==selectedUnitData.unit->color){//有可能选择了别人的部队,这里要做检查
 					if(!selectedUnitData.unit->isWait){//待机状态也要做检查
 						showCorpMenu();//自己的未行动部队,可以显示菜单
@@ -570,8 +608,8 @@ void Campaign::cursorConfirm(){
 			}
 		}
 	}else{
-		if(cursorUnitData.unit && cursorUnitData.corp){//如果光标处有单位,则计算移动范围
-			selectedUnitData=cursorUnitData;
+		selectedUnitData=cursorUnitData;
+		if(selectedUnitData.unit && selectedUnitData.corp){//如果光标处有单位,则计算移动范围
 			caculateMovement(*selectedUnitData.unit,*selectedUnitData.corp);//计算移动范围
 			if(selectedUnitData.corp->isDirectAttack()){//计算火力范围(直接攻击部队的情况下)
 				caculateFlightshot_byMovement();
@@ -579,7 +617,22 @@ void Campaign::cursorConfirm(){
 					firablePoints.remove(p);
 				}
 			}
-		}//如果没有单位,则有可能是制造单位的工厂
+		}else{
+			auto produceType=cursorUnitData.terrainCode->produceType;
+			if(!produceType.empty()){//如果没有单位,则有可能是制造单位的生产厂
+				auto troop=currentTroop();
+				if(troop && troop->troopID==selectedUnitData.terrain->status){//是自军的生产厂
+					produceMenu.clear();
+					//生成生产菜单(后期可加入黑白名单)
+					produceTroopID=troop->troopID;
+					battleField->corpsList->forEach([&](const Corp &corp,SizeType idx){
+						if(corp.corpType==produceType){
+							produceMenu.push_back(idx);
+						}
+					});
+				}
+			}
+		}
 	}
 }
 void Campaign::cursorCancel(){
@@ -649,6 +702,11 @@ void Campaign::executeCorpMenu(int command){
 }
 void Campaign::executeProduceMenu(int index){
 	//根据idx确定要执行的command
+	auto corpID=produceMenu.data(index);
+	if(corpID){
+		auto unit=battleField->addUnit(cursor.x,cursor.y,*corpID,produceTroopID);//产生部队
+		if(unit){unit->isWait=true;}//待机状态
+	}
 	//确定了兵种,我们可以进行生产
 	clearAllOperation();
 }
@@ -686,9 +744,15 @@ bool Campaign::selectDropPoint(Unit &unit){
 	}
 	return false;
 }
+
+bool Campaign::isSelfUnit(const CampaignTroop &campTroop,const Unit &unit)const{return campTroop.troopID==unit.color;}
 bool Campaign::isFriendUnit(const CampaignTroop &campTroop,const Unit &unit)const{
 	auto troop=findCampaignTroop(unit);
 	return troop ? campTroop.teamID==troop->teamID : false;
+}
+bool Campaign::isSelfTerrain(const CampaignTroop &campTroop, const Terrain &terrain)const{
+	auto troop=findCampaignTroop(terrain);
+	return troop ? campTroop.troopID==troop->troopID : false;
 }
 bool Campaign::isFriendTerrain(const CampaignTroop &campTroop, const Terrain &terrain)const{
 	auto troop=findCampaignTroop(terrain);
@@ -727,6 +791,12 @@ bool Campaign::showMenuItem_Join(){
 }
 bool Campaign::showMenuItem_Load(){
 	if(cursorUnitData.unit){
+		//确定是不是自己人
+		auto troop=currentTroop();
+		bool canLoad=campaignRule.allowLoadUnitOnFriendUnit?
+			isFriendUnit(*troop,*cursorUnitData.unit):
+			isSelfUnit(*troop,*cursorUnitData.unit);
+		if(!canLoad)return false;
 		//不能自己与自己结合
 		if(selectedUnitData.unit==cursorUnitData.unit)return false;
 		//确定载体的容积
@@ -806,7 +876,7 @@ bool Campaign::showMenuItem_Capture(){
 }
 bool Campaign::showMenuItem_Supply(){
 	if(!selectedUnitData.corp->suppliable)return false;//兵种必须有补给能力
-	caculateSuppliableUnits();
+	caculateSuppliableUnits(false);
 	if(suppliableUnits.size()){//有可补给的单位就显示此指令
 		corpMenu.push_back(Menu_Supply);
 	}
@@ -855,7 +925,7 @@ bool Campaign::showMenuItem_Launch(){
 }
 bool Campaign::showMenuItem_Repair(){
 	if(!selectedUnitData.corp->repairable)return false;
-	caculateSuppliableUnits();
+	caculateSuppliableUnits(true);
 	if(suppliableUnits.size()){//有可补给的单位就显示此指令
 		corpMenu.push_back(Menu_Repair);
 	}
@@ -966,7 +1036,7 @@ bool Campaign::execMenuItem_Capture(){
 	MOVE_WITH_PATH
 	auto unit=selectedUnitData.unit;
 	unit->progressValue += unit->presentHP();//自己增长自己的进度值(占领值)
-	if(unit->progressValue>=20){//占领完成的时候就改变状态
+	if(unit->progressValue>=campaignRule.captureProgressMax){//占领完成的时候就改变状态
 		unit->progressValue=0;
 		cursorUnitData.terrain->status = unit->color;
 	}
@@ -982,7 +1052,7 @@ bool Campaign::execMenuItem_Build(){
 	MOVE_WITH_PATH
 	auto unit=selectedUnitData.unit;
 	unit->progressValue += unit->presentHP();//自己增长自己的进度值(占领值)
-	if(unit->progressValue>=20){//占领完成的时候就改变状态
+	if(unit->progressValue>=campaignRule.buildProgressMax){//占领完成的时候就改变状态
 		unit->progressValue=0;
 		auto toBuild=luaFunc_buildTerrain(selectedUnitData.terrainCode->name);
 		if(!toBuild.empty()){
@@ -1046,10 +1116,10 @@ bool Campaign::execMenuItem_Appear(){
 bool Campaign::execMenuItem_Launch(){
 	if(selectedTargetPoint){//发射火箭
 		MOVE_WITH_PATH
-		caculateRange(*selectedTargetPoint,0,2,[&](const CoordType &p){//范围内的单位都受伤
+		caculateRange(*selectedTargetPoint,0,campaignRule.launchImpactRange,[&](const CoordType &p){//范围内的单位都受伤
 			auto unit=battleField->getUnit(p);
 			if(unit){
-				unit->healthPower = unit->healthPower>30 ? unit->healthPower-30 : 1;//削弱30%的HP
+				unit->healthPower = unit->healthPower>campaignRule.launchImpactDamage ? unit->healthPower-campaignRule.launchImpactDamage : 1;//削弱30%的HP
 			}
 		});
 		//地形改变
@@ -1073,7 +1143,7 @@ bool Campaign::execMenuItem_Repair(){
 	if(selectedTargetPoint){//执行修复
 		MOVE_WITH_PATH
 		supplyUnit(*cursorUnitData.unit);//补给
-		repairUnit(*cursorUnitData.unit,10);
+		repairUnit(*cursorUnitData.unit,campaignRule.unitRepairHP);
 		return true;
 	}else{//选择修复目标
 		hideCorpMenu();
@@ -1094,9 +1164,9 @@ bool Campaign::execMenuItem_Explode(){
 		}
 		MOVE_WITH_PATH
 		//爆炸,波及范围内所有单位会受伤
-		caculateRange(*movePath.lastData(),0,2,[&](const CoordType &p){
+		caculateRange(*movePath.lastData(),0,campaignRule.unitExplodeRange,[&](const CoordType &p){
 			auto unit=battleField->getUnit(p);
-			if(unit)reduceUnitHP(*unit,50);
+			if(unit)reduceUnitHP(*unit,campaignRule.unitExplodeDamage);
 		});
 	}else{//显示波及范围
 		hideCorpMenu();

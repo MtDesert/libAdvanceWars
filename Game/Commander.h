@@ -2,17 +2,44 @@
 #define COMMANDER_H
 
 #include"DataList.h"
+#include"Number.h"
+
+struct CommanderPowerFeature{
+	CommanderPowerFeature();
+	//条件
+	string corpType;//兵种类型(默认为所有兵种全符合条件)
+	string terrainType;//地形类型(默认为所有处于terrainType的单位全符合条件)
+	string weatherType;//天气类型(默认为所有在weatherType下的单位全符合条件)
+	//状态效果
+	int capturableIncome;//据点收入
+	int capturableRepairHP;//据点修复量
+	IntRange damageFix;//损伤修正的最大最小值(百分数),默认为{0,10}
+	int attack;//攻击修正百分数
+	int counterAttack;//反击修正百分数(累乘attack)
+	int defence;//防御百分比
+	int indirectDefence;//防御间接攻击百分数
+	int enemyTerrainDefendLVminus;//敌方地形防御等级减少
+	int movement;//移动力
+	int attackRangeMax;//最大射程
+	int enemyDamageTransformSelfFunds;//敌人损伤转化自身资金率(百分数)
+	int fuelConsumePerDay;//日消耗油量
+};
+
+//指挥官能力值
+struct CommanderPower{
+	CommanderPower();
+	string name,translate;//名字,翻译
+	int energySlot;//能量槽
+	Array<CommanderPowerFeature> allFeatures;//特性描述
+};
 
 /*指挥官(CO=Commander)数据,仅仅用来查看*/
 struct Commander{
-	string name,note,quote;//名字,指挥官的说明,口头禅
+	string name,troop;//名字,所属部队
+	string note,quote;//指挥官的说明,口头禅
 	string coHit,coMiss;//喜欢和头疼的事物(不知怎么翻译)
 	string d2d;//描述CO部队的日常能力
-	struct Power{//CO可发动的能力
-		string name,note;//能力名称,能力造成的效果
-		int starCount;//能量星数,决定了累积多少能量才能发动技能
-	};
-	Power power,superPower;//一般来说CO都有普通能力和超能力,也可能只有一种或没有
+	Array<CommanderPower> allPowers;//所有能力,包括日常能力和发动后的能力
 	int commandRange;//指挥范围
 	string author;//设计此CO的作者
 };

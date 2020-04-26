@@ -55,6 +55,7 @@ struct CampaignWeathers{
 struct CampaignRule{//比赛规则
 	CampaignRule();
 
+	//基础规则
 	bool mIsFogWar;//是否雾战状态
 	int mInitFunds;//初始资金
 	int mBaseIncome;//每个据点的收入
@@ -63,6 +64,21 @@ struct CampaignRule{//比赛规则
 	int mTurnsToWin;//达到多少天算胜利,0忽略
 	int mUnitLevel;//单位可升的等级,0不可升级
 	int mCoPowerLevel;//CO可用的能力等级,0不可使用能力
+	//核心规则(需要慎重修改)
+	int baseRepairHP;//据点修复量
+	int captureProgressMax;//占领进度最大值
+	int buildProgressMax;//建造进度最大值
+	int unitRepairHP;//单位修复时候的回复量
+	int launchImpactRange;//发射冲击范围
+	int launchImpactDamage;//发射冲击损伤
+	int unitExplodeRange;//单位爆炸范围
+	int unitExplodeDamage;//单位爆炸损伤
+	//特殊规则
+	bool allowLoadCOonUnit;//允许单位搭载CO
+	bool allowBaseRepairFriendUnit;//允许据点修复有军(修理费用由友军出)
+	bool allowLoadUnitOnFriendUnit;//允许上友军的载体(卸载权由友军决定)
+	bool allowSupplyFriendUnit;//允许补给友军
+	bool allowUnitRepairFriendUnit;//允许单位修复友军(费用由自己出)
 };
 
 //单位相关数据
@@ -108,14 +124,18 @@ public:
 	DamageCaculator *damageCaculator;//损伤计算器
 
 	//参赛部队
+	CampaignTroop* currentTroop()const;//当前行动的部队
 	CampaignTroop* findCampaignTroop(const Unit &unit)const;//通过单位寻找所属的CampaignTroop
 	CampaignTroop* findCampaignTroop(const Terrain &terrain)const;//通过单位寻找所属的CampaignTroop
+	SizeType currentDay;//当前天数
 	SizeType currentTroopIndex;//当前参赛队伍索引
 	SizeType currentWeatherIndex;//当前天气
 
 	//战前准备
 	void makeAllTeams();//根据battleField自动生成所有队伍
-	void beginTurn();
+	void beginTurn();//回合开始
+	void currentTroop_GetIncome();//当前部队获得收入
+	void currentTroop_AllBaseRepairAllUnit();//所有据点修理所有部队
 	void endTurn();//结束当前回合
 	void nextCampaignTroopTurn();//下一个部队开始行动
 
@@ -143,7 +163,7 @@ public:
 	CoordType *selectedTargetPoint;//需要选择的目标点
 	bool selectedTargetPointFreely;//自由选择目标点,直接移动光标选择,而不是从候选列表中自动选择
 
-	//菜单相关
+	//兵种命令菜单
 	#define CAMPAIGN_ENUM(name) Menu_##name,
 	enum EnumCorpMenu{//给每个兵种指令创建枚举
 		CAMPAIGN_CORPMENU(CAMPAIGN_ENUM)
@@ -153,12 +173,15 @@ public:
 	Array<EnumCorpMenu> corpMenu;//兵种的指令菜单,显示当前单位可用的命令,参考EnumMenu
 	EnumCorpMenu corpMenuCommand;//当前菜单命令
 
-	Array<Unit*> unitsArray;//单位列表,可供选择用
+	//生产菜单
+	int produceTroopID;//生产单位的所属部队
 	Array<int> produceMenu;//单位生产菜单,表中存放兵种索引
 
 	//菜单命令执行
 	void executeCorpMenu(int command);//执行兵种菜单项
 	void executeProduceMenu(int index);//执行生产菜单项
+
+	Array<Unit*> unitsArray;//单位列表,可供选择用
 	//目标选择
 	void choosePrevTarget();//选择上一个目标
 	void chooseTarget(int delta);
@@ -167,7 +190,9 @@ public:
 	bool selectDropPoint(Unit &unit);//选择unit的卸载点,返回能否选择
 
 	//关系判定
+	bool isSelfUnit(const CampaignTroop &campTroop,const Unit &unit)const;//判断unit是不是campTroop自军
 	bool isFriendUnit(const CampaignTroop &campTroop,const Unit &unit)const;//判断unit是不是campTroop的友军
+	bool isSelfTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的自军地形
 	bool isFriendTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的友军地形
 
 	//lua相关
@@ -197,7 +222,7 @@ private:
 	//卸载部队计算
 	Unit *unitToDrop;//要卸载的部队
 	bool canStayAt(const string &moveType,const CoordType &p,bool checkBarrier);//判断moveType的兵种能否停在战场位置p上,checkBarrier为false时不检查p点处已经存在的单位
-	bool canDropFrom(const Unit &unit, const CoordType &p,bool needSave=false);//判断unit能否从落点p卸载,若needSave则会保存到targetPoints中
+	bool canDropFrom(const Unit &unit,const CoordType &p,bool needSave=false);//判断unit能否从落点p卸载,若needSave则会保存到targetPoints中
 	//移动执行
 	bool moveWithPath();
 
@@ -213,7 +238,7 @@ private:
 	void caculateFlightshot_byCenter(const CoordType &center,int minDistance,int maxDistance);
 
 	//补给修复计算
-	void caculateSuppliableUnits();//寻找出可补给的单位
+	void caculateSuppliableUnits(bool isRepair);//寻找出可补给的单位
 	void supplyUnit(Unit &unit);//对unit进行补给
 	void repairUnit(Unit &unit,int repairHP,int repairPayPercent=100);//对unit进行修复,hp回复量为repairHP,修理费百分比为repairPayPercent
 	void reduceUnitHP(Unit &unit,int reduceHP);//减少unit的HP,但最低保持1

@@ -130,13 +130,13 @@ void Layer_BattleField::whenPressConfirm(){
 	//编辑模式
 	if(isEditMode){
 		auto p=campaign->cursor;
-		if(scene->menuMapEdit.selectingItemIndex==Scene_BattleField::MapEdit_Delete){//删除单位
+		if(scene->menuMapEdit->selectingItemIndex==Scene_BattleField::MapEdit_Delete){//删除单位
 			battleField->removeUnit(p.x,p.y);
 		}else{//添加地形或单位
 			if(isEditMode_Unit){//添加单位
-				battleField->addUnit(p.x,p.y,scene->menuCorpSelect.selectingItemIndex,scene->menuCorpSelect.troopID);
+				battleField->addUnit(p.x,p.y,scene->menuCorpSelect->selectingItemIndex,scene->menuCorpSelect->troopID);
 			}else{//设置地形
-				Terrain terrain(scene->menuTerrainSelect.selectingItemIndex,scene->menuTerrainSelect.troopID);
+				Terrain terrain(scene->menuTerrainSelect->selectingItemIndex,scene->menuTerrainSelect->troopID);
 				battleField->setTerrain(p.x,p.y,terrain);
 				battleField->autoAdjustTerrainTile(p.x,p.y,true);
 			}

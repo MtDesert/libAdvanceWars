@@ -29,8 +29,9 @@ public:
 	static Game_AdvanceWars* currentGame();
 	string gameName()const;
 
-	//override
+	//启动
 	virtual void reset();
+	virtual void restart();
 
 	//场景跳转
 	Scene_Main* gotoScene_Main(bool reset=false);
@@ -67,7 +68,8 @@ public:
 	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
 	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
 	TextureCache_String allIconsTextures;//所有的菜单图标
-	TextureCache mapEditMenuTextures;//地图编辑菜单
+	TextureCache mapEditMenuTextures;//地图编辑菜单纹理
+	TextureCache campaignMenuTextures;//战役主菜单纹理
 	TextureCache corpMenuTextures;//兵种菜单
 	TextureCache numbersTextures;//数字,用于显示HP
 	void clearAllTextureCache();
@@ -75,11 +77,14 @@ public:
 	//纹理加载过程
 	void loadCorpsTextures(bool forceReload=false);//读取兵种纹理
 	void loadCommandersTextures(bool forceReload=false);//读取指挥官
-	void loadTroopsTextures(bool forceReload=false);
-	void loadTerrainsTextures(bool forceReload=false);
-	void loadMapEditMenuTextures(bool forceReload=false);
-	void loadCorpMenuTextures(bool forceReload=false);
-	void loadAllIconsTextures(bool forceReload=false);
+	void loadTroopsTextures(bool forceReload=false);//读取部队纹理
+	void loadTerrainsTextures(bool forceReload=false);//读取地形纹理
+	void loadAllIconsTextures(bool forceReload=false);//加载所有图标,主要提供给菜单使用
+	//纹理引用复制过程
+	void loadMapEditMenuTextures(bool forceReload=false);//地图编辑菜单
+	void laodCampaignMenuTextures(bool forceReload=false);//战役
+	void loadCorpMenuTextures(bool forceReload=false);//兵种命令菜单
+
 	//剧情脚本
 	GAME_USE_CONVERSATION(Layer_Conversation)
 	GAME_USE_SCRIPT(ScenarioScript)
