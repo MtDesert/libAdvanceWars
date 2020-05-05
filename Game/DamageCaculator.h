@@ -18,9 +18,12 @@ public:
 
 	//指挥官影响相关
 
+	//可攻击性
 	bool canAttack(UnitData &attacker,UnitData &defender,const decltype(Unit::coordinate) &attackPos);//判断attacker能否攻击defender
 	bool canCounterAttack(UnitData &attacker,UnitData &defender);//判断attacker能否反击defender
-	int corpDamage(const Corp &atkCorp,const Corp &defCorp,int weaponIndex);//查询兵种伤害
+	//损伤
+	int corpDamage(const Corp &atkCorp,const Corp &defCorp,int weaponIndex);//查询兵种损伤
+	int unitDamage(const Unit &atkUnit,const Unit &defUnit);//查询单位损伤
 	int predictDamage(UnitData &attacker,UnitData &defender,int damageFix);//查询attacker对defender的预计损伤,damageFix进行修正
 
 	void executeAttack();//开始执行攻击动作

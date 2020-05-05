@@ -3,6 +3,8 @@
 #include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
 
+#define BATTLEFIELD_SCENE auto scene=dynamic_cast<Scene_BattleField*>(parentObject);
+
 static int latticeSize=32;//格子大小
 //渲染变量
 static Rectangle2D<int> mapRect;//地图矩形
@@ -23,8 +25,8 @@ static void updateRenderLattice(int x,int y){//更新需要渲染的网格数据
 	renderLattice.p1.setXY(renderLattice.p0.x +latticeSize-1,renderLattice.p0.y +latticeSize-1);
 }
 
-Layer_BattleField::Layer_BattleField():battleField(nullptr),campaign(nullptr),
-isEditMode(false),isEditMode_Unit(false){
+Layer_BattleField::Layer_BattleField():battleField(nullptr),campaign(nullptr),isEditMode(false),isEditMode_Unit(false),
+animationUnit(nullptr){
 	forceIntercept=true;
 	GAME_AW
 	battleField=&game->battleField;//读取数据用
@@ -57,8 +59,17 @@ isEditMode(false),isEditMode_Unit(false){
 	MAKE_LATTICE_TEXTURE(latticeMovePath,Green)
 	MAKE_LATTICE_TEXTURE(latticeFog,Black)
 	MAKE_LATTICE_TEXTURE(latticeImpactRange,Yellow)
+	//动画相关
+	game->timeSliceList.pushTimeSlice(this,20,40);
+	campaign->whenExecuteMoveUnit=[&](const Campaign::CoordType &oldPos,const Unit &unit){//单位移动动画
+		BATTLEFIELD_SCENE
+		scene->allowInput(false);//播放动画时禁止触摸
+		playMoveUnit(unit,oldPos);//单位移动
+	};
 }
 Layer_BattleField::~Layer_BattleField(){
+	GAME_AW
+	game->timeSliceList.removeTimeSlice(this);
 	latticeMove.texture.deleteTexture();
 	latticeFire.texture.deleteTexture();
 	latticeMovePath.texture.deleteTexture();
@@ -118,8 +129,6 @@ bool Layer_BattleField::mouseMove(int x,int y){
 	return false;
 }
 
-#define BATTLEFIELD_SCENE auto scene=dynamic_cast<Scene_BattleField*>(parentObject);
-
 void Layer_BattleField::setCursor(const Campaign::CoordType &p){
 	BATTLEFIELD_SCENE
 	campaign->setCursor(p);
@@ -152,7 +161,38 @@ void Layer_BattleField::whenPressCancel(){
 	campaign->cursorCancel();
 	scene->updateMenu();
 }
+void Layer_BattleField::playMoveUnit(const Unit &unit,const BattleField::CoordType &oldPos){
+	//计算动画数据
+	auto delta=oldPos-unit.coordinate;
+	animationUnit=&unit;
+	animationUnitOffset.setXY(delta.x * latticeSize,delta.y * latticeSize);
+}
 
+#define UNIT_MOVE_SPEED 4
+void Layer_BattleField::consumeTimeSlice(){
+	if(!animationUnit)return;
+	//x变换
+	if(animationUnitOffset.x>0)animationUnitOffset.x-=UNIT_MOVE_SPEED;
+	if(animationUnitOffset.x<0)animationUnitOffset.x+=UNIT_MOVE_SPEED;
+	//y变换
+	if(animationUnitOffset.y>0)animationUnitOffset.y-=UNIT_MOVE_SPEED;
+	if(animationUnitOffset.y<0)animationUnitOffset.y+=UNIT_MOVE_SPEED;
+	//结束
+	if(animationUnitOffset.x==0 && animationUnitOffset.y==0){//一格移动完成
+		if(campaign->moveWithPath()){//执行完毕
+			animationUnit=nullptr;//
+			campaign->executeCorpMenu(campaign->corpMenuCommand);//执行命令
+			//执行完成,人脑情况下允许操作,电脑情况下则继续思考
+			BATTLEFIELD_SCENE
+			auto troop=campaign->currentTroop();
+			if(!troop || !troop->isAI){//人脑控制,允许触摸
+				scene->allowInput(true);
+			}else{//继续让AI思考
+				scene->aiThink();
+			}
+		}
+	}
+}
 void Layer_BattleField::renderX()const{
 	renderTerrains();//画地形图块
 	renderFog();//渲染雾
@@ -216,6 +256,9 @@ void Layer_BattleField::renderUnits()const{
 			spriteUnit.setUnit(*unit);
 			updateRenderPos(unit->coordinate.x,unit->coordinate.y);
 			spriteUnit.position.setXY(renderPos.x,renderPos.y);
+			if(animationUnit==unit){//动画偏移修正
+				spriteUnit.position = spriteUnit.position + animationUnitOffset;
+			}
 			spriteUnit.render();
 		}
 	)

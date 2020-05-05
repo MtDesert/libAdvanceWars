@@ -18,6 +18,9 @@ public:
 	//操作模式
 	bool isEditMode:1;//是否处于编辑模式
 	bool isEditMode_Unit:1;//false时候为地形编辑模式,true的时候为单位编辑模式
+	//动画控制
+	const Unit *animationUnit;//移动中的单位
+	decltype(position) animationUnitOffset;//移动单位偏移量,影响渲染
 
 	//输入事件
 	virtual bool keyboardKey(Keyboard::KeyboardKey key,bool pressed);//处理光标移动
@@ -27,7 +30,10 @@ public:
 	void setCursor(const Campaign::CoordType &p);//设置光标位置
 	void whenPressConfirm();//确定操作
 	void whenPressCancel();//取消操作
-	//渲染函数
+	void playMoveUnit(const Unit &unit, const BattleField::CoordType &oldPos);//播放移动单位
+
+	//重写函数
+	virtual void consumeTimeSlice();//消耗时间片,处理动画过程
 	virtual void renderX()const;//画战场
 	//更新函数
 	void updateMapRect();//更新地图矩形,影响渲染

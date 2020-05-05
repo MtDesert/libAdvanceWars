@@ -115,13 +115,19 @@ public:
 
 	typedef decltype(Unit::coordinate) CoordType;//坐标类型
 
+	//运算符
+	Campaign& operator=(const Campaign &another);
+
 	//战场,参战部队,天气变化规律,参赛规则
 	BattleField *battleField;//战场地图(包括地图所用的数据表)
-	WeathersList *weathesList;//天气数据表
+	const WeathersList *weathersList;//天气数据表
 	Array<CampaignTroop> allTroops;//所有参赛队伍
 	CampaignWeathers campaignWeathers;//天气
 	CampaignRule campaignRule;//规则
 	DamageCaculator *damageCaculator;//损伤计算器
+	//数据查询
+	const Corp* getCorp(const Unit &unit)const;
+	const TerrainCode* getTerrainCode(const Terrain &terrain)const;
 
 	//参赛部队
 	CampaignTroop* currentTroop()const;//当前行动的部队
@@ -146,6 +152,7 @@ public:
 	void cursorCancel();//在光标处进行取消操作
 	void clearAllOperation();//清除所有操作
 	UnitData cursorUnitData;//光标的实时数据
+	UnitData selectedUnitData;//选择的状态数据
 
 	//范围表示
 	struct MovePoint:public CoordType{//此结构体专门用于移动范围的计算
@@ -177,11 +184,15 @@ public:
 	int produceTroopID;//生产单位的所属部队
 	Array<int> produceMenu;//单位生产菜单,表中存放兵种索引
 
-	//菜单命令执行
-	void executeCorpMenu(int command);//执行兵种菜单项
+	//兵种命令菜单
+	void showCorpMenu();//显示(动态生成内容)
+	void hideCorpMenu();//隐藏
+	bool executeCorpMenu(int command);//执行兵种菜单项
 	void executeProduceMenu(int index);//执行生产菜单项
 
 	Array<Unit*> unitsArray;//单位列表,可供选择用
+	Array<CoordType> targetPoints;//扫描出来的目标点
+	Array<Unit*> suppliableUnits;//可补给的单位
 	//目标选择
 	void choosePrevTarget();//选择上一个目标
 	void chooseTarget(int delta);
@@ -196,13 +207,13 @@ public:
 	bool isFriendTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的友军地形
 
 	//lua相关
-	LuaState luaState;//lua状态机,执行特定的规则代码
+	LuaState *luaState;//lua状态机,执行特定的规则代码
+
+	//移动相关
+	bool moveWithPath();//沿着路径移动,返回有没有执行完毕
+	bool moveOneStepWithPath();//沿着路径移动,返回是否发生了移动
+	function<void(const CoordType &oldPos,const Unit &unit)> whenExecuteMoveUnit;
 private:
-	//单位数据操作
-	UnitData selectedUnitData;//选择的状态数据
-	//目标状态数据
-	Array<CoordType> targetPoints;//扫描出来的目标点
-	Array<Unit*> suppliableUnits;//可补给的单位
 	//lua函数
 	int luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName);//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
 	int luaFunc_fuelCost(const string &weatherName);//查询燃料损耗(天气名),返回值小于0表示不存在
@@ -219,12 +230,12 @@ private:
 	bool selectPath(const CoordType &p);//选择路径(目标点为p),返回路径是否发生变化
 	bool tryToPathTo(const MovePoint &target);//试图正常走到目标点,这个点必须和路径的最后一个点相邻(否则返回false),返回能否移动过去
 	bool tryToBackPathTo(const MovePoint &current,const CoordType &offset);//从current位置往offset方向寻找能通往起点的路径,返回能否找到
+	CoordType movePath_SrcCoord()const;//移动路径的起点坐标
+	CoordType movePath_DstCoord()const;//目标点
 	//卸载部队计算
 	Unit *unitToDrop;//要卸载的部队
 	bool canStayAt(const string &moveType,const CoordType &p,bool checkBarrier);//判断moveType的兵种能否停在战场位置p上,checkBarrier为false时不检查p点处已经存在的单位
 	bool canDropFrom(const Unit &unit,const CoordType &p,bool needSave=false);//判断unit能否从落点p卸载,若needSave则会保存到targetPoints中
-	//移动执行
-	bool moveWithPath();
 
 	//范围计算
 	void caculateRange(const CoordType &center,int distance,function<void (const CoordType &)> callback);
@@ -243,9 +254,6 @@ private:
 	void repairUnit(Unit &unit,int repairHP,int repairPayPercent=100);//对unit进行修复,hp回复量为repairHP,修理费百分比为repairPayPercent
 	void reduceUnitHP(Unit &unit,int reduceHP);//减少unit的HP,但最低保持1
 
-	//菜单相关
-	void showCorpMenu();
-	void hideCorpMenu();
 	//给每个兵种指令设定对应的处理函数
 #define CAMPAIGN_FUNC(name)\
 	bool showMenuItem_##name();\

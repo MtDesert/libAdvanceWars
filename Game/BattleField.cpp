@@ -61,9 +61,17 @@ Unit* BattleField::addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopI
 Unit* BattleField::addUnit(const Unit &unit){
 	auto trn=getTerrain(unit.coordinate);
 	if(trn){
-		chessPieces.push_back(unit);
-		trn->unitIndex=chessPieces.size()-1;
-		return chessPieces.lastData();
+		auto idx=chessPieces.indexOf([&](const Unit &u){//查询是否需要覆盖旧的数据
+			return u.coordinate==unit.coordinate;
+		});
+		if(idx>=0){
+			chessPieces.setData(idx,unit);
+			trn->unitIndex=idx;
+		}else{
+			chessPieces.push_back(unit);
+			trn->unitIndex=chessPieces.size()-1;
+		}
+		return chessPieces.data(trn->unitIndex);
 	}
 	return nullptr;
 }
@@ -78,11 +86,11 @@ bool BattleField::removeUnit(SizeType x,SizeType y){return removeUnit(CoordType(
 bool BattleField::removeUnit(const Unit &unit){
 	//地形关系中移除
 	auto trn=getTerrain(unit.coordinate);
-	if(trn)trn->unitIndex=TERRAIN_NO_UNIT;
-	//队列中移除
-	auto sz=chessPieces.size();
-	chessPieces.remove(&unit);//队列中移除
-	return sz!=chessPieces.size();
+	if(trn){
+		trn->unitIndex=TERRAIN_NO_UNIT;//从地形上消失
+		return true;
+	}
+	return false;
 }
 
 Unit* BattleField::getUnit(SizeType x,SizeType y)const{
@@ -94,6 +102,18 @@ Unit* BattleField::getUnit(const CoordType &p)const{
 	return trn ? getUnit(*trn) : nullptr;
 }
 Unit* BattleField::getUnit(const Terrain &terrain)const{return chessPieces.data(terrain.unitIndex);}
+
+void BattleField::forEachUnit(function<void(Unit &unit)> callback){
+	Terrain *trn=nullptr;
+	chessPieces.forEach([&](Unit &unit,SizeType index){
+		trn=getTerrain(unit.coordinate);
+		if(!trn)return;
+		//判断单位有没有从战场上消失
+		if(trn->unitIndex!=index)return;//消失了
+		//只处理还没消失的部队
+		callback(unit);
+	});
+}
 
 bool BattleField::fillTerrain(const Terrain &terrain){
 	for(SizeType x=0;x<width;++x){

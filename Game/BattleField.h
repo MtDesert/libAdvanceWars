@@ -55,11 +55,11 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	bool setTerrain(const CoordType &p,const Terrain &terrain);
 	bool setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status="");//根据名字和状态设置地形
 	bool fillTerrain(const Terrain &terrain);//地形填充
-	//单位编辑
+	//添加单位
 	Unit* addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName);//x,y处添加兵种为corpName,部队为troopName的单位
 	Unit* addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID);//x,y处添加兵种ID为corpID,部队ID为troopID的单位
 	Unit* addUnit(const Unit &unit);//添加具体单位
-
+	//移除单位
 	bool removeUnit(const CoordType &p);//移除p处的所有单位
 	bool removeUnit(SizeType x,SizeType y);//移除x,y处的所有单位
 	bool removeUnit(const Unit &unit);//移除具体单位
@@ -67,6 +67,8 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	Unit* getUnit(SizeType x,SizeType y)const;
 	Unit* getUnit(const CoordType &p)const;//获取p点处的单位
 	Unit* getUnit(const Terrain &terrain)const;
+	//单位遍历
+	void forEachUnit(function<void(Unit &unit)> callback);
 	//图块调整
 	void autoAdjustTerrainsTiles();//调整所有地图块的样式
 	void autoAdjustTerrainTile(SizeType x,SizeType y,bool adjustAround=false);//调整x,y部分的样式,使其与周边看上去相连,如果adjustAround为true,则周边的图块也会一起调整

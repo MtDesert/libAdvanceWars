@@ -15,15 +15,17 @@ ALL_SCENES(GAME_SCENE_DECLARE)
 ALL_DIALOGS(GAME_DIALOG_DECLARE)
 
 Game_AdvanceWars::Game_AdvanceWars(){
-	gameSettings=&settings;
-	//战场数据源
+	gameSettings=&settings;//配置
+	//战场数据
 	battleField.corpsList=&mCorpsList;
 	battleField.troopsList=&mTroopsList;
 	battleField.terrainsList=&mTerrainCodesList;
-	battleField.whenError=whenError;
+	//战役数据
 	campaign.battleField=&battleField;
-	campaign.weathesList=&mWeathersList;
-	campaign.luaState.whenError = damageCaculator.luaState.whenError = whenError;
+	campaign.weathersList=&mWeathersList;
+	//错误处理函数
+	battleField.whenError=whenError;
+	luaState.whenError = damageCaculator.luaState.whenError = whenError;
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
@@ -56,11 +58,11 @@ void Game_AdvanceWars::reset(){
 }
 void Game_AdvanceWars::restart(){
 	//进入场景
-	auto scene=gotoScene_Logo();
+	/*auto scene=gotoScene_Logo();
 	scene->reset();
 	scene->logoText.setString("AdvanceWars_LifeTime",true);
-	scene->whenLogoOver=[&](){gotoScene_Main();};
-	//gotoScene_Main();
+	scene->whenLogoOver=[&](){gotoScene_Main();};*/
+	gotoScene_Main(true);
 }
 
 GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,Main)
@@ -76,9 +78,12 @@ bool Game_AdvanceWars::loadAllConfigData(){
 	AW_LOAD_LUA(mCommandersList,dataCommanders)//CO表
 	AW_LOAD_LUA(mWeathersList,dataWeathers)//天气表
 	//规则数据
-	campaign.luaState.doFile(settings.ruleMove);//移动规则
-	campaign.luaState.doFile(settings.ruleLoadUnit);//装载单位规则
-	campaign.luaState.doFile(settings.ruleBuild);//装载建造规则
+	if(!campaign.luaState){
+		campaign.luaState=&luaState;
+		luaState.doFile(settings.ruleMove);//移动规则
+		luaState.doFile(settings.ruleLoadUnit);//装载单位规则
+		luaState.doFile(settings.ruleBuild);//装载建造规则
+	}
 	damageCaculator.luaState.doFile(settings.ruleDamage);//损伤规则
 	//引用传递
 	damageCaculator.campaign=&campaign;

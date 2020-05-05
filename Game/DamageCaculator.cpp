@@ -37,6 +37,7 @@ bool DamageCaculator::canCounterAttack(UnitData &attacker,UnitData &defender){
 int DamageCaculator::corpDamage(const Corp &atkCorp,const Corp &defCorp,int weaponIndex){
 	return luaFunc_corpDamage(atkCorp.name,defCorp.name,weaponIndex);
 }
+int DamageCaculator::unitDamage(const Unit &atkUnit,const Unit &defUnit){return 0;}
 int DamageCaculator::predictDamage(UnitData &attacker,UnitData &defender,int damageFix){
 	//攻击方
 	auto baseDamage=0;

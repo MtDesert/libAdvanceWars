@@ -57,6 +57,7 @@ public:
 	bool loadAllTextures();//加载所有要用到的纹理
 
 	//游戏数据区
+	LuaState luaState;
 	BattleField battleField;//地图数据,负责存放地形和单位
 	Campaign campaign;//比赛数据,关于比赛过程产生的数据均放于此
 	DamageCaculator damageCaculator;//损伤计算器,负责计算损伤

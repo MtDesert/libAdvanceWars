@@ -2,6 +2,10 @@
 #include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
 
+//人工智能
+#include"AI.h"
+static AI ai;
+
 Scene_BattleField::Scene_BattleField():battleField(nullptr),campaign(nullptr),
 menuMapEdit(nullptr),menuCorpSelect(nullptr),menuTerrainSelect(nullptr),menuTroopSelect(nullptr),
 menuCampaign(nullptr),menuProduceSelect(nullptr),menuUnitSelect(nullptr),menuCorpCommand(nullptr),
@@ -15,10 +19,16 @@ spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 	//菜单按钮
 	buttonEdit.position.y=(game->resolution.y-buttonEdit.size.y)/2;
 	addSubObject(&buttonEdit);
+	addSubObject(&inputLayer);
 	//addSubObject(&spriteTerrainInfo);
 	//addSubObject(&spriteUnitInfo);
+
+	//时间片
+	game->timeSliceList.pushTimeSlice(this,20,40);
 }
 Scene_BattleField::~Scene_BattleField(){
+	GAME_AW
+	game->timeSliceList.removeTimeSlice(this);
 #define DELETE_MENU(name) if(menu##name)delete menu##name;
 	DELETE_MENU(MapEdit)
 	DELETE_MENU(CorpSelect)
@@ -149,11 +159,12 @@ void Scene_BattleField::gotoBattleMode(){
 			case Campaign_Power:break;
 			case Campaign_ChangeCO:break;
 			case Campaign_EndTurn://回合结束
-				campaign->endTurn();
+				endTurn();
 			break;
 			case Campaign_SaveFile:break;
 			case Campaign_LoadFile:break;
 			case Campaign_ExitMap:break;
+			default:;
 		}
 	};
 	//战役菜单
@@ -165,7 +176,10 @@ void Scene_BattleField::gotoBattleMode(){
 	beginTurn();
 }
 
+static bool aiStartedThink=false;
 void Scene_BattleField::beginTurn(){
+	allowInput(false);
+	//设置需要显示的内容
 	campaign->beginTurn();
 	if(!spriteCurrentDay)return;
 	spriteCurrentDay->setCampaign(*campaign);
@@ -187,9 +201,21 @@ void Scene_BattleField::beginTurn(){
 				//获得收入
 				campaign->currentTroop_GetIncome();
 				spriteTroopFundsCO->setCampaignTroop(*campaign->currentTroop());
+				//AI思考
+				auto troop=campaign->currentTroop();
+				if(troop->isAI){//开始思考
+					aiThink();
+				}else{//人脑,允许用户操作
+					allowInput(true);
+				}
 			});
 		});
 	});
+}
+void Scene_BattleField::endTurn(){
+	menuCampaign->removeFromParentObject();
+	campaign->endTurn();
+	beginTurn();
 }
 
 void Scene_BattleField::reset(){
@@ -205,10 +231,42 @@ void Scene_BattleField::reset(){
 	spriteUnitInfo.iconAmmo.setTexture(iconsTexs.getTexture("Ammo"));
 	spriteUnitInfo.verticalLayout(spriteUnitInfo.size.y/2,0);
 }
+void Scene_BattleField::consumeTimeSlice(){
+	if(aiStartedThink && !ai.isThinking()){//AI思考完毕
+		printf("AI开始行动\n");
+		aiStartedThink=false;
+		//得到结果,开始行动
+		UnitAI *unitAI=ai.troopAI.getMovingUnitAI();
+		if(unitAI){
+			printf("单位(%d,%d)开始行动\n",unitAI->unit->coordinate.x,unitAI->unit->coordinate.y);
+			campaign->setCursor(unitAI->unit->coordinate);//选择单位
+			campaign->cursorConfirm();//得到移动范围
+			campaign->setCursor(unitAI->moveCoord);//移动到目标
+			campaign->cursorConfirm();//弹出命令菜单
+			auto finish=campaign->executeCorpMenu(unitAI->command);//执行命令
+			if(!finish){
+				campaign->setCursor(unitAI->commandCoord);//选择目标
+				campaign->executeCorpMenu(unitAI->command);//执行命令
+			}
+			//下一个
+			unitAI->unit->isWait=true;//这是AI中的数据,一定要设置为待机状态
+		}else{
+			endTurn();
+		}
+	}
+}
+void Scene_BattleField::allowInput(bool allow){
+	inputLayer.forceIntercept=!allow;
+}
 void Scene_BattleField::setCursor(const Campaign::CoordType p){
 	spriteTerrainInfo.setUnitData(campaign->cursorUnitData);//实时显示地形信息
 	spriteUnitInfo.setUnitData(campaign->cursorUnitData);//实时显示单位信息
 	//调整信息框位置
+}
+
+void Scene_BattleField::aiThink(){
+	ai.setCampaign(*campaign);
+	aiStartedThink = ai.startThinking();
 }
 
 void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm,decltype(GameMenu::onCancel) onCancel){

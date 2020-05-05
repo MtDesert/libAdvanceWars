@@ -71,6 +71,7 @@ public:
 	Sprite_TerrainInfo spriteTerrainInfo;//地形信息框
 	Sprite_UnitInfo spriteUnitInfo;//单位信息框
 	GameButton_String buttonEdit;//编辑按钮,用来打开编辑菜单
+	GameLayer inputLayer;//输入层,根据情况拦截输入事件
 
 	//编辑模式菜单
 	Menu_MapEdit *menuMapEdit;//地图编辑菜单
@@ -92,11 +93,18 @@ public:
 	void gotoEditMode();//进入编辑模式,对编辑菜单进行初始化
 	void gotoBattleMode();//进入战斗模式
 
+	//回合开始结束
 	void beginTurn();
+	void endTurn();
 
 	//输入事件
 	virtual void reset();
+	virtual void consumeTimeSlice();//时间片事件
+	void allowInput(bool allow);//是否允许输入,在动画场合或者AI思考场合应该禁止输入
 	void setCursor(const Campaign::CoordType p);//设置光标位置
+
+	//AI
+	void aiThink();//让AI进行思考,并执行下一步行动
 
 	//菜单
 	void showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) onConfirm,decltype(GameMenu::onCancel) onCancel=nullptr);
