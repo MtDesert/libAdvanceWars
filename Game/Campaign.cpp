@@ -1,8 +1,9 @@
 #include"Campaign.h"
 #include"DamageCaculator.h"
 #include"Number.h"
+#include"StringList.h"
 
-CampaignCO::CampaignCO():coID(0),energy(0),powerStatus(0){}
+CampaignCO::CampaignCO():coID(0),energy(0),powerStatus(0),onUnit(nullptr){}
 CampaignTroop::CampaignTroop():troopID(0),isAI(false),teamID(0),funds(0),isLose(false){}
 CampaignRule::CampaignRule():mIsFogWar(false),mInitFunds(0),mBaseIncome(1000),
 mBasesToWin(0),mFundsToWin(0),mTurnsToWin(0),mUnitLevel(0),mCoPowerLevel(2),
@@ -18,12 +19,12 @@ void UnitData::getUnitData(const decltype(Unit::coordinate) &p,bool clearCache){
 	//获取地形信息
 	auto field = campaign->battleField;
 	terrain = field->getTerrain(p.x,p.y);
-	terrainCode = terrain ? field->terrainsList->data(terrain->terrainType) : nullptr;
+	if(terrain)terrainCode=campaign->getTerrainCode(*terrain);
 	//获取单位信息
 	if(!unit){
 		unit = field->getUnit(p);
 	}
-	corp = unit ? campaign->getCorp(*unit) : nullptr;
+	if(unit)corp=campaign->getCorp(*unit);
 	//获取所属部队信息
 	campaignTroop = unit ? campaign->allTroops.data([&](const CampaignTroop &troop){return troop.troopID==unit->color;}) : nullptr;
 	troop = unit ? campaign->battleField->troopsList->data(unit->color) : nullptr;
@@ -40,6 +41,8 @@ void UnitData::clear(){
 	terrainCode=nullptr;
 	campaignTroop=nullptr;
 	troop=nullptr;
+	campaignCO=nullptr;
+	commander=nullptr;
 }
 
 Campaign::Campaign():battleField(nullptr),damageCaculator(nullptr),
@@ -72,6 +75,91 @@ Campaign& Campaign::operator=(const Campaign &another){
 
 const Corp* Campaign::getCorp(const Unit &unit)const{return battleField->corpsList->data(unit.corpType);}
 const TerrainCode* Campaign::getTerrainCode(const Terrain &terrain)const{return battleField->terrainsList->data(terrain.terrainType);}
+CampaignCO* Campaign::getCampaignCO(const Unit &unit)const{
+	auto troop=findCampaignTroop(unit);
+	if(!troop)return nullptr;
+	//搜索临场指挥官
+	CampaignCO *campaignCO=nullptr;
+	for(auto &co:troop->allCOs){
+		if(!co.onUnit)continue;//临场指挥的co会搭载在单位上
+		if(battleField->getUnit(co.onUnit->coordinate) != co.onUnit)continue;//搭载CO的单位必须存活在地图上
+		//必须在其指挥范围内
+		auto cmd=commandersList->data(co.coID);
+		if(cmd){
+			auto range = cmd->commandRange;
+			auto dist=(unit.coordinate-co.onUnit->coordinate).manhattanLength();
+			if(dist<=range){//在范围内,找到了
+				campaignCO=&co;
+				break;
+			}
+		}
+	}
+	//找不到临场指挥,则找队列中的总指挥
+	if(!campaignCO){
+		for(auto &co:troop->allCOs){
+			if(co.onUnit)continue;//过滤掉临场指挥
+			//找到了
+			campaignCO=&co;
+			break;
+		}
+	}
+	return campaignCO;
+}
+const Commander* Campaign::getCommander(const Unit &unit)const{
+	auto campaignCO=getCampaignCO(unit);
+	if(campaignCO){
+		return commandersList->data(campaignCO->coID);
+	}
+	return nullptr;
+}
+
+CommanderPowerFeature Campaign::getCommanderPowerFeature(const decltype(CommanderPower::allFeatures) &allFeatures,const Corp &corp,const TerrainCode &terrainCode,const Weather &weather)const{
+	CommanderPowerFeature ret;
+	//数据传递给lua环境
+	luaState->doString("corp="+corp.toLuaString());//兵种
+	luaState->doString("terrain="+terrainCode.toLuaString());//地形
+	luaState->doString("weather="+weather.toLuaString());//天气
+	allFeatures.forEach([&](const CommanderPowerFeature &cpf){//从特性中找出加成数据
+		bool corpOK=true,terrainOK=true,weatherOK=true;
+		if(!cpf.corpType.empty()){//查询兵种条件
+			if(luaState->getGlobalFunction(cpf.corpType) && luaState->protectCall()){
+				corpOK=luaState->getTopBoolean();
+			}
+		}
+		if(!cpf.terrainType.empty()){//查询地形条件
+			if(luaState->getGlobalFunction(cpf.terrainType) && luaState->protectCall()){
+				terrainOK=luaState->getTopBoolean();
+			}
+		}
+		if(!cpf.weatherType.empty()){//查询天气条件
+			if(luaState->getGlobalFunction(cpf.weatherType) && luaState->protectCall()){
+				weatherOK=luaState->getTopBoolean();
+			}
+		}
+		//根据条件,累加各种数据
+		if(corpOK && terrainOK && weatherOK){
+			ret+=cpf;
+		}
+	});
+	return ret;
+}
+CommanderPowerFeature Campaign::getCommanderPowerFeature(const UnitData &unitData)const{
+	CommanderPowerFeature ret;
+	auto campaignCO=getCampaignCO(*unitData.unit);
+	if(campaignCO){
+		auto commander=commandersList->data(campaignCO->coID);
+		if(commander){//获取指挥官当前的能力发动状态
+			auto power=commander->allPowers.data(campaignCO->powerStatus);
+			if(power){
+				auto weather=weathersList->data(currentWeatherIndex);
+				if(weather){
+					ret=getCommanderPowerFeature(power->allFeatures,*unitData.corp,*unitData.terrainCode,*weather);
+				}
+			}
+		}
+	}
+	return ret;
+}
 
 CampaignTroop* Campaign::currentTroop()const{return allTroops.data(currentTroopIndex);}
 CampaignTroop* Campaign::findCampaignTroop(const Unit &unit)const{
@@ -269,7 +357,9 @@ void Campaign::caculateMovement(const Unit &unit,const Corp &corp){
 	mp.setP(unit.coordinate);
 	mp.remainMovement=corp.movement;
 	mp.remainFuel=unit.fuel;
-	//这里加入CO对移动力的修正,对了还有个别CO是可以以地形损耗1通过所有地形的
+	//CO对移动力修正
+	auto feature=getCommanderPowerFeature(selectedUnitData);
+	mp.remainMovement += feature.movement;
 	//清除缓冲
 	movementCostCache.setSize(battleField->terrainsList->size(),true);
 	for(auto &move:movementCostCache)move=-1;
@@ -688,7 +778,7 @@ void Campaign::clearAllOperation(){
 
 bool Campaign::executeCorpMenu(int command){
 	corpMenuCommand = (EnumCorpMenu)command;
-	if(command>=AmountOfCorpEnumMenu)return false;
+	if(command>=AmountOfCorpEnumMenu)return true;
 	//执行
 	bool executeFinish=false;
 	switch(command){
@@ -730,10 +820,6 @@ void Campaign::chooseTarget(int delta){
 	//更新指针
 	selectedTargetPoint=targetPoints.data(idx);
 	setCursor(*selectedTargetPoint);
-	//开火指令,需要显示预测威力
-	if(corpMenuCommand==Menu_Fire){
-		printf("预计损伤%d\n",damageCaculator->predictDamage(selectedUnitData,cursorUnitData,0));
-	}
 }
 void Campaign::chooseNextTarget(){chooseTarget(1);}
 
@@ -766,19 +852,63 @@ bool Campaign::isFriendTerrain(const CampaignTroop &campTroop, const Terrain &te
 	return troop ? campTroop.teamID==troop->teamID : false;
 }
 
+void Campaign::makeCommandString(){
+	//单位的坐标
+	if(selectedUnitData.unit){
+		auto p=&selectedUnitData.unit->coordinate;
+		commandString += Number::toString(p->x)+","+Number::toString(p->y);
+	}
+	//移动方向
+	MovePoint last,current;
+	commandString+=",";
+	for(SizeType i=0;i<movePath.size();++i){
+		last=current;
+		current=*movePath.data(i);
+		if(i==0)continue;
+		//计算方向序列
+		auto p=current-last;
+		if(p.x==-1&&p.y==0){commandString+="L";}
+		if(p.x==1&&p.y==0){commandString+="R";}
+		if(p.x==0&&p.y==-1){commandString+="D";}
+		if(p.x==0&&p.y==1){commandString+="U";}
+	}
+	//指令名称
+	switch(corpMenuCommand){
+#define CASE(name) case Menu_##name:commandString+=","#name;break;
+		CAMPAIGN_CORPMENU(CASE)
+#undef CASE
+		default:;
+	}
+	//指令参数
+}
+bool Campaign::executeCommandString(const string &cmdString){
+	printf("执行命令:%s\n",cmdString.data());
+	clearAllOperation();
+	//读取坐标,获取单位
+	CoordType p;
+	sscanf(cmdString.data(),"%hd,%hd",&p.x,&p.y);
+	auto unit=battleField->getUnit(p);
+	if(!unit)return false;
+	//读取移动方向,获取路径
+	return true;
+}
+
 bool Campaign::moveWithPath(){
 	//移动过程中,命令菜单,移动攻击范围消失
 	hideCorpMenu();
 	movablePoints.clear();
 	firablePoints.clear();
+	if(!selectedUnitData.unit)return true;
 	//开始移动过程
 	auto oldCoord=selectedUnitData.unit->coordinate;
-	while(moveOneStepWithPath()){
-		if(whenExecuteMoveUnit){
+	do{
+		auto moved=moveOneStepWithPath();
+		if(whenExecuteMoveUnit){//发生了位移,要播放动画
 			whenExecuteMoveUnit(oldCoord,*selectedUnitData.unit);
-			return false;
+			if(moved)return false;//要等动画播放完,必须返回false
 		}
-	}
+		if(!moved)break;
+	}while(true);
 	selectedUnitData.unit->isWait=true;//不管有没有碰撞,都变成待机状态
 	//改变坐标
 	auto srcTerrain=battleField->getTerrain(movePath_SrcCoord());
@@ -790,6 +920,7 @@ bool Campaign::moveWithPath(){
 	return true;
 }
 bool Campaign::moveOneStepWithPath(){
+	//确定当前位置在路径中的索引
 	auto idx=movePath.indexOf([&](const MovePoint &mp){
 		return mp==selectedUnitData.unit->coordinate;
 	});
@@ -1233,7 +1364,4 @@ bool Campaign::execMenuItem_Explode(){
 	}
 	return false;
 }
-bool Campaign::execMenuItem_Wait(){
-	if(!moveWithPath())return false;//移动中
-	return true;
-}
+bool Campaign::execMenuItem_Wait(){return moveWithPath();}

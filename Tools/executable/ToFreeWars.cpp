@@ -9,7 +9,7 @@ using namespace std;
 
 CorpsList corpsList;
 TroopsList troopsList;
-TerrainCodesList terrainsList;
+TerrainCodesList terrainCodesList;
 BattleField battleField;
 AwbwCategory category;
 
@@ -42,28 +42,29 @@ void addMapName(const string &filename){}
 int main(int argc,char* argv[]){
 	//if(argc!=2)return -1;
 	//初始化
-	corpsList.loadFile_lua("datas/Corps/Corps-AWDS.lua");//写死了...
-	troopsList.loadFile_lua("datas/Troops/Troops-AWDS.lua");//写死了...
-	troopsList.loadFile_lua("datas/Troops/Troops-AWBW.lua");//写死了...
-	terrainsList.loadFile_lua("datas/Terrains/Terrains-DIY.lua");//写死了...
+	corpsList.loadFile_lua("datas/Corps/Corps-AWDS.lua",nullptr);//写死了...
+	troopsList.loadFile_lua("datas/Troops/Troops-AWDS.lua",nullptr);//写死了...
+	troopsList.loadFile_lua("datas/Troops/Troops-AWBW.lua",nullptr);//写死了...
+	terrainCodesList.loadFile_lua("datas/Terrains/Terrains-DIY.lua");//写死了...
 	battleField.corpsList=&corpsList;
 	battleField.troopsList=&troopsList;
-	battleField.terrainsList=&terrainsList;
+	battleField.terrainsList=&terrainCodesList;
 	//扫描特定路径下的文件
+	BattleField_Feature feature;
 	category.loadFile("awbw/Categories/S_Rank.txt");
 	char filename[256];
 	for(auto &id:category.allMapsID){
 		printf("%d\n",id);
 		sprintf(filename,"awbw/CategoriedMapsCsv/%d.csv",id);
 		battleField.loadMap_CSV(filename);
-		battleField.analyseFeature();
+		battleField.analyseFeature(feature);
 		sprintf(filename,"awbw/S_Rank/%d.tmx",id);
-		battleField.saveMap_TMX_BabyWars(filename);
+		//battleField.saveMap_TMX_BabyWars(filename);
 	}
 	//收尾工作
 	battleField.deleteData();
 	corpsList.clear();
 	troopsList.clear();
-	terrainsList.clear();
+	terrainCodesList.clear();
 	return 0;
 }

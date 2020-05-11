@@ -3,6 +3,7 @@
 
 #include"BattleField.h"
 #include"Weather.h"
+#include"Commander.h"
 #include"DamageCaculator.h"
 #include"LuaState.h"
 
@@ -29,6 +30,7 @@ struct CampaignCO{//在参赛队伍中的CO
 	SizeType coID;//指挥官的ID
 	SizeType energy;//指挥官所累计的能量
 	SizeType powerStatus;//能力发动状态
+	Unit *onUnit;//附在哪个搭载单位上
 };
 struct CampaignTroop{//参赛队伍
 	CampaignTroop();
@@ -92,6 +94,8 @@ struct UnitData{
 	const TerrainCode *terrainCode;//terrain对应的地形码
 	CampaignTroop *campaignTroop;//unit所属的战役部队
 	const Troop *troop;//所属的部队数据
+	CampaignCO *campaignCO;//unit对应的指挥官
+	const Commander *commander;//指挥官的数据
 	//数据源,依靠数据源的线索来查询数据
 	Campaign *campaign;
 
@@ -120,14 +124,20 @@ public:
 
 	//战场,参战部队,天气变化规律,参赛规则
 	BattleField *battleField;//战场地图(包括地图所用的数据表)
+	const CommandersList *commandersList;
 	const WeathersList *weathersList;//天气数据表
 	Array<CampaignTroop> allTroops;//所有参赛队伍
-	CampaignWeathers campaignWeathers;//天气
+	CampaignWeathers campaignWeathers;//天气发生概率
 	CampaignRule campaignRule;//规则
 	DamageCaculator *damageCaculator;//损伤计算器
+
 	//数据查询
-	const Corp* getCorp(const Unit &unit)const;
-	const TerrainCode* getTerrainCode(const Terrain &terrain)const;
+	const Corp* getCorp(const Unit &unit)const;//根据单位查询兵种
+	const TerrainCode* getTerrainCode(const Terrain &terrain)const;//根据地形查询地形代码
+	CampaignCO* getCampaignCO(const Unit &unit)const;//根据单位查询CO
+	const Commander* getCommander(const Unit &unit)const;//根据单位查询其对应的指挥官
+	CommanderPowerFeature getCommanderPowerFeature(const decltype(CommanderPower::allFeatures) &allFeatures,const Corp &corp,const TerrainCode &terrainCode,const Weather &weather)const;//从powerList中根据各种条件寻找出对应的特性
+	CommanderPowerFeature getCommanderPowerFeature(const UnitData &unitData)const;
 
 	//参赛部队
 	CampaignTroop* currentTroop()const;//当前行动的部队
@@ -208,6 +218,11 @@ public:
 
 	//lua相关
 	LuaState *luaState;//lua状态机,执行特定的规则代码
+	//命令!
+	string commandString;//当前执行的命令
+	size_t commandStringPos;//当前执行命令的位置
+	void makeCommandString();//生成字符串指令
+	bool executeCommandString(const string &commandString);//执行字符串指令
 
 	//移动相关
 	bool moveWithPath();//沿着路径移动,返回有没有执行完毕

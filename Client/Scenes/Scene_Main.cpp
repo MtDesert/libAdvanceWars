@@ -108,7 +108,7 @@ void Scene_Main::menuSingleModeConfirm(){
 				}
 			});
 		}break;
-		case MissionMode:break;
+		//case MissionMode:break;
 		case VersusMode:{//打开文件菜单
 			auto scene=game->gotoScene_FileList(true);
 			scene->selectFile(false,"MapSelect",game->settings.mapsPath,[game](const string &filename){
@@ -119,18 +119,46 @@ void Scene_Main::menuSingleModeConfirm(){
 				}
 			});
 		}break;
-		case SurvivalMode:break;
-		case CombatMode:break;
+		//case SurvivalMode:break;
+		//case CombatMode:break;
+		default:game->notDone();
 	}
 }
 
 void Scene_Main::menuOnlineModeConfirm(){
 	GET_GAME
-	auto dialog=game->showDialog_Login();
-	dialog->setIsRegister(menuOnlineMode.selectingItemIndex==Register);
+	switch(menuOnlineMode.selectingItemIndex){
+		default:game->notDone();
+	}
+	//GET_GAME
+	//auto dialog=game->showDialog_Login();
+	//dialog->setIsRegister(menuOnlineMode.selectingItemIndex==Register);
 }
-void Scene_Main::menuMilitaryFilesConfirm(){}
-void Scene_Main::menuMilitaryDeployConfirm(){}
-void Scene_Main::menuMilitaryRecordConfirm(){}
-void Scene_Main::menuGameSettingConfirm(){}
-void Scene_Main::menuAboutConfirm(){}
+void Scene_Main::menuMilitaryFilesConfirm(){
+	GET_GAME
+	switch(menuMilitaryFiles.selectingItemIndex){
+		default:game->notDone();
+	}
+}
+void Scene_Main::menuMilitaryDeployConfirm(){
+	GET_GAME
+	switch(menuMilitaryDeploy.selectingItemIndex){
+		default:game->notDone();
+	}
+}
+void Scene_Main::menuMilitaryRecordConfirm(){
+	GET_GAME
+	switch(menuMilitaryRecord.selectingItemIndex){
+		default:game->notDone();
+	}
+}
+void Scene_Main::menuGameSettingConfirm(){
+	GET_GAME
+	switch(menuGameSetting.selectingItemIndex){
+		default:game->notDone();
+	}
+}
+void Scene_Main::menuAboutConfirm(){
+	GET_GAME
+	game->notDone();
+}

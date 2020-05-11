@@ -1,11 +1,6 @@
 #include"Game_AdvanceWars.h"
 #include"Layer_Conversation.h"
 
-//所有场景
-#define ALL_SCENES(MACRO)\
-MACRO(Main)\
-MACRO(BattleField)\
-MACRO(CampaignPrepare)
 //所有对话框
 #define ALL_DIALOGS(MACRO)\
 MACRO(NewMap)
@@ -22,6 +17,7 @@ Game_AdvanceWars::Game_AdvanceWars(){
 	battleField.terrainsList=&mTerrainCodesList;
 	//战役数据
 	campaign.battleField=&battleField;
+	campaign.commandersList=&mCommandersList;
 	campaign.weathersList=&mWeathersList;
 	//错误处理函数
 	battleField.whenError=whenError;
@@ -65,9 +61,11 @@ void Game_AdvanceWars::restart(){
 	gotoScene_Main(true);
 }
 
-GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,Main)
-GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,BattleField)
-GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,CampaignPrepare)
+//场景跳转
+#define SCENE_DEFINE(Name) GAME_GOTOSCENE_DEFINE(Game_AdvanceWars,Name)
+ALL_SCENES(SCENE_DEFINE)
+#undef SCENE_DEFINE
+//对话框
 GAME_SHOWDIALOG_DEFINE(Game_AdvanceWars,NewMap)
 
 #define AW_LOAD_LUA(mList,dataName) if(mList.size()==0)mList.loadFile_lua(settings.dataName,whenError);
@@ -83,6 +81,7 @@ bool Game_AdvanceWars::loadAllConfigData(){
 		luaState.doFile(settings.ruleMove);//移动规则
 		luaState.doFile(settings.ruleLoadUnit);//装载单位规则
 		luaState.doFile(settings.ruleBuild);//装载建造规则
+		luaState.doFile(settings.ruleCommanders);//指挥官规则
 	}
 	damageCaculator.luaState.doFile(settings.ruleDamage);//损伤规则
 	//引用传递
@@ -283,4 +282,8 @@ void Game_AdvanceWars::loadAllIconsTextures(bool forceReload){
 			allIconsTextures.insert(nm,tex);
 		}
 	}
+}
+
+void Game_AdvanceWars::notDone(){
+	whenError("尚未实现");
 }

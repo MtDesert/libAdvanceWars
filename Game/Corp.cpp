@@ -20,6 +20,50 @@ bool Corp::isIndirectAttack()const{
 	return wpn ? wpn->isIndirectAttack():false;
 }
 
+#include"Number.h"
+
+#define WRITE_STR(name) ret+=#name"=\""+name+"\",";
+#define WRITE_INT(name) ret+=#name"="+Number::toString(name)+",";
+#define WRITE_BOOL(name) if(name)ret+=#name"=true,";
+#define WRITE_STR_WPN(name) ret+=#name"=\""+wpn.name+"\",";
+#define WRITE_INT_WPN(name) ret+=#name"="+Number::toString(wpn.name)+",";
+
+string Corp::toLuaString()const{
+	string ret("{");//输出基本属性
+	WRITE_STR(name)
+	WRITE_STR(translate)
+	WRITE_STR(corpType)
+	WRITE_INT(price)
+	WRITE_INT(vision)
+	ret+="move={";//输出移动相关数据
+	WRITE_INT(movement)
+	WRITE_STR(moveType)
+	WRITE_INT(gasMax)
+	ret.pop_back();ret+="},";
+	if(weapons.size()){//输出武器数据
+		ret+="weapons={";
+		weapons.forEach([&](const Weapon &wpn){
+			ret+="{";
+			WRITE_STR_WPN(name)
+			if(wpn.minRange!=1)WRITE_INT_WPN(minRange);
+			if(wpn.maxRange!=1)WRITE_INT_WPN(maxRange);
+			if(wpn.ammunitionMax)WRITE_INT_WPN(ammunitionMax)
+			if(wpn.flareRange)WRITE_INT_WPN(flareRange)
+			ret+="},";
+		});
+		ret+="},";
+	}
+	//
+	WRITE_BOOL(capturable)
+	WRITE_BOOL(suppliable)
+	WRITE_BOOL(hidable)
+	WRITE_BOOL(repairable)
+	WRITE_BOOL(explodable)
+	WRITE_BOOL(buildable)
+	ret+="}";
+	return ret;
+}
+
 #define READ_STR(obj,member) state.getTableString(#member,obj->member);
 #define READ_INT(obj,member) obj->member=state.getTableInteger(#member);
 #define READ_CORP_BOOL(member) corp->member=state.getTableBoolean(#member);

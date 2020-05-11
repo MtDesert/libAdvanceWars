@@ -18,6 +18,7 @@ void Settings::readCustom(LuaState &state){
 	READ_STR(ruleDamage)
 	READ_STR(ruleLoadUnit)
 	READ_STR(ruleBuild)
+	READ_STR(ruleCommanders)
 	//图像目录
 	READ_STR(imagesPathTerrainCodes)
 	READ_STR(imagesPathCorps)

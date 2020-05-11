@@ -12,6 +12,10 @@ struct Weather{
 	bool isRainy:1;//是否雨天
 	bool isSnowy:1;//是否雪天
 	bool isSandy:1;//是否风沙天
+	bool isStorm:1;//是否风暴天气,比如暴雨,暴雪,沙暴
+
+	//
+	string toLuaString()const;
 };
 
 class WeathersList:public DataList<Weather>{

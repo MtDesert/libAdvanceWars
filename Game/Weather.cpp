@@ -5,7 +5,22 @@
 #define READ_INT(name) weather->name=state.getTableInteger(#name);
 #define READ_STR(name) state.getTableString(#name,weather->name);
 
-Weather::Weather():isRainy(false),isSnowy(false),isSandy(false){}
+Weather::Weather():isRainy(false),isSnowy(false),isSandy(false),isStorm(false){}
+
+#define WRITE_STR(name) ret+=#name"=\""+name+"\",";
+#define WRITE_INT(name) ret+=#name"="+Number::toString(name)+",";
+#define WRITE_BOOL(name) if(name)ret+=#name"=true,";
+
+string Weather::toLuaString()const{
+	string ret("{");
+	WRITE_STR(name)
+	WRITE_STR(translate)
+	WRITE_BOOL(isRainy)
+	WRITE_BOOL(isSnowy)
+	WRITE_BOOL(isSandy)
+	ret+="}";
+	return ret;
+}
 bool WeathersList::loadFile_lua(const string &filename,WhenErrorString whenError){
 	LuaState state;
 	state.whenError=whenError;

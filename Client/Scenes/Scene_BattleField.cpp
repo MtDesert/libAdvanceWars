@@ -16,6 +16,23 @@ spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 	//战场图层
 	layerBattleField.battleField=battleField;
 	addSubObject(&layerBattleField);
+	layerBattleField.whenAnimationUnitMoveOver=[&](){
+		if((campaign->selectedUnitData.unit && campaign->selectedUnitData.unit->isWait) || campaign->moveWithPath()){//继续移动,直到完成目标
+			printf("命令%d\n",campaign->corpMenuCommand);
+			if(campaign->selectedTargetPoint){
+				printf("参数%d,%d\n",campaign->selectedTargetPoint->x,campaign->selectedTargetPoint->y);
+				campaign->cursor=*campaign->selectedTargetPoint;
+				campaign->cursorUnitData.getUnitData(campaign->cursor);
+			}
+			auto finish=campaign->executeCorpMenu(campaign->corpMenuCommand);
+			//行动完毕,下一步
+			if(finish){
+				nextStep();
+			}else{
+				printf("命令%d没完没了\n",campaign->corpMenuCommand);
+			}
+		}
+	};
 	//菜单按钮
 	buttonEdit.position.y=(game->resolution.y-buttonEdit.size.y)/2;
 	addSubObject(&buttonEdit);
@@ -146,25 +163,20 @@ void Scene_BattleField::gotoBattleMode(){
 	menuCorpCommand->corpCommandArray = &campaign->corpMenu;
 	campaign->beginTurn();//回合开始
 	//菜单事件
-	menuCampaign->onConfirm=[&](GameMenu *menu){
+	menuCampaign->onConfirm=[&,game](GameMenu *menu){
 		switch(menu->selectingItemIndex){
-			case Campaign_UnitsList:break;
-			case Campaign_Mission:break;
-			case Campaign_BattleSituation:break;
-			case Campaign_Statistics:break;
-			case Campaign_Commander:break;
-			case Campaign_Rule:break;
-			case Campaign_Yield:break;
-			case Campaign_Delete:break;
-			case Campaign_Power:break;
-			case Campaign_ChangeCO:break;
 			case Campaign_EndTurn://回合结束
 				endTurn();
 			break;
-			case Campaign_SaveFile:break;
-			case Campaign_LoadFile:break;
-			case Campaign_ExitMap:break;
-			default:;
+			case Campaign_ExitMap:{
+				auto dialog=game->showDialog_Message();
+				dialog->setText("Exit?");
+				dialog->setConfirmCallback([&,dialog](){
+					dialog->removeFromParentObject();
+					game->gotoScene_Main();
+				});
+			}break;
+			default:game->notDone();
 		}
 	};
 	//战役菜单
@@ -201,16 +213,19 @@ void Scene_BattleField::beginTurn(){
 				//获得收入
 				campaign->currentTroop_GetIncome();
 				spriteTroopFundsCO->setCampaignTroop(*campaign->currentTroop());
-				//AI思考
-				auto troop=campaign->currentTroop();
-				if(troop->isAI){//开始思考
-					aiThink();
-				}else{//人脑,允许用户操作
-					allowInput(true);
-				}
+				//开始行动
+				nextStep();
 			});
 		});
 	});
+}
+void Scene_BattleField::nextStep(){
+	auto troop=campaign->currentTroop();
+	if(troop->isAI){//开始思考
+		aiThink();
+	}else{//人脑,允许用户操作
+		allowInput(true);
+	}
 }
 void Scene_BattleField::endTurn(){
 	menuCampaign->removeFromParentObject();
@@ -233,23 +248,22 @@ void Scene_BattleField::reset(){
 }
 void Scene_BattleField::consumeTimeSlice(){
 	if(aiStartedThink && !ai.isThinking()){//AI思考完毕
+		aiStartedThink=false;//防止频繁进入此分支
 		printf("AI开始行动\n");
-		aiStartedThink=false;
 		//得到结果,开始行动
 		UnitAI *unitAI=ai.troopAI.getMovingUnitAI();
 		if(unitAI){
 			printf("单位(%d,%d)开始行动\n",unitAI->unit->coordinate.x,unitAI->unit->coordinate.y);
+			printf("目标点%d,%d\n",unitAI->moveCoord.x,unitAI->moveCoord.y);
+			//获取移动路径(模仿玩家操作)
 			campaign->setCursor(unitAI->unit->coordinate);//选择单位
 			campaign->cursorConfirm();//得到移动范围
+			//传递AI参数
 			campaign->setCursor(unitAI->moveCoord);//移动到目标
-			campaign->cursorConfirm();//弹出命令菜单
-			auto finish=campaign->executeCorpMenu(unitAI->command);//执行命令
-			if(!finish){
-				campaign->setCursor(unitAI->commandCoord);//选择目标
-				campaign->executeCorpMenu(unitAI->command);//执行命令
-			}
-			//下一个
-			unitAI->unit->isWait=true;//这是AI中的数据,一定要设置为待机状态
+			campaign->corpMenuCommand=unitAI->command;//设置命令
+			campaign->selectedTargetPoint=&unitAI->commandCoord;
+			//先执行移动
+			campaign->moveWithPath();
 		}else{
 			endTurn();
 		}

@@ -26,7 +26,7 @@ static void updateRenderLattice(int x,int y){//更新需要渲染的网格数据
 }
 
 Layer_BattleField::Layer_BattleField():battleField(nullptr),campaign(nullptr),isEditMode(false),isEditMode_Unit(false),
-animationUnit(nullptr){
+animationUnit(nullptr),whenAnimationUnitMoveOver(nullptr){
 	forceIntercept=true;
 	GAME_AW
 	battleField=&game->battleField;//读取数据用
@@ -179,18 +179,8 @@ void Layer_BattleField::consumeTimeSlice(){
 	if(animationUnitOffset.y<0)animationUnitOffset.y+=UNIT_MOVE_SPEED;
 	//结束
 	if(animationUnitOffset.x==0 && animationUnitOffset.y==0){//一格移动完成
-		if(campaign->moveWithPath()){//执行完毕
-			animationUnit=nullptr;//
-			campaign->executeCorpMenu(campaign->corpMenuCommand);//执行命令
-			//执行完成,人脑情况下允许操作,电脑情况下则继续思考
-			BATTLEFIELD_SCENE
-			auto troop=campaign->currentTroop();
-			if(!troop || !troop->isAI){//人脑控制,允许触摸
-				scene->allowInput(true);
-			}else{//继续让AI思考
-				scene->aiThink();
-			}
-		}
+		animationUnit=nullptr;
+		if(whenAnimationUnitMoveOver)whenAnimationUnitMoveOver();
 	}
 }
 void Layer_BattleField::renderX()const{

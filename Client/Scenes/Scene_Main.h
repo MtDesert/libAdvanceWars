@@ -54,10 +54,17 @@ MACRO(DesignCommanders)
 
 //军事记录
 #define MILITARY_RECORD_MENU(MACRO)\
-//军事记录
+MACRO(WinLose)\
+MACRO(UnitUse)
+//游戏设置
 #define GAME_SETTING_MENU(MACRO)\
-//军事记录
+MACRO(CommonSettings)\
+MACRO(SpecialSettings)
+//关于
 #define ABOUT_MENU(MACRO)\
+MACRO(ThisGame)\
+MACRO(Developer)\
+MACRO(DevelopEnv)
 
 //主场景,显示一下简短信息,然后播放一下动画,然后进入主界面菜单显示
 class Scene_Main:public GameScene{

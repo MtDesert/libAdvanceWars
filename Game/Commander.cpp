@@ -7,8 +7,25 @@
 #define READ_BOOL(member) READ(feature,member,Boolean)
 
 CommanderPowerFeature::CommanderPowerFeature():capturableIncome(0),capturableRepairHP(0),damageFix(0,10),
-attack(0),counterAttack(0),defence(0),indirectDefence(0),enemyTerrainDefendLVminus(0),
+attack(0),counterAttack(0),defence(0),directDefence(0),indirectDefence(0),enemyTerrainDefendLVminus(0),
 movement(0),attackRangeMax(0),enemyDamageTransformSelfFunds(0),fuelConsumePerDay(0){}
+
+CommanderPowerFeature& CommanderPowerFeature::operator+=(const CommanderPowerFeature &another){
+#define ACCUMULATE(name) name += another.name;
+			ACCUMULATE(damageFix.minimun)//损伤波动min
+			ACCUMULATE(damageFix.maximun)//损伤波动max
+			ACCUMULATE(attack)//攻击
+			ACCUMULATE(counterAttack)//反击
+			ACCUMULATE(defence)//防御
+			ACCUMULATE(directDefence)//直接防御
+			ACCUMULATE(indirectDefence)//间接防御
+			ACCUMULATE(enemyTerrainDefendLVminus)//敌方地形防御减少
+			ACCUMULATE(movement)//移动力
+			ACCUMULATE(attackRangeMax)//最大射程
+			ACCUMULATE(enemyDamageTransformSelfFunds)//敌方损伤转化资金率
+#undef ACCUMULATE
+	return *this;
+}
 
 CommanderPower::CommanderPower():energySlot(0){}
 
@@ -55,6 +72,7 @@ bool CommandersList::loadFile_lua(const string &filename,WhenErrorString whenErr
 								READ_INT(attack)
 								READ_INT(counterAttack)
 								READ_INT(defence)
+								READ_INT(directDefence)
 								READ_INT(indirectDefence)
 								READ_INT(enemyTerrainDefendLVminus)
 								READ_INT(movement)

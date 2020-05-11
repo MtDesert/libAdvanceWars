@@ -42,6 +42,9 @@ struct Corp{
 
 	bool isDirectAttack()const;//是否为直接攻击的兵种
 	bool isIndirectAttack()const;//是否为间接攻击的兵种
+
+	//lua交互
+	string toLuaString()const;//根据当前数据输出成lua的格式
 };
 
 /*兵种数据列表,提供加载文件的功能*/

@@ -75,12 +75,12 @@ int AwbwCategory::parsePageFile(int page){
 	lastestAmount=0;//在网页中继续解析
 	while(fgets(buffer,BUFSIZ,file)){//逐行处理
 		if(lastestAmount==0){//扫描最新的地图数
-			string str=CurlEasy::parseContent(buffer,"yellow_text_plain>(","&nbsp");
+			string str=CurlEasy::parseContent(buffer,"yellow_text_plain>(","&nbsp",false);
 			if(!str.empty()){
 				lastestAmount=atoi(str.data());
 			}
 		}else{//扫描地图id
-			string str=CurlEasy::parseContent(buffer,"prevmaps.php?maps_id=",">");
+			string str=CurlEasy::parseContent(buffer,"prevmaps.php?maps_id=",">",false);
 			if(!str.empty()){
 				allMapsID.insert(atoi(str.data()));
 				++count;

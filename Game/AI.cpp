@@ -14,7 +14,7 @@ void UnitAI::getAttackableUnits(){
 	troopAI->allEnemyUnitsAI.forEach([&](UnitAI &unitAI){
 		enemyUD.getUnitData(*unitAI.unit);
 		//判断一下损伤表,有损伤值表示可以攻击
-		auto dmg=troopAI->campaign->damageCaculator->predictDamage(selfUd,enemyUD,0);
+		auto dmg=troopAI->campaign->damageCaculator->predictDamage(selfUd,enemyUD,0,false);
 		if(dmg>=0){
 			allAttackableTargets.push_back(AI_TargetUnit(unitAI.unit));
 		}

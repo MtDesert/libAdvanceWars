@@ -27,6 +27,7 @@ public:
 	string ruleDamage;//损伤规则文件
 	string ruleLoadUnit;//装载单位规则
 	string ruleBuild;//建造规则
+	string ruleCommanders;//指挥官规则
 
 	string imagesPathIcons;//兵种命令菜单图表路径
 	string imagesPathNumbers;//数字图片路径

@@ -95,6 +95,7 @@ public:
 
 	//回合开始结束
 	void beginTurn();
+	void nextStep();
 	void endTurn();
 
 	//输入事件

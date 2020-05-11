@@ -1,5 +1,6 @@
 #include"Terrain.h"
 #include"LuaState.h"
+#include"Number.h"
 
 Terrain::Terrain(int type,int status):unitIndex(TERRAIN_NO_UNIT){
 	this->terrainType=type;
@@ -8,6 +9,28 @@ Terrain::Terrain(int type,int status):unitIndex(TERRAIN_NO_UNIT){
 }
 
 TerrainCode::TerrainCode():defendLV(0),capturable(false),hasIncome(false),hidable(false),has4direction(false){}
+
+#define WRITE_STR(name) ret+=#name"=\""+name+"\",";
+#define WRITE_INT(name) ret+=#name"="+Number::toString(name)+",";
+#define WRITE_BOOL(name) if(name)ret+=#name"=true,";
+
+string TerrainCode::toLuaString()const{
+	string ret("{");
+	WRITE_STR(name)
+	WRITE_STR(translate)
+	WRITE_INT(defendLV)
+	WRITE_STR(repairType)
+	WRITE_STR(produceType)
+	WRITE_STR(terrainAfterLanuch)
+	//
+	WRITE_BOOL(capturable)
+	WRITE_BOOL(hasIncome)
+	WRITE_BOOL(hidable)
+	WRITE_BOOL(has4direction)
+	WRITE_STR(tileType)
+	ret+="}";
+	return ret;
+}
 
 #define READ_BOOL(name) code->name=state.getTableBoolean(#name);
 #define READ_INT(name) code->name=state.getTableInteger(#name);

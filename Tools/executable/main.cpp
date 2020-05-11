@@ -1,36 +1,56 @@
-#include"Socket.h"
-#include<unistd.h>
-#include<errno.h>
+#include"Settings.h"
+#include"Campaign.h"
 
-Socket client,server;
-void whenServerError(Socket *skt){
-	printf("服务端错误 %d\n",skt->errorNumber);
-}
-void whenServerAccepted(Socket *skt){
-	printf("服务端收到连接\n");
-}
+CorpsList corpsList;
+TroopsList troopsList;
+TerrainCodesList terrainCodesList;
+CommandersList commandersList;
+WeathersList weathersList;
 
-void whenClientError(Socket *skt){
-	printf("客户端错误 %d\n",skt->errorNumber);
-}
-void whenClientConnected(Socket *skt){
-	printf("客户端连接成功\n");
+static void whenError(const string &err){
+	printf("%s\n",err.data());
 }
 
 int main(int argc,char* argv[]){
-	auto address="127.0.0.1";
-	uint16 port=2048;
-	//服务端
-	server.whenSocketError=whenServerError;
-	server.whenSocketAccepted=whenServerAccepted;
-	server.listenPort(port);
-	//客户端
-	client.whenSocketError=whenClientError;
-	client.whenSocketConnected=whenClientConnected;
-	client.connect(address,port);
-	client.connect(address,port);
-	//等待完成
-	usleep(1000000);
-	printf("main结束\n");
+	if(argc!=4)return -1;
+	//获取参数
+	auto coName=argv[1];
+	auto terrainName=argv[2];
+	auto weatherName=argv[3];
+	//数据关联
+	LuaState luaState;
+	BattleField battleField;
+	battleField.corpsList=&corpsList;
+	battleField.troopsList=&troopsList;
+	battleField.terrainsList=&terrainCodesList;
+	Campaign campaign;
+	campaign.battleField=&battleField;
+	campaign.weathersList=&weathersList;
+	campaign.luaState=&luaState;
+	//读取配置
+	AwSettings settings;
+	settings.loadFile("settings.lua",whenError);
+	corpsList.loadFile_lua(settings.dataCorps,whenError);
+	troopsList.loadFile_lua(settings.dataTroops,whenError);
+	terrainCodesList.loadFile_lua(settings.dataTerrainCodes,whenError);
+	commandersList.loadFile_lua(settings.dataCommanders,whenError);
+	weathersList.loadFile_lua(settings.dataWeathers,whenError);
+	luaState.doFile(settings.ruleCommanders);
+	//开始查询
+	auto co=commandersList.data([&](const Commander &commander){return commander.name==coName;});
+	auto terrainCode=terrainCodesList.data([&](const TerrainCode &code){return code.name==terrainName;});
+	auto weather=weathersList.data([&](const Weather &weather){return weather.name==weatherName;});
+	if(!co || !terrainCode || !weather){
+		printf("error: %p %p %p\n",co,terrainCode,weather);
+	}
+	printf("co: %s\n",co->name.data());
+	battleField.corpsList->forEach([&](const Corp &corp){
+		printf("%s",corp.name.data());
+		co->allPowers.forEach([&](const CommanderPower &power){
+			auto feature=campaign.getCommanderPowerFeature(power.allFeatures,corp,*terrainCode,*weather);
+			printf(",%d",feature.attack);
+		});
+		printf("\n");
+	});
 	return 0;
 }

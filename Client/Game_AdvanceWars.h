@@ -12,10 +12,18 @@
 #include"Scene_Main.h"
 #include"Scene_BattleField.h"
 #include"Scene_CampaignPrepare.h"
+#include"Scene_BattleAnimation.h"
 #include"Dialog_NewMap.h"
 #include"Layer_Conversation.h"
 
 #define GAME_AW auto game=Game_AdvanceWars::currentGame();
+
+//所有场景
+#define ALL_SCENES(MACRO)\
+MACRO(Main)\
+MACRO(BattleField)\
+MACRO(CampaignPrepare)\
+MACRO(BattleAnimation)
 
 /*高级战争的Game本体,负责管理场景的调度,即管理怎么从一个场景跳到另一个场景
 除此之外,还负责管理一些基础数据和纹理,以及脚本的调度
@@ -34,9 +42,9 @@ public:
 	virtual void restart();
 
 	//场景跳转
-	Scene_Main* gotoScene_Main(bool reset=false);
-	Scene_BattleField* gotoScene_BattleField(bool reset=false);
-	Scene_CampaignPrepare* gotoScene_CampaignPrepare(bool reset=false);
+#define SCENE_DECL(Name) Scene_##Name* gotoScene_##Name(bool reset=false);
+	ALL_SCENES(SCENE_DECL)
+#undef SCENE_DECL
 	//对话框显示
 	Dialog_NewMap* showDialog_NewMap();
 
@@ -89,5 +97,7 @@ public:
 	//剧情脚本
 	GAME_USE_CONVERSATION(Layer_Conversation)
 	GAME_USE_SCRIPT(ScenarioScript)
+
+	void notDone();//提示尚未制作
 };
 #endif

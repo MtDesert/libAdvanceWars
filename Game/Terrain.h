@@ -43,6 +43,9 @@ struct TerrainCode{
 	bool hidable:1;//是否可隐藏地形,隐藏地形只有靠近的时候才能发现内部情况
 	bool has4direction:1;//地形是否具有4个方向,主要用于支持BattleField的调整图块功能
 	string tileType;//图块类型,比如"水域""道路"等,主要用于支持BattleField的调整图块功能
+
+	//lua
+	string toLuaString()const;
 };
 
 //地形代码表

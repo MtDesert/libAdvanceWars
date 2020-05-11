@@ -13,16 +13,20 @@ struct CommanderPowerFeature{
 	//状态效果
 	int capturableIncome;//据点收入
 	int capturableRepairHP;//据点修复量
+	//状态效果-单位
 	IntRange damageFix;//损伤修正的最大最小值(百分数),默认为{0,10}
 	int attack;//攻击修正百分数
 	int counterAttack;//反击修正百分数(累乘attack)
 	int defence;//防御百分比
+	int directDefence;//防御直接攻击百分数
 	int indirectDefence;//防御间接攻击百分数
 	int enemyTerrainDefendLVminus;//敌方地形防御等级减少
 	int movement;//移动力
 	int attackRangeMax;//最大射程
 	int enemyDamageTransformSelfFunds;//敌人损伤转化自身资金率(百分数)
 	int fuelConsumePerDay;//日消耗油量
+	//运算符号
+	CommanderPowerFeature& operator+=(const CommanderPowerFeature &another);
 };
 
 //指挥官能力值

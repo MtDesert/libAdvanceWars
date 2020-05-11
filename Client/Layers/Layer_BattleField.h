@@ -21,6 +21,7 @@ public:
 	//动画控制
 	const Unit *animationUnit;//移动中的单位
 	decltype(position) animationUnitOffset;//移动单位偏移量,影响渲染
+	function<void()> whenAnimationUnitMoveOver;//移动结束后的回调函数
 
 	//输入事件
 	virtual bool keyboardKey(Keyboard::KeyboardKey key,bool pressed);//处理光标移动

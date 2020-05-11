@@ -1,5 +1,6 @@
-#include "AwbwMap.h"
+#include"AwbwMap.h"
 #include"CurlEasy.h"
+#include"typedef.h"
 
 #include<list>
 

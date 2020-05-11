@@ -2,6 +2,7 @@
 #define DAMAGECACULATOR_H
 
 #include"Campaign.h"
+#include"Commander.h"
 #include"LuaState.h"
 
 //前向声明
@@ -23,8 +24,9 @@ public:
 	bool canCounterAttack(UnitData &attacker,UnitData &defender);//判断attacker能否反击defender
 	//损伤
 	int corpDamage(const Corp &atkCorp,const Corp &defCorp,int weaponIndex);//查询兵种损伤
+	int commanderDamage(const Corp &corp,const CommanderPower &power);//查询指挥官的兵种损伤
 	int unitDamage(const Unit &atkUnit,const Unit &defUnit);//查询单位损伤
-	int predictDamage(UnitData &attacker,UnitData &defender,int damageFix);//查询attacker对defender的预计损伤,damageFix进行修正
+	int predictDamage(UnitData &attacker, UnitData &defender, int damageFix, bool isCounterAttak);//查询attacker对defender的预计损伤,damageFix进行修正
 
 	void executeAttack();//开始执行攻击动作
 	void attack(UnitData &attacker,UnitData &defender);//atkUnit对defUnit发动攻击
