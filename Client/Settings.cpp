@@ -22,6 +22,7 @@ void Settings::readCustom(LuaState &state){
 	//图像目录
 	READ_STR(imagesPathTerrainCodes)
 	READ_STR(imagesPathCorps)
+	READ_STR(imagesPathCorpsImages)
 	READ_STR(imagesPathTroops)
 	READ_STR(imagesPathCommanders)
 	READ_STR(imagesPathIcons)

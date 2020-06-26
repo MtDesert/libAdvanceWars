@@ -11,9 +11,8 @@ attack(0),counterAttack(0),defence(0),directDefence(0),indirectDefence(0),enemyT
 movement(0),attackRangeMax(0),enemyDamageTransformSelfFunds(0),fuelConsumePerDay(0){}
 
 CommanderPowerFeature& CommanderPowerFeature::operator+=(const CommanderPowerFeature &another){
+	damageFix=another.damageFix;
 #define ACCUMULATE(name) name += another.name;
-			ACCUMULATE(damageFix.minimun)//损伤波动min
-			ACCUMULATE(damageFix.maximun)//损伤波动max
 			ACCUMULATE(attack)//攻击
 			ACCUMULATE(counterAttack)//反击
 			ACCUMULATE(defence)//防御
@@ -86,6 +85,7 @@ bool CommandersList::loadFile_lua(const string &filename,WhenErrorString whenErr
 										return true;
 									});
 								});
+								READ_STR(executeFunction)
 								return true;
 							});
 						});

@@ -63,5 +63,9 @@ CLASS_MENU_ITEM_DECLARE(CorpCommand,
 	,
 	Array<Campaign::EnumCorpMenu> *corpCommandArray;
 )
+//指挥官能力菜单
+CLASS_MENU_ITEM_DECLARE(CommanderPower,,
+	decltype(Commander::allPowers) *allPowers;
+)
 
 #endif

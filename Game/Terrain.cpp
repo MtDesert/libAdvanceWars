@@ -8,7 +8,7 @@ Terrain::Terrain(int type,int status):unitIndex(TERRAIN_NO_UNIT){
 	isVisible=true;
 }
 
-TerrainCode::TerrainCode():defendLV(0),capturable(false),hasIncome(false),hidable(false),has4direction(false){}
+TerrainCode::TerrainCode():defendLV(0),attackPercent(0),capturable(false),hasIncome(false),hidable(false),has4direction(false){}
 
 #define WRITE_STR(name) ret+=#name"=\""+name+"\",";
 #define WRITE_INT(name) ret+=#name"="+Number::toString(name)+",";
@@ -19,6 +19,7 @@ string TerrainCode::toLuaString()const{
 	WRITE_STR(name)
 	WRITE_STR(translate)
 	WRITE_INT(defendLV)
+	WRITE_INT(attackPercent)
 	WRITE_STR(repairType)
 	WRITE_STR(produceType)
 	WRITE_STR(terrainAfterLanuch)
@@ -51,6 +52,7 @@ bool TerrainCodesList::loadFile_lua(const string &filename,WhenErrorString callb
 				READ_STR(name)
 				READ_STR(translate)
 				READ_INT(defendLV)
+				READ_INT(attackPercent)
 				READ_STR(repairType)
 				READ_STR(produceType)
 				READ_STR(terrainAfterLanuch)

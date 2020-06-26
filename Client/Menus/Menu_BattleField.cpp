@@ -80,6 +80,10 @@ MenuItem_CorpCommand::MenuItem_CorpCommand(){
 	size.setXY(ICON_SIZE*4,ICON_SIZE);
 	setCursorWidth(ICON_SIZE);
 }
+MenuItem_CommanderPower::MenuItem_CommanderPower(){
+	size.setXY(ICON_SIZE*8,ICON_SIZE);
+	setCursorWidth(ICON_SIZE);
+}
 
 //Menu们的构造函数
 Menu_CorpSelect::Menu_CorpSelect():troopID(0){MENU_INIT}
@@ -91,6 +95,7 @@ Menu_Campaign::Menu_Campaign(){MENU_INIT}
 Menu_ProduceSelect::Menu_ProduceSelect():troopID(0),produceCorpArray(nullptr){MENU_INIT}
 Menu_UnitSelect::Menu_UnitSelect(){MENU_INIT}
 Menu_CorpCommand::Menu_CorpCommand():corpCommandArray(nullptr){MENU_INIT}
+Menu_CommanderPower::Menu_CommanderPower():allPowers(nullptr){MENU_INIT}
 
 //Item们的updateData函数
 void MenuItem_CorpSelect::updateData(SizeType pos){
@@ -100,7 +105,7 @@ void MenuItem_CorpSelect::updateData(SizeType pos){
 		stringPrice.setString(Number::toString(corp->price));
 		auto menu=dynamic_cast<Menu_CorpSelect*>(parentObject);
 		if(menu){
-			spriteIcon.setTexture(game->corpsTexturesArray.getTexture(pos,menu->troopID));
+			spriteIcon.setTexture(game->corpsIconsArray.getTexture(pos,menu->troopID));
 		}
 	}else{
 		ITEM_ICON_NAME_NULL
@@ -149,7 +154,7 @@ void MenuItem_MapEdit::updateData(SizeType pos){
 	if(menu && pos< Scene_BattleField::AmountOfEnumMapEditCommand){
 		switch(pos){
 			case Scene_BattleField::MapEdit_CorpSelect:
-				spriteIcon.setTexture(game->corpsTexturesArray.getTexture(menu->menuCorpSelect->selectingItemIndex,menu->menuCorpSelect->troopID));
+				spriteIcon.setTexture(game->corpsIconsArray.getTexture(menu->menuCorpSelect->selectingItemIndex,menu->menuCorpSelect->troopID));
 			break;
 			case Scene_BattleField::MapEdit_TerrainSelect:{
 				auto terrainCode=game->mTerrainCodesList.data(menu->menuTerrainSelect->selectingItemIndex);
@@ -199,7 +204,7 @@ void MenuItem_ProduceSelect::updateData(SizeType pos){
 	if(corp){
 		stringName.setString(corp->translate);
 		stringPrice.setString(Number::toString(corp->price));
-		spriteIcon.setTexture(game->corpsTexturesArray.getTexture(*corpID,menu->troopID));
+		spriteIcon.setTexture(game->corpsIconsArray.getTexture(*corpID,menu->troopID));
 	}else{
 		ITEM_ICON_NAME_NULL
 	}
@@ -210,7 +215,7 @@ void MenuItem_UnitSelect::updateData(SizeType pos){
 	auto pUnit = menu->unitArray->data(pos);
 	if(pUnit && *pUnit){
 		auto unit=*pUnit;
-		spriteIcon.setTexture(game->corpsTexturesArray.getTexture(unit->corpType,unit->color));
+		spriteIcon.setTexture(game->corpsIconsArray.getTexture(unit->corpType,unit->color));
 	}else{
 		ITEM_ICON_NAME_NULL
 	}
@@ -233,6 +238,22 @@ void MenuItem_CorpCommand::updateData(SizeType pos){
 		ITEM_ICON_NAME_NULL
 	}
 }
+void MenuItem_CommanderPower::updateData(SizeType pos){
+	auto menu=dynamic_cast<Menu_CommanderPower*>(parentObject);
+	if(!menu || !menu->allPowers)return;
+	auto power=menu->allPowers->data(pos);
+	//显示能力
+	if(power){
+		//生成图标名字
+		char name[10];
+		sprintf(name,"Power");
+		if(pos>0)sprintf(&name[5],"%lu",pos);
+		spriteIcon.setTexture(game->allIconsTextures.getTexture(name));
+		stringName.setString(power->translate);
+	}else{
+		ITEM_ICON_NAME_NULL
+	}
+}
 
 //Menu们的itemAmount函数
 SizeType Menu_CorpSelect::itemAmount()const{return game->mCorpsList.size();}
@@ -244,3 +265,4 @@ SizeType Menu_Campaign::itemAmount()const{return Scene_BattleField::AmountOfEnum
 SizeType Menu_ProduceSelect::itemAmount()const{return produceCorpArray ? produceCorpArray->size() : 0;}
 SizeType Menu_UnitSelect::itemAmount()const{return unitArray ? unitArray->size() : 0;}
 SizeType Menu_CorpCommand::itemAmount()const{return corpCommandArray ? corpCommandArray->size() : 0;}
+SizeType Menu_CommanderPower::itemAmount()const{return allPowers ? allPowers->size() : 0;}

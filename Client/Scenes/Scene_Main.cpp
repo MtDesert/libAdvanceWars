@@ -128,11 +128,12 @@ void Scene_Main::menuSingleModeConfirm(){
 void Scene_Main::menuOnlineModeConfirm(){
 	GET_GAME
 	switch(menuOnlineMode.selectingItemIndex){
+		case Register:{
+			auto dialog=game->showDialog_Login();
+			dialog->setIsRegister(menuOnlineMode.selectingItemIndex==Register);
+		}break;
 		default:game->notDone();
 	}
-	//GET_GAME
-	//auto dialog=game->showDialog_Login();
-	//dialog->setIsRegister(menuOnlineMode.selectingItemIndex==Register);
 }
 void Scene_Main::menuMilitaryFilesConfirm(){
 	GET_GAME

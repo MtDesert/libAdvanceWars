@@ -22,6 +22,7 @@ public:
 	DATA_FILENAME_AND_IMAGEPATH(Commanders)
 	DATA_FILENAME_AND_IMAGEPATH(TerrainCodes)
 	DATA_FILENAME_AND_IMAGEPATH(Weathers)
+	string imagesPathCorpsImages;
 #undef DATA_FILENAME_AND_IMAGEPATH
 	string ruleMove;//移动规则文件
 	string ruleDamage;//损伤规则文件

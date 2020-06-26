@@ -75,7 +75,8 @@ public:
 	TextureCache commandersBodyTextures;//指挥官全身像
 	TextureCache troopsTextures;//部队标记
 	TextureCacheArray terrainsTexturesArray;//地形纹理的容器,用于支持快速查询
-	TextureCacheArray corpsTexturesArray;//兵种纹理的容器,用于支持快速查询
+	TextureCacheArray corpsIconsArray;//兵种纹理的容器,用于支持快速查询
+	TextureCacheArray corpsImagesArray;//兵种图片
 	TextureCache_String allIconsTextures;//所有的菜单图标
 	TextureCache mapEditMenuTextures;//地图编辑菜单纹理
 	TextureCache campaignMenuTextures;//战役主菜单纹理
@@ -84,7 +85,7 @@ public:
 	void clearAllTextureCache();
 
 	//纹理加载过程
-	void loadCorpsTextures(bool forceReload=false);//读取兵种纹理
+	void loadCorpsTextures(TextureCacheArray &corpsTexArray,const string &imagePath,bool forceReload=false);//读取兵种纹理
 	void loadCommandersTextures(bool forceReload=false);//读取指挥官
 	void loadTroopsTextures(bool forceReload=false);//读取部队纹理
 	void loadTerrainsTextures(bool forceReload=false);//读取地形纹理

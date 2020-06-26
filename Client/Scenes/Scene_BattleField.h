@@ -2,6 +2,7 @@
 #define SCENE_BATTLEFIELD_H
 
 #include"Layer_BattleField.h"
+#include"Layer_Weather.h"
 #include"Menu_BattleField.h"
 #include"Sprite_CampaignInfo.h"
 
@@ -68,6 +69,7 @@ public:
 
 	//控件
 	Layer_BattleField layerBattleField;//战场图层
+	Layer_Weather layerWeather;//天气图层
 	Sprite_TerrainInfo spriteTerrainInfo;//地形信息框
 	Sprite_UnitInfo spriteUnitInfo;//单位信息框
 	GameButton_String buttonEdit;//编辑按钮,用来打开编辑菜单
@@ -83,7 +85,8 @@ public:
 	Menu_Campaign *menuCampaign;//战役模式的菜单
 	Menu_ProduceSelect *menuProduceSelect;//生产菜单,用于生产部队
 	Menu_UnitSelect *menuUnitSelect;//单位表,用于查看场上单位
-	Menu_CorpCommand *menuCorpCommand;//兵种命令菜单,用于显示命令
+	Menu_CorpCommand *menuCorpCommand;//兵种命令菜单,用于执行兵种命令
+	Menu_CommanderPower *menuCommanderPower;//指挥官
 
 	//对战模式精灵组
 	Sprite_CurrentDay *spriteCurrentDay;//显示当前天数和当前行动部队

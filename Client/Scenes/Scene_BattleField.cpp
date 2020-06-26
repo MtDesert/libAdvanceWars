@@ -8,7 +8,7 @@ static AI ai;
 
 Scene_BattleField::Scene_BattleField():battleField(nullptr),campaign(nullptr),
 menuMapEdit(nullptr),menuCorpSelect(nullptr),menuTerrainSelect(nullptr),menuTroopSelect(nullptr),
-menuCampaign(nullptr),menuProduceSelect(nullptr),menuUnitSelect(nullptr),menuCorpCommand(nullptr),
+menuCampaign(nullptr),menuProduceSelect(nullptr),menuUnitSelect(nullptr),menuCorpCommand(nullptr),menuCommanderPower(nullptr),
 spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 	GAME_AW
 	battleField=&game->battleField;
@@ -16,6 +16,8 @@ spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 	//战场图层
 	layerBattleField.battleField=battleField;
 	addSubObject(&layerBattleField);
+	addSubObject(&layerWeather);
+	layerWeather.setParticleAmount(Game::resolution.x*Game::resolution.y/40,Layer_Weather::StyleLine);
 	layerBattleField.whenAnimationUnitMoveOver=[&](){
 		if((campaign->selectedUnitData.unit && campaign->selectedUnitData.unit->isWait) || campaign->moveWithPath()){//继续移动,直到完成目标
 			printf("命令%d\n",campaign->corpMenuCommand);
@@ -56,6 +58,7 @@ Scene_BattleField::~Scene_BattleField(){
 	DELETE_MENU(ProduceSelect)
 	DELETE_MENU(UnitSelect)
 	DELETE_MENU(CorpCommand)
+	DELETE_MENU(CommanderPower)
 }
 
 void Scene_BattleField::gotoEditMode(){
@@ -154,6 +157,7 @@ void Scene_BattleField::gotoBattleMode(){
 	MAKE_MENU(ProduceSelect)
 	MAKE_MENU(UnitSelect)
 	MAKE_MENU(CorpCommand)
+	MAKE_MENU(CommanderPower)
 	menuProduceSelect->produceCorpArray = &campaign->produceMenu;
 	//各种信息部件
 	if(!spriteCurrentDay)spriteCurrentDay=new Sprite_CurrentDay();
@@ -165,6 +169,21 @@ void Scene_BattleField::gotoBattleMode(){
 	//菜单事件
 	menuCampaign->onConfirm=[&,game](GameMenu *menu){
 		switch(menu->selectingItemIndex){
+			case Campaign_Power:{//显示指挥官能力菜单
+				auto powers=campaign->currentCOpowersList();
+				if(powers){//显示能力信息
+					menuCommanderPower->allPowers=powers;
+					showMenu(*menuCommanderPower,[&](GameMenu *menu){
+						menu->removeFromParentObject();//菜单消失
+						campaign->changeCOpowerLevel(menuCommanderPower->selectingItemIndex);//改变能力状态
+					});
+				}else{//显示无
+					auto dialog=game->showDialog_Message();
+					dialog->setText("No power!");
+				}
+			}break;
+			case Campaign_ChangeCO:{//显示当前CO列表
+			}break;
 			case Campaign_EndTurn://回合结束
 				endTurn();
 			break;
@@ -288,7 +307,7 @@ void Scene_BattleField::showMenu(GameMenu &menu,decltype(GameMenu::onConfirm) on
 	if(onCancel){//不指定取消函数的情况下,就不要动原来的函数
 		menu.onCancel=onCancel;
 	}
-	addSubObject(&menu);
+	reAddSubObject(&menu);
 	menu.updateRenderParameters(true);
 }
 void Scene_BattleField::updateMenu(){

@@ -24,13 +24,18 @@
 	macro(Explode)\
 	macro(Wait)
 
+class Campaign;//前向声明
 struct CampaignCO{//在参赛队伍中的CO
 	CampaignCO();
 
 	SizeType coID;//指挥官的ID
 	SizeType energy;//指挥官所累计的能量
-	SizeType powerStatus;//能力发动状态
+	SizeType powerLevel;//能力发动状态
 	Unit *onUnit;//附在哪个搭载单位上
+
+	//CO技能相关
+	decltype(Commander::allPowers)* getCOpowersList(const Campaign &campaign)const;//获取CO的能力表
+	void changeCoPower(Campaign &campaign,SizeType level);//发动CO能力,并启动瞬发技能
 };
 struct CampaignTroop{//参赛队伍
 	CampaignTroop();
@@ -41,7 +46,17 @@ struct CampaignTroop{//参赛队伍
 
 	//指挥官相关
 	Array<CampaignCO> allCOs;//队伍中的所有CO
+	CampaignCO* currentGlobalCO()const;//当前负责指挥全局的CO
+
 	int funds;//队伍的资金,可用于生产单位和修复单位
+	//据点情况
+	struct TerrainAmount{//各种据点对应的数量
+		TerrainAmount();
+		uint8 terrainID;
+		SizeType amount;
+	};
+	Array<TerrainAmount> allCapturableTerrains;
+	void updateTerrainsInfo(const BattleField &battleField);//更新当前的据点信息
 
 	bool isLose;//状态,表明此队伍是否已经输了
 };
@@ -75,6 +90,8 @@ struct CampaignRule{//比赛规则
 	int launchImpactDamage;//发射冲击损伤
 	int unitExplodeRange;//单位爆炸范围
 	int unitExplodeDamage;//单位爆炸损伤
+	int attackFixWhenCOpower;//单位攻击修正(发动能力时)
+	int defenceFixWhenCOpower;//单位防御修正(发动能力时)
 	//特殊规则
 	bool allowLoadCOonUnit;//允许单位搭载CO
 	bool allowBaseRepairFriendUnit;//允许据点修复有军(修理费用由友军出)
@@ -124,20 +141,16 @@ public:
 
 	//战场,参战部队,天气变化规律,参赛规则
 	BattleField *battleField;//战场地图(包括地图所用的数据表)
-	const CommandersList *commandersList;
+	const CommandersList *commandersList;//指挥官数据表
 	const WeathersList *weathersList;//天气数据表
 	Array<CampaignTroop> allTroops;//所有参赛队伍
 	CampaignWeathers campaignWeathers;//天气发生概率
 	CampaignRule campaignRule;//规则
 	DamageCaculator *damageCaculator;//损伤计算器
 
-	//数据查询
+	//常量数据查询
 	const Corp* getCorp(const Unit &unit)const;//根据单位查询兵种
 	const TerrainCode* getTerrainCode(const Terrain &terrain)const;//根据地形查询地形代码
-	CampaignCO* getCampaignCO(const Unit &unit)const;//根据单位查询CO
-	const Commander* getCommander(const Unit &unit)const;//根据单位查询其对应的指挥官
-	CommanderPowerFeature getCommanderPowerFeature(const decltype(CommanderPower::allFeatures) &allFeatures,const Corp &corp,const TerrainCode &terrainCode,const Weather &weather)const;//从powerList中根据各种条件寻找出对应的特性
-	CommanderPowerFeature getCommanderPowerFeature(const UnitData &unitData)const;
 
 	//参赛部队
 	CampaignTroop* currentTroop()const;//当前行动的部队
@@ -210,14 +223,27 @@ public:
 	//卸载单位
 	bool selectDropPoint(Unit &unit);//选择unit的卸载点,返回能否选择
 
+	//指挥官相关
+	CampaignCO* getCampaignCO(const Unit &unit)const;//根据单位查询CO
+	CampaignCO* getCurrentGlobalCampaignCO()const;//获取当前的全场指挥官
+	CommanderPowerFeature getCommanderPowerFeature(const decltype(CommanderPower::allFeatures) &allFeatures,const Corp &corp, const TerrainCode &terrainCode,const Weather &weather,function<void(const CommanderPowerFeature&)> eachFeature=nullptr)const;//从powerList中根据各种条件寻找出对应的特性
+	CommanderPowerFeature getCommanderPowerFeature(const UnitData &unitData,function<void(const CommanderPowerFeature&)> eachFeature=nullptr)const;
+	decltype(Commander::allPowers)* currentCOpowersList()const;//获取当前CO的能力表
+	bool changeCO();
+	bool changeCOpowerLevel(SizeType level);//改变CO的能力等级,并出发瞬发技能
+
 	//关系判定
 	bool isSelfUnit(const CampaignTroop &campTroop,const Unit &unit)const;//判断unit是不是campTroop自军
 	bool isFriendUnit(const CampaignTroop &campTroop,const Unit &unit)const;//判断unit是不是campTroop的友军
+	bool isEnemyUnit(const CampaignTroop &campTroop,const Unit &unit)const;//判断unit是不是campTroop的敌军
+
 	bool isSelfTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的自军地形
 	bool isFriendTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的友军地形
+	bool isEnemyTerrain(const CampaignTroop &campTroop,const Terrain &terrain)const;//判断terrain是不是campTroop的敌军地形
 
-	//lua相关
+	//脚本相关
 	LuaState *luaState;//lua状态机,执行特定的规则代码
+	void registerDefaultScriptFunction();//注册默认的脚本函数,供玩家调用
 	//命令!
 	string commandString;//当前执行的命令
 	size_t commandStringPos;//当前执行命令的位置
@@ -228,7 +254,7 @@ public:
 	bool moveWithPath();//沿着路径移动,返回有没有执行完毕
 	bool moveOneStepWithPath();//沿着路径移动,返回是否发生了移动
 	function<void(const CoordType &oldPos,const Unit &unit)> whenExecuteMoveUnit;
-private:
+
 	//lua函数
 	int luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName);//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
 	int luaFunc_fuelCost(const string &weatherName);//查询燃料损耗(天气名),返回值小于0表示不存在

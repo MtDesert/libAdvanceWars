@@ -20,8 +20,7 @@ Game_AdvanceWars::Game_AdvanceWars(){
 	campaign.commandersList=&mCommandersList;
 	campaign.weathersList=&mWeathersList;
 	//错误处理函数
-	battleField.whenError=whenError;
-	luaState.whenError = damageCaculator.luaState.whenError = whenError;
+	battleField.whenError = luaState.whenError = whenError;
 }
 Game_AdvanceWars::~Game_AdvanceWars(){
 	//删除场景
@@ -78,12 +77,14 @@ bool Game_AdvanceWars::loadAllConfigData(){
 	//规则数据
 	if(!campaign.luaState){
 		campaign.luaState=&luaState;
+		campaign.registerDefaultScriptFunction();
+		damageCaculator.luaState=&luaState;
 		luaState.doFile(settings.ruleMove);//移动规则
 		luaState.doFile(settings.ruleLoadUnit);//装载单位规则
 		luaState.doFile(settings.ruleBuild);//装载建造规则
 		luaState.doFile(settings.ruleCommanders);//指挥官规则
+		luaState.doFile(settings.ruleDamage);//损伤规则
 	}
-	damageCaculator.luaState.doFile(settings.ruleDamage);//损伤规则
 	//引用传递
 	damageCaculator.campaign=&campaign;
 	campaign.damageCaculator=&damageCaculator;
@@ -91,7 +92,8 @@ bool Game_AdvanceWars::loadAllConfigData(){
 }
 bool Game_AdvanceWars::loadAllTextures(){
 	loadTerrainsTextures();
-	loadCorpsTextures();
+	loadCorpsTextures(corpsIconsArray,settings.imagesPathCorps);
+	loadCorpsTextures(corpsImagesArray,settings.imagesPathCorpsImages);
 	loadTroopsTextures();
 	loadCommandersTextures();
 	loadAllIconsTextures();
@@ -115,29 +117,29 @@ void Game_AdvanceWars::clearAllTextureCache(){
 	commandersHeadTextures.clearCache();
 	commandersBodyTextures.clearCache();
 	terrainsTexturesArray.clearCache();
-	corpsTexturesArray.clearCache();
+	corpsIconsArray.clearCache();
 	troopsTextures.clearCache();
 	allIconsTextures.clearCache();
 	numbersTextures.clearCache();
-	//corpMenuTextures.clearCache();
+	corpMenuTextures.clearCache();
 }
 
 #define FORCE_LOAD_CHECK(texArray) \
 if(forceReload)texArray.clearCache();\
 if(texArray.size())return;
 
-void Game_AdvanceWars::loadCorpsTextures(bool forceReload){
+void Game_AdvanceWars::loadCorpsTextures(TextureCacheArray &corpsTexArray,const string &imagePath,bool forceReload){
 	//强行重新加载一定要清除数据
-	FORCE_LOAD_CHECK(corpsTexturesArray)
+	FORCE_LOAD_CHECK(corpsTexArray)
 	//未加载,重新加载
-	corpsTexturesArray.setSize(mCorpsList.size(),true);
+	corpsTexArray.setSize(mCorpsList.size(),true);
 	int corpIndex=0;
 	for(auto &corp:mCorpsList){
-		auto texArr=corpsTexturesArray.data(corpIndex);
+		auto texArr=corpsTexArray.data(corpIndex);
 		texArr->setSize(mTroopsList.size(),true);
 		//开始用png调色
 		FilePNG filePng;
-		filePng.loadFile(settings.imagesPathCorps+"/"+corp.name+".png",whenError);
+		filePng.loadFile(imagePath+"/"+corp.name+".png",whenError);
 		filePng.parseData();
 		auto plte=filePng.findPLTE();
 		if(plte){

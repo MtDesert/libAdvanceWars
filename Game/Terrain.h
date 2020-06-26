@@ -35,6 +35,7 @@ struct TerrainCode{
 	string name;//地形名称
 	string translate;//翻译名称
 	uint8 defendLV;//地形防御等级
+	uint8 attackPercent;//攻击百分数
 	string repairType;//修复类型,用于修复部队
 	string produceType;//建造类型,用于生产部队,比如"LandForce","AirForce","Navy"
 	string terrainAfterLanuch;//发射后的地形变化

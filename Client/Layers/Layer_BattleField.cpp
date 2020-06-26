@@ -36,7 +36,7 @@ animationUnit(nullptr),whenAnimationUnitMoveOver(nullptr){
 	spriteUnit.anchorPoint.setXY(0,0);
 	spriteCursor.anchorPoint.setXY(0,0);
 	spriteTerrain.terrainsTexArray=&game->terrainsTexturesArray;//地形渲染
-	spriteUnit.unitTexArray=&game->corpsTexturesArray;//渲染单位用
+	spriteUnit.unitTexArray=&game->corpsIconsArray;//渲染单位用
 	spriteUnit.numTexArray=&game->numbersTextures;//渲染HP用
 	spriteCursor.setTexture(game->allIconsTextures.getTexture("Cursor"));
 	//范围设定,这里要区分一下GDI和OpenGL的格式
@@ -96,7 +96,14 @@ bool Layer_BattleField::keyboardKey(Keyboard::KeyboardKey key,bool pressed){
 				case Keyboard::Key_Right:x=1;break;
 				case Keyboard::Key_Enter:whenPressConfirm();break;
 				case Keyboard::Key_Esc:whenPressCancel();break;
-				case Keyboard::Key_F1:campaign->endTurn();break;
+				case Keyboard::Key_F1:
+					if(campaign->selectedUnitData.unit && campaign->cursorUnitData.unit){//进入战斗界面
+						GAME_AW
+						campaign->damageCaculator->attackPredict();//预测战斗数据
+						auto scene=game->gotoScene_BattleAnimation(true);
+						scene->playAnimation(*campaign);
+					}
+				break;
 				default:ret=false;
 			}
 			if(x || y){//方向键,进行移动

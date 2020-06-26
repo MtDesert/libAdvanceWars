@@ -10,7 +10,7 @@ struct CommanderPowerFeature{
 	string corpType;//兵种类型(默认为所有兵种全符合条件)
 	string terrainType;//地形类型(默认为所有处于terrainType的单位全符合条件)
 	string weatherType;//天气类型(默认为所有在weatherType下的单位全符合条件)
-	//状态效果
+	//状态效果-据点
 	int capturableIncome;//据点收入
 	int capturableRepairHP;//据点修复量
 	//状态效果-单位
@@ -25,6 +25,8 @@ struct CommanderPowerFeature{
 	int attackRangeMax;//最大射程
 	int enemyDamageTransformSelfFunds;//敌人损伤转化自身资金率(百分数)
 	int fuelConsumePerDay;//日消耗油量
+	//瞬发效果
+	string executeFunction;//执行瞬间发动的技能
 	//运算符号
 	CommanderPowerFeature& operator+=(const CommanderPowerFeature &another);
 };

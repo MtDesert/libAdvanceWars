@@ -116,7 +116,7 @@ void Sprite_UnitInfo::setUnitData(const UnitData &unitData){
 	if(unit && corp){
 		setColor(ColorRGBA::White);
 		GAME_AW
-		unitIcon.setTexture(game->corpsTexturesArray.getTexture(unit->corpType,unit->color));
+		unitIcon.setTexture(game->corpsIconsArray.getTexture(unit->corpType,unit->color));
 		unitName.setString(corp->translate);
 		stringHP.setString(Number::toString(unit->healthPower));
 		stringGas.setString(Number::toString(unit->fuel));
