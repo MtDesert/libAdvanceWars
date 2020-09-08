@@ -1,5 +1,6 @@
 #include"BattleField.h"
 #include"define.h"
+#include"Map.h"
 
 void BattleField_Feature::print()const{
 	printf("build:\n");
@@ -115,22 +116,17 @@ void BattleField::forEachUnit(function<void(Unit &unit)> callback){
 	});
 }
 
-bool BattleField::fillTerrain(const Terrain &terrain){
-	for(SizeType x=0;x<width;++x){
-		for(SizeType y=0;y<height;++y){
-			setValue(x,y,terrain);
-		}
-	}
-	return true;
+void BattleField::fillTerrain(const Terrain &terrain){
+	forEachLattice([&](uint x,uint y,Terrain &terrain){
+		setValue(x,y,terrain);
+	});
 }
 
 void BattleField::autoAdjustTerrainsTiles(){
 	if(!terrainsList)return;
-	for(SizeType x=0;x<width;++x){
-		for(SizeType y=0;y<height;++y){
-			autoAdjustTerrainTile(x,y);
-		}
-	}
+	forEachLattice([&](uint x,uint y,Terrain &terrain){
+		autoAdjustTerrainTile(x,y);
+	});
 }
 
 void BattleField::autoAdjustTerrainTile(SizeType x,SizeType y,bool adjustAround){
@@ -202,6 +198,37 @@ static void commaSeperate(char *str,char* strAddr[],int &strAddrLen){
 	strAddrLen=i;
 }
 
+static const char* encodeString="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static const SizeType encodeLen=strlen(encodeString);
+static void printTerrainCode(FILE *file,SizeType index){
+	if(index<encodeLen)fprintf(file,"%c",encodeString[index]);//单个数字或字母表示
+	else{//否则用两个字母表示
+		index-=encodeLen;//从"00"开始编码到"zz"
+		fprintf(file,"%c%c",encodeString[index/encodeLen],encodeString[index%encodeLen]);
+	}
+}
+static int getTerrainIndex(const char* name){
+	int ret=0;
+	auto nameLen=strlen(name);
+	for(size_t i=0;i<nameLen;++i){
+		auto ptr=strchr(encodeString,name[i]);
+		if(ptr){//计算每一位,不断更新返回值
+			ret*=encodeLen;
+			ret+=(ptr-encodeString);
+		}else{//出错了
+			return -1;
+		}
+	}
+	//开始分析值
+	return ret;
+}
+static int getTerrainIndex(char ch){
+	char chr[2]={0};
+	chr[0]=ch;//变成字符串
+	return getTerrainIndex(chr);
+}
+
+#define READ_LINE fgets(buffer,BUFSIZ,file)
 bool BattleField::loadMap_CSV(const string &filename){
 	ASSERT(corpsList,"No corps list")
 	ASSERT(troopsList,"No troops list")
@@ -210,26 +237,111 @@ bool BattleField::loadMap_CSV(const string &filename){
 	FILE *file=fopen(filename.data(),"rb");
 	//开始读取地图名和作者
 	char buffer[BUFSIZ];
-	mapName=fgets(buffer,BUFSIZ,file);
+	mapName=READ_LINE;
 	mapName.pop_back();//因为自带了换行符'\n'
-	author=fgets(buffer,BUFSIZ,file);
+	author=READ_LINE;
 	author.pop_back();//因为自带了换行符'\n'
 	//读取地图尺寸
 	int w,h;
-	if(fgets(buffer,BUFSIZ,file) && sscanf(buffer,"%d,%d",&w,&h)==2){
-		newData(w,h);//申请内存
-		for(int y=h-1;y>=0;--y){
-			if(fgets(buffer,BUFSIZ,file)){//逐行处理
-				char* strAddr[w];//缓存地形名称
-				int total=w;//实际数量(有可能读到的数量不为w)
-				commaSeperate(buffer,strAddr,total);
-				for(int x=0;x<total;++x){
-					auto name=strAddr[x];//地形名
-					auto dot=strchr(name,'.');//寻找分隔符
-					if(dot)*dot='\0';//变成字符串
-					auto trpName=(dot ? dot+1 : "");//势力的名字可能有
-					//解析地形
-					setTerrain(x,y,name,trpName);
+	ASSERT(READ_LINE && sscanf(buffer,"%d,%d",&w,&h)==2,"Size format error")
+	newData(w,h);//申请内存
+	for(int y=h-1;y>=0;--y){
+		if(fgets(buffer,BUFSIZ,file)){//逐行处理
+			char* strAddr[w];//缓存地形名称
+			int total=w;//实际数量(有可能读到的数量不为w)
+			commaSeperate(buffer,strAddr,total);
+			for(int x=0;x<total;++x){
+				auto name=strAddr[x];//地形名
+				auto dot=strchr(name,'.');//寻找分隔符
+				if(dot)*dot='\0';//变成字符串
+				auto trpName=(dot ? dot+1 : "");//势力的名字可能有
+				//解析地形
+				setTerrain(x,y,name,trpName);
+			}
+		}
+	}
+	//自动调整地形
+	autoAdjustTerrainsTiles();
+	//读取作战单位
+	chessPieces.clear();
+	char* strAddr[4];//x,y,兵种名,部队名
+	int x,y;
+	while(fgets(buffer,BUFSIZ,file)){
+		//分析数据量
+		int total=4;
+		commaSeperate(buffer,strAddr,total);
+		if(total!=4)continue;
+		//读取数据
+		if(sscanf(strAddr[0],"%d",&x)==1 && sscanf(strAddr[1],"%d",&y)==1){
+			addUnit(x,y,strAddr[2],strAddr[3]);
+		}
+	}
+	//关闭文件
+	fclose(file);
+	return true;
+}
+
+bool BattleField::loadMap_CSV_new(const string &filename){
+	ASSERT(corpsList,"No corps list")
+	ASSERT(troopsList,"No troops list")
+	ASSERT(terrainsList,"No terrains list")
+	//打开文件
+	FILE *file=fopen(filename.data(),"rb");
+	//开始读取地图名和作者
+	char buffer[BUFSIZ];
+	mapName=READ_LINE;
+	mapName.pop_back();//因为自带了换行符'\n'
+	author=READ_LINE;
+	author.pop_back();//因为自带了换行符'\n'
+	//读取地图尺寸
+	int w,h;
+	ASSERT(READ_LINE && sscanf(buffer,"%d,%d",&w,&h)==2,"Size format error")
+	//读取地形表
+	READ_LINE;//读取空行
+	Array<Terrain> terrainArray;
+	Terrain terrain;
+	SizeType terrainID,troopID;
+	while(READ_LINE){
+		//去掉行尾换行符号
+		buffer[strlen(buffer)-1]='\0';
+		if(buffer[0]=='\0')break;//读取结束
+		//分析格式
+		auto troopName=strchr(buffer,'.');//直接分析'.',可能拿到部队名
+		if(troopName){//构造成字符串以便读取
+			*troopName='\0';
+			++troopName;
+		}
+		//开始读取
+		if(terrainsList->dataName(buffer,terrainID)){
+			//获取terrainID成功,再确定troopID
+			troopID=0;
+			if(troopName)troopsList->dataName(troopName,troopID);
+			//插入Terrain
+			terrain.terrainType=terrainID;
+			terrain.status=troopID;
+			terrainArray.push_back(terrain);
+		}
+	}
+	//读取地形数据
+	bool needComma = terrainArray.size()>encodeLen;
+	newData(w,h);//申请内存
+	for(int y=h-1;y>=0;--y){
+		if(READ_LINE){//逐行处理
+			if(needComma){//把','转化成'\0'以便读取
+				auto len=strlen(buffer);
+				for(size_t i=0;i<len;++i){
+					if(buffer[i]==',')buffer[i]='\0';
+				}
+			}
+			//开始读取
+			for(int x=0;x<w;++x){
+				if(needComma){
+				}else{//开始对照码表
+					auto idx=getTerrainIndex(buffer[x]);
+					auto trn=terrainArray.data(idx);
+					if(trn){
+						setTerrain(x,y,*trn);
+					}
 				}
 			}
 		}
@@ -274,32 +386,55 @@ void BattleField::saveMap_CSV(FILE *file)const{
 	fprintf(file,"%s\n",mapName.data());
 	fprintf(file,"%s\n",author.data());
 	fprintf(file,"%d,%d\n",w,h);
-	//打印地形信息
+	//构造地形表
+	BattleField_Feature feature;
+	analyseFeature(feature);
 	Terrain terrain;
-	for(int y=h-1;y>=0;--y){
-		for(decltype(w) x=0;x<w;++x){
-			if(getTerrain(x,y,terrain)){
-				auto code=terrainsList->data(terrain.terrainType);
-				if(!code)continue;
-				if(code->capturable){
-					auto troop=troopsList->data(terrain.status);
-					if(troop){
-						fprintf(file,"%s.%s",code->name.data(),troop->name.data());
-					}else{
-						fprintf(file,"%s",code->name.data());
-					}
-				}else{
-					fprintf(file,"%s",code->name.data());
-				}
-				//打印逗号或者换行
-				if(x+1<w){
-					fprintf(file,",");
-				}else if(y>0){
-					fprintf(file,"\n");
-				}
-			}
+	Array<Terrain> terrainArray;//借用Terrain的结构,用unitIndex来表示统计数量
+	feature.array_terrainAmount.forEach([&](SizeType x,SizeType y,SizeType &value){
+		if(value>0){
+			terrain.terrainType=x;
+			terrain.status=y;
+			terrain.unitIndex=value;
+			terrainArray.push_back(terrain);
 		}
-	}
+	});
+	//地形表简单排序
+	terrainArray.sort([](const Terrain &a,const Terrain &b){
+		if(a.terrainType==b.terrainType)return a.status<b.status;
+		else return a.terrainType<b.terrainType;
+	});
+	//输出地形表
+	terrainArray.forEach([&](const Terrain &terrain){
+		auto code=terrainsList->data(terrain.terrainType);
+		if(!code)return;
+		fprintf(file,"\n");
+		if(code->capturable){
+			auto troop=troopsList->data(terrain.status);
+			if(troop){
+				fprintf(file,"%s.%s",code->name.data(),troop->name.data());
+			}else{
+				fprintf(file,"%s",code->name.data());
+			}
+		}else{
+			fprintf(file,"%s",code->name.data());
+		}
+	});
+	fprintf(file,"\n");
+	//输出地形信息
+	bool needComma = terrainArray.size()>encodeLen;
+	forEachLattice([&](SizeType x,SizeType y,const Terrain &terrain){
+		//打印逗号或者换行
+		fprintf(file,x>0?(needComma?",":""):"\n");
+		auto index=terrainArray.indexOf([&](const Terrain &trn){
+			if(terrain.terrainType==trn.terrainType){
+				auto code=terrainsList->data(trn.terrainType);
+				return code->capturable ? terrain.status==trn.status : true;
+			}
+			return false;
+		});
+		printTerrainCode(file,index);
+	});
 	//打印单位信息
 	for(auto &unit:chessPieces){
 		auto x=unit.coordinate.x;
@@ -318,28 +453,32 @@ void BattleField::saveMap_CSV(FILE *file)const{
 
 void BattleField::analyseFeature(BattleField_Feature &feature)const{
 	//初始化
+	feature.array_terrainAmount.newData(terrainsList->size(),troopsList->size(),0);
 	feature.array_buildableTerrainAmount.setSize(troopsList->size(),true);
 	feature.array_buildableTerrainAmount.fill(0);
 	feature.array_UnitAmount.setSize(troopsList->size(),true);
 	feature.array_UnitAmount.fill(0);
+
 	//开始遍历各个地形
-	auto w=getWidth();
-	auto h=getHeight();
-	Terrain terrain;
-	for(decltype(h) y=0;y<h;++y){
-		for(decltype(w) x=0;x<w;++x){
-			if(getTerrain(x,y,terrain)){
-				//开始统计可能的玩家个数
-				auto code=terrainsList->data(terrain.terrainType);
-				if(!code)continue;
-				//统计生产据点数
-				if(!code->produceType.empty()){
-					auto pNum=feature.array_buildableTerrainAmount.data(terrain.status);
-					if(pNum)++(*pNum);
-				}
-			}
+	TerrainCode *code=nullptr;
+	SizeType status=0,amount=0;
+	forEachLattice([&](uint x,uint y,const Terrain &terrain){
+		//获取对应地形码
+		code=terrainsList->data(terrain.terrainType);
+		if(!code)return;
+		//统计各个地形数量
+		status = code->capturable ? terrain.status : 0;//若为据点,则需要status来区分势力
+		if(feature.array_terrainAmount.getValue(terrain.terrainType,status,amount)){
+			++amount;
+			feature.array_terrainAmount.setValue(terrain.terrainType,status,amount);
 		}
-	}
+		//统计生产据点数
+		if(!code->produceType.empty()){
+			auto pNum=feature.array_buildableTerrainAmount.data(terrain.status);
+			if(pNum)++(*pNum);
+		}
+	});
+	//统计各个势力的单位数
 	for(auto &unit:chessPieces){
 		auto pNum=feature.array_UnitAmount.data(unit.color);
 		if(pNum)++(*pNum);

@@ -13,6 +13,7 @@
 struct BattleField_Feature{
 	void print()const;
 
+	Array2D_LV2_Pointer<SizeType> array_terrainAmount;//各个地形的数量(地形ID -> 数量)
 	Array<SizeType> array_buildableTerrainAmount;//统计每个势力的可生产据点数(部队ID -> 据点数量)
 	Array<SizeType> array_UnitAmount;//统计每个势力的单位数量(部队ID -> 单位数量)
 };
@@ -30,6 +31,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	//读取地图
 	int loadMap(const string &filename);
 	bool loadMap_CSV(const string &filename);
+	bool loadMap_CSV_new(const string &filename);
 	//保存地图
 	int saveMap_CSV(const string &filename)const;
 	void saveMap_CSV(FILE *file)const;
@@ -54,7 +56,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	bool setTerrain(SizeType x,SizeType y,const Terrain &terrain);
 	bool setTerrain(const CoordType &p,const Terrain &terrain);
 	bool setTerrain(SizeType x,SizeType y,const string &terrainName,const string &status="");//根据名字和状态设置地形
-	bool fillTerrain(const Terrain &terrain);//地形填充
+	void fillTerrain(const Terrain &terrain);//地形填充
 	//添加单位
 	Unit* addUnit(SizeType x,SizeType y,const string &corpName,const string &troopName);//x,y处添加兵种为corpName,部队为troopName的单位
 	Unit* addUnit(SizeType x,SizeType y,SizeType corpID,SizeType troopID);//x,y处添加兵种ID为corpID,部队ID为troopID的单位
@@ -67,7 +69,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	Unit* getUnit(SizeType x,SizeType y)const;
 	Unit* getUnit(const CoordType &p)const;//获取p点处的单位
 	Unit* getUnit(const Terrain &terrain)const;
-	//单位遍历
+	//遍历
 	void forEachUnit(function<void(Unit &unit)> callback);
 	//图块调整
 	void autoAdjustTerrainsTiles();//调整所有地图块的样式
