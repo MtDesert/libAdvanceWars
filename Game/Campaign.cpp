@@ -109,17 +109,20 @@ Campaign& Campaign::operator=(const Campaign &another){
 	//创建缓冲
 	if(!battleField)battleField=new BattleField();
 	//复制数据
+#define COPY(obj) obj=another.obj;
 	*battleField=*another.battleField;//复制战场
-	weathersList=another.weathersList;//复用天气配置
-	allTroops=another.allTroops;//复制部队
-	campaignWeathers=another.campaignWeathers;//复制天气发生概率
-	campaignRule=another.campaignRule;//复制规则
-	damageCaculator=another.damageCaculator;//复用损伤计算器
+	COPY(commandersList)//指挥官
+	COPY(weathersList)//天气配置
+	COPY(allTroops)//部队
+	COPY(campaignWeathers)//复制天气发生概率
+	COPY(campaignRule)//复制规则
+	COPY(damageCaculator)//复用损伤计算器
 
-	currentDay=another.currentDay;//当前天数
-	currentTroopIndex=another.currentTroopIndex;//当前行动的部队
-	currentWeatherIndex=another.currentWeatherIndex;//当前天气
-	luaState=another.luaState;//依赖脚本也要传递
+	COPY(currentDay)//当前天数
+	COPY(currentTroopIndex)//当前行动的部队
+	COPY(currentWeatherIndex)//当前天气
+	COPY(luaState)//依赖脚本也要传递
+#undef COPY
 	return *this;
 }
 
@@ -265,10 +268,11 @@ void Campaign::setCursor(const CoordType &p){
 
 static const Campaign::CoordType directionP[]={{0,1},{0,-1},{-1,0},{1,0}};
 //LUA交互
-int Campaign::luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName){
+int Campaign::luaFunc_movementCost(const string &moveType,const string &terrainName,const Weather &weather){
 	int ret=-1;
+	luaState->doString("weather="+weather.toLuaString());//天气
 	if(luaState->getGlobalFunction("movementCost")){
-		luaState->push(moveType).push(terrainName).push(weatherName);
+		luaState->push(moveType).push(terrainName);
 		if(luaState->protectCall()){
 			luaState->getTopInteger(ret);
 		}
@@ -357,7 +361,7 @@ void Campaign::tryToMoveTo(const MovePoint &currentPos,const CoordType &offset){
 	}else{//无缓冲结果,查询地形表
 		auto trnCode=battleField->terrainsList->data(terrain->terrainType);
 		if(trnCode){
-			moveCost=luaFunc_movementCost(selectedUnitData.corp->moveType,trnCode->name,currentWeather->name);
+			moveCost=luaFunc_movementCost(selectedUnitData.corp->moveType,trnCode->name,*currentWeather);
 			(*movementCostCache.data(terrain->terrainType))=moveCost;//缓存起来
 			if(moveCost<0)return;
 		}
@@ -437,7 +441,7 @@ bool Campaign::tryToPathTo(const MovePoint &target){
 	//取地形
 	if(!cursorUnitData.terrainCode)return false;
 	//看看剩余的移动力能不能过去
-	int moveCost=luaFunc_movementCost(selectedUnitData.corp->moveType,cursorUnitData.terrainCode->name,currentWeather->name);
+	int moveCost=luaFunc_movementCost(selectedUnitData.corp->moveType,cursorUnitData.terrainCode->name,*currentWeather);
 	if(lastP->remainMovement < moveCost)return false;
 	//看看剩余的燃料能不能过去
 	int costFuel=luaFunc_fuelCost(currentWeather->name);
@@ -477,7 +481,7 @@ bool Campaign::canStayAt(const string &moveType,const CoordType &p,bool checkBar
 	UnitData unitData(this);
 	unitData.getUnitData(p);
 	if(!unitData.terrainCode)return false;
-	int moveCost=luaFunc_movementCost(moveType,unitData.terrainCode->name,currentWeather->name);
+	int moveCost=luaFunc_movementCost(moveType,unitData.terrainCode->name,*currentWeather);
 	if(moveCost<0)return false;//必须是可停靠地形
 	if(checkBarrier){
 		if(unitData.unit && unitData.unit->isVisible){//有障碍单位

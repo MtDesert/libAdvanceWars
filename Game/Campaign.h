@@ -246,7 +246,6 @@ public:
 	void registerDefaultScriptFunction();//注册默认的脚本函数,供玩家调用
 	//命令!
 	string commandString;//当前执行的命令
-	size_t commandStringPos;//当前执行命令的位置
 	void makeCommandString();//生成字符串指令
 	bool executeCommandString(const string &commandString);//执行字符串指令
 
@@ -256,7 +255,7 @@ public:
 	function<void(const CoordType &oldPos,const Unit &unit)> whenExecuteMoveUnit;
 
 	//lua函数
-	int luaFunc_movementCost(const string &moveType,const string &terrainName,const string &weatherName);//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
+	int luaFunc_movementCost(const string &moveType,const string &terrainName,const Weather &weather);//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
 	int luaFunc_fuelCost(const string &weatherName);//查询燃料损耗(天气名),返回值小于0表示不存在
 	int luaFunc_volumnOfLoader(const string &loaderName);
 	int luaFunc_unitWeight(const string &loaderName,const string &beLoaderName,const string &beLoaderCorpType);//查询部队可装载数量,小于等于0表示不可装载

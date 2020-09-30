@@ -130,7 +130,11 @@ void Scene_Main::menuOnlineModeConfirm(){
 	switch(menuOnlineMode.selectingItemIndex){
 		case Register:{
 			auto dialog=game->showDialog_Login();
-			dialog->setIsRegister(menuOnlineMode.selectingItemIndex==Register);
+			dialog->setIsRegister(true);
+		}break;
+		case Login:{
+			auto dialog=game->showDialog_Login();
+			dialog->setIsRegister(false);
 		}break;
 		default:game->notDone();
 	}

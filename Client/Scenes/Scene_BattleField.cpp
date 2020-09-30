@@ -16,8 +16,8 @@ spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 	//战场图层
 	layerBattleField.battleField=battleField;
 	addSubObject(&layerBattleField);
-	addSubObject(&layerWeather);
-	layerWeather.setParticleAmount(Game::resolution.x*Game::resolution.y/40,Layer_Weather::StyleLine);
+	//addSubObject(&layerWeather);
+	//layerWeather.setParticleAmount(Game::resolution.x*Game::resolution.y/40,Layer_Weather::StyleLine);
 	layerBattleField.whenAnimationUnitMoveOver=[&](){
 		if((campaign->selectedUnitData.unit && campaign->selectedUnitData.unit->isWait) || campaign->moveWithPath()){//继续移动,直到完成目标
 			printf("命令%d\n",campaign->corpMenuCommand);
@@ -132,10 +132,7 @@ void Scene_BattleField::gotoEditMode(){
 				});
 			}break;
 			case MapEdit_ExitMap:{
-				auto dialog=game->showDialog_Message();
-				dialog->setText("Exit?");
-				dialog->setConfirmCallback([&,dialog](){
-					dialog->removeFromParentObject();
+				Game::dialogConfirm("Exit?",[&](){
 					game->gotoScene_Main();
 				});
 			}break;
@@ -188,11 +185,8 @@ void Scene_BattleField::gotoBattleMode(){
 				endTurn();
 			break;
 			case Campaign_ExitMap:{
-				auto dialog=game->showDialog_Message();
-				dialog->setText("Exit?");
-				dialog->setConfirmCallback([&,dialog](){
-					dialog->removeFromParentObject();
-					game->gotoScene_Main();
+				Game::dialogConfirm("Exit?",[&](){
+					game->gotoScene_Main(true);
 				});
 			}break;
 			default:game->notDone();

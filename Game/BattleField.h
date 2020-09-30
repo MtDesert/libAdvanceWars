@@ -31,7 +31,6 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	//读取地图
 	int loadMap(const string &filename);
 	bool loadMap_CSV(const string &filename);
-	bool loadMap_CSV_new(const string &filename);
 	//保存地图
 	int saveMap_CSV(const string &filename)const;
 	void saveMap_CSV(FILE *file)const;

@@ -14,6 +14,7 @@ struct DamageData{
 	DamageData();
 	void clear();
 	void setAttackerDefender(const DamageCaculator &caculator,const UnitData &attacker,const UnitData &defender);//根据攻击防御方来设置自身数据
+	static int finalDamage(int baseDmg,int dmgFix,int presentHP,int attack,int defend);
 	//基础数据
 	const UnitData *unitData;//基准的单位数据
 	//攻击
@@ -21,13 +22,16 @@ struct DamageData{
 	int baseAttack;//据点修正
 	int customAttack;//自定义修正
 	int powerAttack;//发动能力修正
+	int attackPercent()const;//攻击百分比
 	//防御
 	int coDefence;//指挥官修正
 	int terrainDefence;//地形防御修正
 	int customDefence;//自定义修正
 	int powerDefence;//发动能力修正
+	int defendPercent()const;//防御百分比
 	//损伤
 	int baseDamage;//基本损伤
+	IntRange damageRange;//损伤范围
 	IntRange damageFix;//损伤修正
 	int realDamageFix;//实际附加的损伤修正
 	//得失
@@ -46,14 +50,14 @@ public:
 
 	//可攻击性
 	bool canAttack(const UnitData &attacker,const UnitData &defender,const decltype(Unit::coordinate) &attackPos);//判断attacker能否攻击defender
-	bool canCounterAttack(UnitData &attacker,UnitData &defender);//判断attacker能否反击defender
+	bool canCounterAttack(const UnitData &attacker,const UnitData &defender);//判断attacker能否反击defender
 	//损伤
 	int corpDamage(const Corp &atkCorp,const Corp &defCorp,int weaponIndex)const;//查询兵种损伤
 	int unitDamage(const UnitData &attacker,const UnitData &defender)const;//查询单位损伤
 
 	void attackPredict();//攻击预测,预测攻击过程中的各种数据
 	void executeAttack();//开始执行攻击动作
-	void attack(UnitData &attacker,UnitData &defender);//atkUnit对defUnit发动攻击
+	void attack(DamageData &atkDmg,DamageData &defDmg);//atkUnit对defUnit发动攻击
 };
 
 #endif//DAMAGECACULATOR_H

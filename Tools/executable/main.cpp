@@ -1,5 +1,6 @@
 #include"Settings.h"
 #include"Campaign.h"
+#include"Directory.h"
 
 CorpsList corpsList;
 TroopsList troopsList;
@@ -20,6 +21,7 @@ int main(int argc,char* argv[]){
 	battleField.corpsList=&corpsList;
 	battleField.troopsList=&troopsList;
 	battleField.terrainsList=&terrainCodesList;
+	battleField.whenError=whenError;
 	//读取配置
 	AwSettings settings;
 	settings.loadFile("settings.lua",whenError);
@@ -27,12 +29,11 @@ int main(int argc,char* argv[]){
 	troopsList.loadFile_lua(settings.dataTroops,whenError);
 	terrainCodesList.loadFile_lua(settings.dataTerrainCodes,whenError);
 	//读取地图
-	if(battleField.loadMap_CSV(filename)){
-		battleField.saveMap_CSV("hahaha.csv");
-		battleField.loadMap_CSV_new("hahaha.csv");
-		battleField.saveMap_CSV("hehehe.csv");
-	}else{
-		printf("error: %s\n",filename);
-	}
+	Directory::scan(filename,nullptr,[&](const string &name){
+		printf("%s\n",name.data());
+		if(battleField.loadMap_CSV(name))battleField.saveMap_CSV(name);
+	});
+	//battleField.loadMap_CSV(filename);
+	//battleField.saveMap_CSV(filename);
 	return 0;
 }

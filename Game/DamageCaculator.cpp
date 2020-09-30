@@ -8,7 +8,8 @@ void DamageData::clear(){
 	unitData=nullptr;
 	coAttack=baseAttack=powerAttack=customAttack=0;
 	coDefence=terrainDefence=powerDefence=customDefence=0;
-	baseDamage=damageFix.minimun=damageFix.maximun=realDamageFix=0;
+	baseDamage=damageRange.minimun=damageRange.maximun=0;
+	damageFix.minimun=damageFix.maximun=realDamageFix=0;
 	hpLost=priceLost=0;
 }
 void DamageData::setAttackerDefender(const DamageCaculator &caculator,const UnitData &attacker,const UnitData &defender){
@@ -17,9 +18,8 @@ void DamageData::setAttackerDefender(const DamageCaculator &caculator,const Unit
 	//攻击方
 	auto damage=caculator.unitDamage(attacker,defender);
 	if(damage<0)return;//不可攻击
-	//攻防要算上指挥官的影响
-	auto feature=attacker.campaign->getCommanderPowerFeature(attacker);
 	//攻击力加成
+	auto feature=attacker.campaign->getCommanderPowerFeature(attacker);
 	this->coAttack = feature.attack;//指挥官的条件加成
 	attacker.campaignTroop->allCapturableTerrains.forEach([&](const CampaignTroop::TerrainAmount &ta){//据点攻击加成
 		auto code=attacker.campaign->battleField->terrainsList->data(ta.terrainID);
@@ -31,22 +31,29 @@ void DamageData::setAttackerDefender(const DamageCaculator &caculator,const Unit
 		this->powerAttack = rule.attackFixWhenCOpower;
 		this->powerDefence = rule.defenceFixWhenCOpower;
 	}
-	//计算损伤
-	damage=Number::divideRound(damage*(100 + this->coAttack + this->baseAttack + this->powerAttack + this->customAttack),100);
-	//防御方
+	auto attack = attackPercent();
+	//防御方防御加成
 	this->coDefence = feature.defence;//CO防御
 	if(defender.corp->isDirectAttack())this->coDefence += feature.directDefence;//对方为直接攻击,则使用直接防御
 	if(defender.corp->isIndirectAttack())this->coDefence += feature.indirectDefence;//对方为间接攻击,则使用间接防御
 	this->terrainDefence = attacker.terrainCode->defendLV * attacker.unit->presentHP();//地形防御力
-	//其它加成
-	auto defence = this->coDefence + this->terrainDefence + this->powerDefence + this->customDefence;
-	//有效损伤系数
-	auto effectiveDamagePercent = 100-defence;//计算有效损伤系数
-	if(effectiveDamagePercent<0)effectiveDamagePercent=0;//有效损伤系数>=0
-	//开始计算损伤(注:代码中统一把所有被除数相乘,所有除数相乘,最后再做除法,以减小误差)
-	//公式:损伤=(基础损伤+损伤修正)*(攻击方表现HP/10)*(有效损伤系数/100)
-	baseDamage = Number::divideRound(damage*attacker.unit->presentHP()*effectiveDamagePercent,1000);
-	damageFix = feature.damageFix;
+	auto defence = defendPercent();
+	//计算损伤
+	damageFix=feature.damageFix;
+	baseDamage=damage;
+	damageRange.minimun=finalDamage(damage,damageFix.minimun,attacker.unit->presentHP(),attack,defence);
+	damageRange.maximun=finalDamage(damage,damageFix.maximun,attacker.unit->presentHP(),attack,defence);
+}
+int DamageData::attackPercent()const{return coAttack + baseAttack + powerAttack + customAttack;}
+int DamageData::defendPercent()const{return coDefence + terrainDefence + powerDefence + customDefence;}
+int DamageData::finalDamage(int baseDmg,int dmgFix,int presentHP,int attack,int defend){
+	//(注:代码中统一把所有被除数相乘,所有除数相乘,最后再做除法,以减小误差)
+	//威力 = 兵种基础损伤*(100%+攻击修正百分比)+损伤修正
+	auto dmg=Number::divideRound(baseDmg*(100+attack),100)+dmgFix;
+	//有效损伤系数 = 100%-防御修正百分比
+	auto effectiveDamagePercent = max(0,100-defend);
+	//最终损伤=威力*(攻击方表现HP/10)*(有效损伤系数/100)
+	return Number::divideRound(dmg * presentHP * effectiveDamagePercent,1000);
 }
 
 int DamageCaculator::luaFunc_corpDamage(const string &attacker,const string &defender,int weaponIndex)const{
@@ -74,7 +81,7 @@ bool DamageCaculator::canAttack(const UnitData &attacker,const UnitData &defende
 	//剩下的就看武器能否攻击对方了
 	return unitDamage(attacker,defender);
 }
-bool DamageCaculator::canCounterAttack(UnitData &attacker,UnitData &defender){
+bool DamageCaculator::canCounterAttack(const UnitData &attacker,const UnitData &defender){
 	if(canAttack(attacker,defender,attacker.unit->coordinate)){//要能反击,首先要能攻击
 		return (attacker.unit->coordinate-defender.unit->coordinate).manhattanLength()<=1;//必须是近身才能反击
 	}
@@ -104,29 +111,26 @@ void DamageCaculator::attackPredict(){
 	defenderDamageData.setAttackerDefender(*this,defender,attacker);//计算防御者数据
 }
 void DamageCaculator::executeAttack(){
-	auto &attacker=campaign->selectedUnitData;
-	auto &defender=campaign->cursorUnitData;
-	//计算交手数据
-	attackerDamageData.setAttackerDefender(*this,attacker,defender);//计算攻击者数据
-	defenderDamageData.setAttackerDefender(*this,defender,attacker);//计算防御者数据
-	//开始交手
-	attack(attacker,defender);//先手方攻击
-	if(defender.unit->healthPower>0 && canCounterAttack(defender,attacker)){//存活且可反击
-		attack(defender,attacker);//后手方反击
+	attackPredict();//攻击前要进行预计
+	attack(attackerDamageData,defenderDamageData);//先手方攻击
+	if(defenderDamageData.unitData->unit->healthPower>0 && canCounterAttack(*defenderDamageData.unitData,*attackerDamageData.unitData)){//存活且可反击
+		attack(defenderDamageData,attackerDamageData);//后手方反击
 	}
 }
-void DamageCaculator::attack(UnitData &attacker,UnitData &defender){
-	auto atkFeature=campaign->getCommanderPowerFeature(attacker);
-	printf("损伤范围%d~%d\n",atkFeature.damageFix.minimun,atkFeature.damageFix.maximun);
-	auto dmgFix = Number::randomInt(atkFeature.damageFix.minimun,atkFeature.damageFix.maximun);//损伤修正
-	auto dmg = 0;//predictDamage(attacker,defender,dmgFix,false);
-	auto hp = defender.unit->healthPower;
-	defender.unit->healthPower = dmg>hp ? 0 : hp-dmg;
+void DamageCaculator::attack(DamageData &atkDmg,DamageData &defDmg){
+	printf("损伤范围%d~%d\n",atkDmg.damageRange.minimun,atkDmg.damageRange.maximun);
+	auto fix=atkDmg.damageFix;
+	auto dmgFix = Number::randomInt(fix.minimun,fix.maximun);//得到随机修正结果
+	auto finalDmg = max(0,DamageData::finalDamage(atkDmg.baseDamage,dmgFix,atkDmg.unitData->unit->presentHP(),atkDmg.attackPercent(),defDmg.defendPercent()));//得到最终损伤
+	//开始减少hp
+	auto defUnit=defDmg.unitData->unit;
+	auto hp=defUnit->healthPower;
+	defUnit->healthPower=max(0,defUnit->healthPower-finalDmg);//保证HP为非负数
 	//输出调试信息
-	printf("%s部队-%s-攻击-%s部队-%s,HP=%u 实际损伤%d(修正%d),对方剩余HP=%u\n",
-		attacker.troop->name.data(),
-		attacker.corp->name.data(),
-		defender.troop->name.data(),
-		defender.corp->name.data(),
-		attacker.unit->healthPower,dmg,dmgFix,defender.unit->healthPower);
+	printf("%s部队%s-攻击-%s部队%s 威力%d 实际损伤%d,HP变化=%u->%d\n",
+		atkDmg.unitData->troop->name.data(),
+		atkDmg.unitData->corp->name.data(),
+		defDmg.unitData->troop->name.data(),
+		defDmg.unitData->corp->name.data(),
+		finalDmg,hp-defUnit->healthPower,hp,defUnit->healthPower);
 }

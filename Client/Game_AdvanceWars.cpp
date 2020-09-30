@@ -50,6 +50,13 @@ void Game_AdvanceWars::reset(){
 	settings.loadFile("settings.lua");//读取配置
 	resolution.setP(settings.resolution);//设定分辨率
 	loadTranslationFile(settings.language+".csv");//读取翻译文件
+	//设定网络部分
+	auto client=currentClient();
+	if(client){
+		client->serverIPaddress = settings.serverIP.empty() ? nullptr : settings.serverIP.data();//设定连接服务器的ip
+		client->serverPort = settings.serverPort;//设定端口
+		client->whenClientErrorStr=whenError;
+	}
 }
 void Game_AdvanceWars::restart(){
 	//进入场景

@@ -228,7 +228,9 @@ static int getTerrainIndex(char ch){
 	return getTerrainIndex(chr);
 }
 
+static char* charRet=nullptr;
 #define READ_LINE fgets(buffer,BUFSIZ,file)
+
 bool BattleField::loadMap_CSV(const string &filename){
 	ASSERT(corpsList,"No corps list")
 	ASSERT(troopsList,"No troops list")
@@ -244,60 +246,8 @@ bool BattleField::loadMap_CSV(const string &filename){
 	//读取地图尺寸
 	int w,h;
 	ASSERT(READ_LINE && sscanf(buffer,"%d,%d",&w,&h)==2,"Size format error")
-	newData(w,h);//申请内存
-	for(int y=h-1;y>=0;--y){
-		if(fgets(buffer,BUFSIZ,file)){//逐行处理
-			char* strAddr[w];//缓存地形名称
-			int total=w;//实际数量(有可能读到的数量不为w)
-			commaSeperate(buffer,strAddr,total);
-			for(int x=0;x<total;++x){
-				auto name=strAddr[x];//地形名
-				auto dot=strchr(name,'.');//寻找分隔符
-				if(dot)*dot='\0';//变成字符串
-				auto trpName=(dot ? dot+1 : "");//势力的名字可能有
-				//解析地形
-				setTerrain(x,y,name,trpName);
-			}
-		}
-	}
-	//自动调整地形
-	autoAdjustTerrainsTiles();
-	//读取作战单位
-	chessPieces.clear();
-	char* strAddr[4];//x,y,兵种名,部队名
-	int x,y;
-	while(fgets(buffer,BUFSIZ,file)){
-		//分析数据量
-		int total=4;
-		commaSeperate(buffer,strAddr,total);
-		if(total!=4)continue;
-		//读取数据
-		if(sscanf(strAddr[0],"%d",&x)==1 && sscanf(strAddr[1],"%d",&y)==1){
-			addUnit(x,y,strAddr[2],strAddr[3]);
-		}
-	}
-	//关闭文件
-	fclose(file);
-	return true;
-}
-
-bool BattleField::loadMap_CSV_new(const string &filename){
-	ASSERT(corpsList,"No corps list")
-	ASSERT(troopsList,"No troops list")
-	ASSERT(terrainsList,"No terrains list")
-	//打开文件
-	FILE *file=fopen(filename.data(),"rb");
-	//开始读取地图名和作者
-	char buffer[BUFSIZ];
-	mapName=READ_LINE;
-	mapName.pop_back();//因为自带了换行符'\n'
-	author=READ_LINE;
-	author.pop_back();//因为自带了换行符'\n'
-	//读取地图尺寸
-	int w,h;
-	ASSERT(READ_LINE && sscanf(buffer,"%d,%d",&w,&h)==2,"Size format error")
 	//读取地形表
-	READ_LINE;//读取空行
+	charRet=READ_LINE;//读取空行
 	Array<Terrain> terrainArray;
 	Terrain terrain;
 	SizeType terrainID,troopID;
