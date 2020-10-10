@@ -8,7 +8,7 @@
 
 CommanderPowerFeature::CommanderPowerFeature():capturableIncome(0),capturableRepairHP(0),damageFix(0,10),
 attack(0),counterAttack(0),defence(0),directDefence(0),indirectDefence(0),enemyTerrainDefendLVminus(0),
-movement(0),attackRangeMax(0),enemyDamageTransformSelfFunds(0),fuelConsumePerDay(0){}
+movement(0),captureSpeed(0),attackRangeMax(0),enemyDamageTransformSelfFunds(0),fuelConsumePerDay(0){}
 
 CommanderPowerFeature& CommanderPowerFeature::operator+=(const CommanderPowerFeature &another){
 	damageFix=another.damageFix;
@@ -20,6 +20,7 @@ CommanderPowerFeature& CommanderPowerFeature::operator+=(const CommanderPowerFea
 			ACCUMULATE(indirectDefence)//间接防御
 			ACCUMULATE(enemyTerrainDefendLVminus)//敌方地形防御减少
 			ACCUMULATE(movement)//移动力
+			ACCUMULATE(captureSpeed)//占领速度
 			ACCUMULATE(attackRangeMax)//最大射程
 			ACCUMULATE(enemyDamageTransformSelfFunds)//敌方损伤转化资金率
 #undef ACCUMULATE
@@ -75,6 +76,7 @@ bool CommandersList::loadFile_lua(const string &filename,WhenErrorString whenErr
 								READ_INT(indirectDefence)
 								READ_INT(enemyTerrainDefendLVminus)
 								READ_INT(movement)
+								READ_INT(captureSpeed)
 								READ_INT(attackRangeMax)
 								READ_INT(enemyDamageTransformSelfFunds)
 								READ_INT(fuelConsumePerDay)

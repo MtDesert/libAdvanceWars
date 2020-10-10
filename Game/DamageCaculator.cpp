@@ -18,6 +18,7 @@ void DamageData::setAttackerDefender(const DamageCaculator &caculator,const Unit
 	//攻击方
 	auto damage=caculator.unitDamage(attacker,defender);
 	if(damage<0)return;//不可攻击
+	baseDamage=damage;
 	//攻击力加成
 	auto feature=attacker.campaign->getCommanderPowerFeature(attacker);
 	this->coAttack = feature.attack;//指挥官的条件加成
@@ -31,18 +32,19 @@ void DamageData::setAttackerDefender(const DamageCaculator &caculator,const Unit
 		this->powerAttack = rule.attackFixWhenCOpower;
 		this->powerDefence = rule.defenceFixWhenCOpower;
 	}
-	auto attack = attackPercent();
-	//防御方防御加成
+	//防御加成
 	this->coDefence = feature.defence;//CO防御
 	if(defender.corp->isDirectAttack())this->coDefence += feature.directDefence;//对方为直接攻击,则使用直接防御
 	if(defender.corp->isIndirectAttack())this->coDefence += feature.indirectDefence;//对方为间接攻击,则使用间接防御
 	this->terrainDefence = attacker.terrainCode->defendLV * attacker.unit->presentHP();//地形防御力
-	auto defence = defendPercent();
-	//计算损伤
+	//损伤修正
 	damageFix=feature.damageFix;
-	baseDamage=damage;
-	damageRange.minimun=finalDamage(damage,damageFix.minimun,attacker.unit->presentHP(),attack,defence);
-	damageRange.maximun=finalDamage(damage,damageFix.maximun,attacker.unit->presentHP(),attack,defence);
+}
+void DamageData::caculateDamageData(const DamageData &defender){
+	auto hp=unitData->unit->presentHP();
+	auto atk=attackPercent(),def=defender.defendPercent();
+	damageRange.minimun=finalDamage(baseDamage,damageFix.minimun,hp,atk,def);
+	damageRange.minimun=finalDamage(baseDamage,damageFix.maximun,hp,atk,def);
 }
 int DamageData::attackPercent()const{return coAttack + baseAttack + powerAttack + customAttack;}
 int DamageData::defendPercent()const{return coDefence + terrainDefence + powerDefence + customDefence;}
@@ -53,7 +55,9 @@ int DamageData::finalDamage(int baseDmg,int dmgFix,int presentHP,int attack,int 
 	//有效损伤系数 = 100%-防御修正百分比
 	auto effectiveDamagePercent = max(0,100-defend);
 	//最终损伤=威力*(攻击方表现HP/10)*(有效损伤系数/100)
-	return Number::divideRound(dmg * presentHP * effectiveDamagePercent,1000);
+	auto finalDmg=Number::divideRound(dmg * presentHP * effectiveDamagePercent,1000);
+	printf("威力%d 有效率%d%% 最终损伤%d\n",dmg,effectiveDamagePercent,finalDmg);
+	return finalDmg;
 }
 
 int DamageCaculator::luaFunc_corpDamage(const string &attacker,const string &defender,int weaponIndex)const{
@@ -109,6 +113,8 @@ void DamageCaculator::attackPredict(){
 	//计算交手数据
 	attackerDamageData.setAttackerDefender(*this,attacker,defender);//计算攻击者数据
 	defenderDamageData.setAttackerDefender(*this,defender,attacker);//计算防御者数据
+	attackerDamageData.caculateDamageData(defenderDamageData);//推算攻击者的损伤
+	defenderDamageData.caculateDamageData(attackerDamageData);//推算防御者的损伤
 }
 void DamageCaculator::executeAttack(){
 	attackPredict();//攻击前要进行预计
@@ -118,7 +124,6 @@ void DamageCaculator::executeAttack(){
 	}
 }
 void DamageCaculator::attack(DamageData &atkDmg,DamageData &defDmg){
-	printf("损伤范围%d~%d\n",atkDmg.damageRange.minimun,atkDmg.damageRange.maximun);
 	auto fix=atkDmg.damageFix;
 	auto dmgFix = Number::randomInt(fix.minimun,fix.maximun);//得到随机修正结果
 	auto finalDmg = max(0,DamageData::finalDamage(atkDmg.baseDamage,dmgFix,atkDmg.unitData->unit->presentHP(),atkDmg.attackPercent(),defDmg.defendPercent()));//得到最终损伤

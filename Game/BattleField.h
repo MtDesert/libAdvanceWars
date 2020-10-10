@@ -44,6 +44,7 @@ struct BattleField:public ChessBoard<Terrain,Unit>{
 	const TerrainCodesList *terrainsList;//地形码表,解读地图用
 
 	//地图信息
+	string mapFilename;//地图文件名
 	string mapName;//地图名
 	string author;//地图作者
 	//地形编辑

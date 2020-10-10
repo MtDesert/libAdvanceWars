@@ -12,6 +12,7 @@ public:
 
 	string mapsPath;//地图路径
 	string scenarioScriptsPath;//剧情脚本文件的路径
+	string savesPath;//存档路径
 	//数据文件名以及图片路径
 #define DATA_FILENAME_AND_IMAGEPATH(name)\
 	string data##name;\

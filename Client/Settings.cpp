@@ -30,4 +30,5 @@ void Settings::readCustom(LuaState &state){
 	//文件选择框路径
 	READ_STR(mapsPath)
 	READ_STR(scenarioScriptsPath)
+	READ_STR(savesPath)
 }

@@ -14,6 +14,7 @@ struct DamageData{
 	DamageData();
 	void clear();
 	void setAttackerDefender(const DamageCaculator &caculator,const UnitData &attacker,const UnitData &defender);//根据攻击防御方来设置自身数据
+	void caculateDamageData(const DamageData &defender);
 	static int finalDamage(int baseDmg,int dmgFix,int presentHP,int attack,int defend);
 	//基础数据
 	const UnitData *unitData;//基准的单位数据

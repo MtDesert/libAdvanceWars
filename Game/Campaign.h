@@ -254,7 +254,7 @@ public:
 	bool moveOneStepWithPath();//沿着路径移动,返回是否发生了移动
 	function<void(const CoordType &oldPos,const Unit &unit)> whenExecuteMoveUnit;
 
-	//lua函数
+	//C++ -> lua函数
 	int luaFunc_movementCost(const string &moveType,const string &terrainName,const Weather &weather);//查询移动损耗(移动类型,地形名,天气名),返回值小于0表示不可移动
 	int luaFunc_fuelCost(const string &weatherName);//查询燃料损耗(天气名),返回值小于0表示不存在
 	int luaFunc_volumnOfLoader(const string &loaderName);
@@ -300,6 +300,10 @@ public:
 	bool execMenuItem_##name();
 	CAMPAIGN_CORPMENU(CAMPAIGN_FUNC)
 #undef CAMPAIGN_FUNC
+
+	//存档/读档
+	bool saveCampaign(const string &filename)const;
+	bool loadCampaign(const string &filename);
 
 	//报错函数
 	WhenErrorString whenError;

@@ -175,8 +175,7 @@ void Scene_BattleField::gotoBattleMode(){
 						campaign->changeCOpowerLevel(menuCommanderPower->selectingItemIndex);//改变能力状态
 					});
 				}else{//显示无
-					auto dialog=game->showDialog_Message();
-					dialog->setText("No power!");
+					Game::dialogOK("No power!");
 				}
 			}break;
 			case Campaign_ChangeCO:{//显示当前CO列表
@@ -184,6 +183,13 @@ void Scene_BattleField::gotoBattleMode(){
 			case Campaign_EndTurn://回合结束
 				endTurn();
 			break;
+			case Campaign_SaveFile:{//保存游戏进度
+				auto scene=game->gotoScene_FileList(true);
+				scene->selectFile(true,"SaveGame",game->settings.savesPath,[&,scene](const string &filename){
+					campaign->saveCampaign(filename);
+					scene->buttonCancel.onClicked();
+				});
+			}break;
 			case Campaign_ExitMap:{
 				Game::dialogConfirm("Exit?",[&](){
 					game->gotoScene_Main(true);

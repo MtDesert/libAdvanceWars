@@ -22,6 +22,7 @@ struct CommanderPowerFeature{
 	int indirectDefence;//防御间接攻击百分数
 	int enemyTerrainDefendLVminus;//敌方地形防御等级减少
 	int movement;//移动力
+	int captureSpeed;//占领速度百分数
 	int attackRangeMax;//最大射程
 	int enemyDamageTransformSelfFunds;//敌人损伤转化自身资金率(百分数)
 	int fuelConsumePerDay;//日消耗油量

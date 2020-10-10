@@ -2,6 +2,7 @@
 #include"DamageCaculator.h"
 #include"Number.h"
 #include"StringList.h"
+#include"define.h"
 
 CampaignCO::CampaignCO():coID(0),energy(0),powerLevel(0),onUnit(nullptr){}
 CampaignTroop::CampaignTroop():troopID(0),isAI(false),teamID(0),funds(0),isLose(false){}
@@ -1291,7 +1292,10 @@ bool Campaign::execMenuItem_Fire(){
 bool Campaign::execMenuItem_Capture(){
 	MOVE_WITH_PATH
 	auto unit=selectedUnitData.unit;
-	unit->progressValue += unit->presentHP();//自己增长自己的进度值(占领值)
+	//计算占领速度
+	auto feature=getCommanderPowerFeature(selectedUnitData);
+	//占领量=10*(表现HP/10)*(100%+速度百分比),向下取整数
+	unit->progressValue += Number::divideFloor(10*unit->presentHP()*(100+feature.captureSpeed),1000);
 	if(unit->progressValue>=campaignRule.captureProgressMax){//占领完成的时候就改变状态
 		unit->progressValue=0;
 		cursorUnitData.terrain->status = unit->color;
@@ -1438,3 +1442,21 @@ bool Campaign::execMenuItem_Explode(){
 	return false;
 }
 bool Campaign::execMenuItem_Wait(){return moveWithPath();}
+
+//存档/读档
+bool Campaign::saveCampaign(const string &filename)const{
+	auto file=fopen(filename.data(),"wb");
+	ASSERT_RETURN(file,ErrorNumber::getErrorString(errno))
+	//保存地图名
+	fprintf(file,"%s",battleField->mapFilename.data());
+	//保存地形变化情况
+	battleField->saveMap_CSV(file);
+	//保存单位表
+	//保存参战的势力和CO
+	//保存天气情况
+	//保存具体规则
+	//完毕
+	fflush(file);fclose(file);
+	return true;
+}
+bool Campaign::loadCampaign(const string &filename){return false;}

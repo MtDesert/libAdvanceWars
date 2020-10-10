@@ -235,6 +235,7 @@ bool BattleField::loadMap_CSV(const string &filename){
 	ASSERT(corpsList,"No corps list")
 	ASSERT(troopsList,"No troops list")
 	ASSERT(terrainsList,"No terrains list")
+	mapFilename=filename;
 	//打开文件
 	FILE *file=fopen(filename.data(),"rb");
 	//开始读取地图名和作者

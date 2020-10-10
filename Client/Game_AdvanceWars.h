@@ -38,7 +38,6 @@ public:
 	string gameName()const;
 
 	//启动
-	virtual void reset();
 	virtual void restart();
 
 	//场景跳转
