@@ -247,7 +247,7 @@ void MenuItem_CommanderPower::updateData(SizeType pos){
 		//生成图标名字
 		char name[10];
 		sprintf(name,"Power");
-		if(pos>0)sprintf(&name[5],"%lu",pos);
+		if(pos>0)sprintf(&name[5],"%d",(int)pos);
 		spriteIcon.setTexture(game->allIconsTextures.getTexture(name));
 		stringName.setString(power->translate);
 	}else{

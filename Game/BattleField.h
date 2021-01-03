@@ -11,8 +11,6 @@
 
 //高级战争-战场特征数据,用于保存分析后的结构,根据需求自行添加需要的内容
 struct BattleField_Feature{
-	void print()const;
-
 	Array2D_LV2_Pointer<SizeType> array_terrainAmount;//各个地形的数量(地形ID -> 数量)
 	Array<SizeType> array_buildableTerrainAmount;//统计每个势力的可生产据点数(部队ID -> 据点数量)
 	Array<SizeType> array_UnitAmount;//统计每个势力的单位数量(部队ID -> 单位数量)

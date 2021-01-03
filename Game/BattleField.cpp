@@ -2,17 +2,6 @@
 #include"define.h"
 #include"Map.h"
 
-void BattleField_Feature::print()const{
-	printf("build:\n");
-	for(SizeType i=0;i<array_buildableTerrainAmount.size();++i){
-		printf("%lu -> %lu\n",i,*array_buildableTerrainAmount.data(i));
-	}
-	printf("unit:\n");
-	for(SizeType i=0;i<array_UnitAmount.size();++i){
-		printf("%lu -> %lu\n",i,*array_UnitAmount.data(i));
-	}
-}
-
 BattleField::BattleField():corpsList(nullptr),troopsList(nullptr),terrainsList(nullptr),whenError(nullptr){}
 BattleField::~BattleField(){}
 

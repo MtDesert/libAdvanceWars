@@ -218,7 +218,7 @@ void Scene_BattleField::beginTurn(){
 	reAddSubObject(spriteCurrentDay);
 	spriteCurrentDay->color.alpha=0;
 	cdFadeTo.fadeTo(spriteCurrentDay,1000,0xFF,[&](){
-		cdDelay.startCountDown(2000,[&](){
+		cdDelay.startCountDown(2000,1,[&](){
 			cdFadeTo.fadeTo(spriteCurrentDay,1000,0,[&](){//动画结束
 				removeSubObject(spriteCurrentDay);
 				//并显示部队状况

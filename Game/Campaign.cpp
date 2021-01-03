@@ -232,7 +232,6 @@ void Campaign::endTurn(){
 	//下一个队伍行动
 	nextCampaignTroopTurn();
 	beginTurn();
-	printf("troop[%lu] turn\n",currentTroopIndex);
 }
 void Campaign::nextCampaignTroopTurn(){
 	auto oldIndex=currentTroopIndex;

@@ -99,7 +99,7 @@ bool Game_AdvanceWars::loadAllTextures(){
 	numbersTextures.setSize(10,true);
 	for(SizeType i=0;i<numbersTextures.size();++i){
 		char ch[2];
-		sprintf(ch,"%lu",i);
+		sprintf(ch,"%d",(int)i);
 		auto tex=numbersTextures.data(i);
 		tex->deleteTexture();
 		tex->texImage2D_FilePNG(settings.imagesPathNumbers+"/"+ch+".png",whenError);
@@ -158,11 +158,18 @@ void Game_AdvanceWars::loadCommandersTextures(bool forceReload){
 	FORCE_LOAD_CHECK(commandersHeadTextures)
 	//开始加载
 	commandersHeadTextures.setSize(mCommandersList.size(),true);
+	commandersBodyTextures.setSize(mCommandersList.size(),true);
 	auto coID=0;
 	for(auto &commander:mCommandersList){
+		//头像纹理
 		auto tex=commandersHeadTextures.data(coID);
 		if(tex){
 			tex->texImage2D_FilePNG(settings.headImagePath+"/"+commander.name+".png",whenError);
+		}
+		//身体纹理
+		tex=commandersBodyTextures.data(coID);
+		if(tex){
+			tex->texImage2D_FilePNG(settings.bodyImagePath+"/"+commander.name+".png",whenError);
 		}
 		//下一个coID
 		++coID;

@@ -8,5 +8,7 @@ class Layer_Conversation:public GameLayer_Conversation{
 public:
 	Layer_Conversation();
 	~Layer_Conversation();
+protected:
+	virtual Texture* bodyImage_str2tex(const char *name)const;
 };
 #endif

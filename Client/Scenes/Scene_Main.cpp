@@ -100,10 +100,10 @@ void Scene_Main::menuSingleModeConfirm(){
 			auto scene=game->gotoScene_FileList(true);
 			scene->selectFile(false,"SelectScript",game->settings.scenarioScriptsPath,[&,game](const string &filename){
 				auto script=game->useScenarioScript();
-				if(script->executeSenarioScript(filename)){//脚本加载没有问题后,再移除场景
+				if(script->loadSenarioScript(filename)){//脚本加载没有问题后,再移除场景
 					game->clearAllScenes();//移除场景
-					game->loadAllConfigData();
-					game->loadAllTextures();
+					game->loadAllConfigData();//加载所有配置
+					game->loadAllTextures();//加载所有纹理
 					game->addSubObject(game->useLayerConversation());//添加对话框
 				}
 			});
