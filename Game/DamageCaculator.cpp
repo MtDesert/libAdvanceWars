@@ -1,5 +1,6 @@
 #include"DamageCaculator.h"
 #include"Number.h"
+#include"PrintF.h"
 
 DamageCaculator::DamageCaculator():luaState(nullptr),campaign(nullptr){}
 DamageData::DamageData(){clear();}
@@ -56,7 +57,7 @@ int DamageData::finalDamage(int baseDmg,int dmgFix,int presentHP,int attack,int 
 	auto effectiveDamagePercent = max(0,100-defend);
 	//最终损伤=威力*(攻击方表现HP/10)*(有效损伤系数/100)
 	auto finalDmg=Number::divideRound(dmg * presentHP * effectiveDamagePercent,1000);
-	printf("威力%d 有效率%d%% 最终损伤%d\n",dmg,effectiveDamagePercent,finalDmg);
+	PRINT_CYAN("威力%d 有效率%d%% 最终损伤%d\n",dmg,effectiveDamagePercent,finalDmg);
 	return finalDmg;
 }
 
@@ -132,7 +133,7 @@ void DamageCaculator::attack(DamageData &atkDmg,DamageData &defDmg){
 	auto hp=defUnit->healthPower;
 	defUnit->healthPower=max(0,defUnit->healthPower-finalDmg);//保证HP为非负数
 	//输出调试信息
-	printf("%s部队%s-攻击-%s部队%s 威力%d 实际损伤%d,HP变化=%u->%d\n",
+	PRINT_CYAN("%s部队%s-攻击-%s部队%s 威力%d 实际损伤%d,HP变化=%u->%d\n",
 		atkDmg.unitData->troop->name.data(),
 		atkDmg.unitData->corp->name.data(),
 		defDmg.unitData->troop->name.data(),

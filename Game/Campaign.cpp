@@ -2,6 +2,7 @@
 #include"DamageCaculator.h"
 #include"Number.h"
 #include"StringList.h"
+#include"PrintF.h"
 #include"define.h"
 
 CampaignCO::CampaignCO():coID(0),energy(0),powerLevel(0),onUnit(nullptr){}
@@ -955,7 +956,7 @@ void Campaign::makeCommandString(){
 	//指令参数
 }
 bool Campaign::executeCommandString(const string &cmdString){
-	printf("执行命令:%s\n",cmdString.data());
+	PRINT_CYAN("执行命令:%s\n",cmdString.data());
 	clearAllOperation();
 	//读取坐标,获取单位
 	CoordType p;

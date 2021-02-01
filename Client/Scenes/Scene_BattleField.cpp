@@ -1,6 +1,7 @@
 #include"Scene_BattleField.h"
 #include"Sprite_Unit.h"
 #include"Game_AdvanceWars.h"
+#include"PrintF.h"
 
 //人工智能
 #include"AI.h"
@@ -20,9 +21,9 @@ spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 	//layerWeather.setParticleAmount(Game::resolution.x*Game::resolution.y/40,Layer_Weather::StyleLine);
 	layerBattleField.whenAnimationUnitMoveOver=[&](){
 		if((campaign->selectedUnitData.unit && campaign->selectedUnitData.unit->isWait) || campaign->moveWithPath()){//继续移动,直到完成目标
-			printf("命令%d\n",campaign->corpMenuCommand);
+			PRINT_PURPLE("命令%d\n",campaign->corpMenuCommand);
 			if(campaign->selectedTargetPoint){
-				printf("参数%d,%d\n",campaign->selectedTargetPoint->x,campaign->selectedTargetPoint->y);
+				PRINT_PURPLE("参数%d,%d\n",campaign->selectedTargetPoint->x,campaign->selectedTargetPoint->y);
 				campaign->cursor=*campaign->selectedTargetPoint;
 				campaign->cursorUnitData.getUnitData(campaign->cursor);
 			}
@@ -31,7 +32,7 @@ spriteCurrentDay(nullptr),spriteTroopFundsCO(nullptr){
 			if(finish){
 				nextStep();
 			}else{
-				printf("命令%d没完没了\n",campaign->corpMenuCommand);
+				PRINT_PURPLE("命令%d没完没了\n",campaign->corpMenuCommand);
 			}
 		}
 	};
@@ -268,12 +269,12 @@ void Scene_BattleField::reset(){
 void Scene_BattleField::consumeTimeSlice(){
 	if(aiStartedThink && !ai.isThinking()){//AI思考完毕
 		aiStartedThink=false;//防止频繁进入此分支
-		printf("AI开始行动\n");
+		PRINT_PURPLE("AI开始行动\n");
 		//得到结果,开始行动
 		UnitAI *unitAI=ai.troopAI.getMovingUnitAI();
 		if(unitAI){
-			printf("单位(%d,%d)开始行动\n",unitAI->unit->coordinate.x,unitAI->unit->coordinate.y);
-			printf("目标点%d,%d\n",unitAI->moveCoord.x,unitAI->moveCoord.y);
+			PRINT_PURPLE("单位(%d,%d)开始行动\n",unitAI->unit->coordinate.x,unitAI->unit->coordinate.y);
+			PRINT_PURPLE("目标点%d,%d\n",unitAI->moveCoord.x,unitAI->moveCoord.y);
 			//获取移动路径(模仿玩家操作)
 			campaign->setCursor(unitAI->unit->coordinate);//选择单位
 			campaign->cursorConfirm();//得到移动范围

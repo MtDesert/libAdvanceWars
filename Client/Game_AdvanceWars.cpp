@@ -47,11 +47,11 @@ string Game_AdvanceWars::gameName()const{return"AdvanceWars";}
 
 void Game_AdvanceWars::restart(){
 	//进入场景
-	/*auto scene=gotoScene_Logo();
+	auto scene=gotoScene_Logo();
 	scene->reset();
 	scene->logoText.setString("AdvanceWars_LifeTime",true);
-	scene->whenLogoOver=[&](){gotoScene_Main();};*/
-	gotoScene_Main(true);
+	scene->whenLogoOver=[&](){gotoScene_Main();};
+	//gotoScene_Main(true);
 }
 
 //场景跳转

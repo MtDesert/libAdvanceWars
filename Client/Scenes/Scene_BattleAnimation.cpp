@@ -1,6 +1,7 @@
 #include"Scene_BattleAnimation.h"
 #include"ShapeRenderer.h"
 #include"Game_AdvanceWars.h"
+#include"PrintF.h"
 
 //单位默认位置
 static const decltype(GameSprite::position) unitDefaultPosition[10]={
@@ -86,14 +87,14 @@ void Scene_BattleAnimation_UnitInfo::setDamageData(const DamageData &data){
 	percentFunc(data.customAttack,strAtk);
 	percentFunc(data.powerAttack,strAtk);
 	if(strAtk.empty())percentFunc(0,strAtk,true);
-	printf("atk %d %d %d %d\n",data.coAttack,data.baseAttack,data.customAttack,data.powerAttack);
+	PRINT_CYAN("攻击 %d %d %d %d\n",data.coAttack,data.baseAttack,data.customAttack,data.powerAttack);
 	//防御(自身,地形)
 	percentFunc(data.coDefence,strDef);
 	percentFunc(data.terrainDefence,strDef);
 	percentFunc(data.customDefence,strDef);
 	percentFunc(data.powerAttack,strDef);
 	if(strDef.empty())percentFunc(0,strDef,true);
-	printf("def %d %d %d %d\n",data.coDefence,data.terrainDefence,data.customDefence,data.powerDefence);
+	PRINT_CYAN("防御 %d %d %d %d\n",data.coDefence,data.terrainDefence,data.customDefence,data.powerDefence);
 	//损伤
 	percentFunc(data.damageFix.minimun,strDmg,true);
 	strDmg+="~";
