@@ -288,7 +288,7 @@ void Layer_BattleField::renderGrid()const{
 		for(decltype(w) x=0;x<w;++x){
 			//计算grid的参数,并渲染
 			updateRenderLattice(x,y);
-			ShapeRenderer::drawRectangle(renderLattice,&ColorRGBA::White,nullptr);
+			//ShapeRenderer::drawRectangle(renderLattice,&ColorRGBA::White,nullptr);
 		}
 	}
 }

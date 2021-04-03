@@ -50,7 +50,7 @@ void Game_AdvanceWars::restart(){
 	auto scene=gotoScene_Logo();
 	scene->reset();
 	scene->logoText.setString("AdvanceWars_LifeTime",true);
-	scene->whenLogoOver=[&](){gotoScene_Main();};
+	scene->whenLogoOver=[&](){gotoScene_Main(true);};
 	//gotoScene_Main(true);
 }
 

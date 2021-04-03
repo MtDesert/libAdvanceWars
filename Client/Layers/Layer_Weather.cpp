@@ -3,7 +3,7 @@
 
 //实验性静态变量
 #define PARTICLE_AMOUNT 1000
-static ShapeRenderer sr;
+#define RENDERER Texture::emptyTex
 
 Layer_Weather::Layer_Weather():particleSpeed(-8,-8),particleSpeedDec(-1,-1),particleSpeedInc(1,1),
 particleColor(ColorRGBA::White),particleLength(8),particleStyle(StylePoint){
@@ -71,7 +71,7 @@ void Layer_Weather::consumeTimeSlice(){
 	});
 }
 void Layer_Weather::renderX()const{
-	sr.edgeColor=&particleColor;
+	ShapeRenderer::setColor(particleColor);
 	auto sz=allParticles.size();
 	WeatherParticle *wp=nullptr;
 #define FOREACH_PARTICLE(code) \
@@ -81,7 +81,7 @@ for(SizeType i=0;i<sz;++i){\
 }
 	switch(particleStyle){
 		case StylePoint:
-			FOREACH_PARTICLE(sr.drawPoint(wp->position))
+			FOREACH_PARTICLE(RENDERER.drawPoint(wp->position))
 		break;
 		case StyleLine:{
 			Point2D<float> p;
@@ -90,7 +90,7 @@ for(SizeType i=0;i<sz;++i){\
 				FOREACH_PARTICLE(
 					p=wp->moveSpeed*particleLength;
 					p=p/speed;
-					sr.drawLine(wp->position,wp->position + p)
+					RENDERER.drawLine2D(wp->position,wp->position + p);
 				)
 			}
 		}break;
